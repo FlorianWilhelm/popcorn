@@ -34,6 +34,28 @@ const getTopN = () => (data.settings && Number(data.settings.topN)) || DEFAULT_T
 const getAutoRefresh = () => (data.settings ? data.settings.autoRefresh !== false : true);
 const getRefreshInterval = () => (data.settings && Number(data.settings.refreshInterval)) || DEFAULT_REFRESH_INTERVAL;
 
+const NOISE_WORDS = new Set([
+  "mic", "mic_off", "videocam", "videocam_off", "more_vert", "more_horiz", "push_pin",
+  "present_to_all", "devices", "person_add", "domain_disabled",
+  "keep", "keep_off", "visual_effects", "raise_hand", "front_hand",
+  "arrow_drop_down", "close", "search", "check", "star", "block",
+  "reframe", "framing", "auto_framing", "auto_awesome", "crop_free", "fit_screen",
+  "fullscreen", "fullscreen_exit", "settings", "tune", "volume_up", "volume_off",
+  "closed_caption", "closed_caption_off", "chat", "chat_bubble", "info", "info_outline",
+  "pan_tool", "call_end", "expand_more", "expand_less", "chevron_right", "chevron_left",
+  "drag_indicator", "grid_view", "screen_search_desktop"
+]);
+
+const NOISE_PATTERN = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in call|contributors|weitere optionen|more options|teilnehmer|participants|personen|people|suchen|search|reframe|framing|auto-framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio)$/i;
+
+const isNoiseOrIcon = (s) => {
+  if (!s) return true;
+  const lower = (s || "").toLowerCase().trim();
+  if (NOISE_WORDS.has(lower)) return true;
+  if (NOISE_PATTERN.test(lower)) return true;
+  return false;
+};
+
 const isPresentationName = (s) => {
   if (!s) return false;
   const str = (s || "").replace(/\s+/g, " ").trim();
@@ -77,12 +99,12 @@ function sanitizeMeetingData(m) {
 
   for (const [oldKey, p] of Object.entries(m.people)) {
     const rawName = (p && p.name) ? p.name : oldKey;
-    if (isPresentationName(rawName) || isPresentationName(oldKey)) {
+    if (isPresentationName(rawName) || isPresentationName(oldKey) || isNoiseOrIcon(rawName) || isNoiseOrIcon(oldKey)) {
       changed = true;
       continue;
     }
     const clean = cleanPersonName(rawName) || rawName;
-    if (isPresentationName(clean)) {
+    if (isPresentationName(clean) || isNoiseOrIcon(clean)) {
       changed = true;
       continue;
     }
@@ -239,9 +261,9 @@ function addAlias(m, value) {
 function syncRoster(m, people) {
   let added = 0;
   for (const p of people) {
-    if (isPresentationName(p.name)) continue;
+    if (isPresentationName(p.name) || isNoiseOrIcon(p.name)) continue;
     const clean = cleanPersonName(p.name);
-    if (!clean || isPresentationName(clean)) continue;
+    if (!clean || isPresentationName(clean) || isNoiseOrIcon(clean)) continue;
     const k = keyOf(clean);
     if (!m.people[k]) {
       m.people[k] = { name: clean, last: 0, prev: null };
@@ -611,9 +633,9 @@ async function refresh(newRound = false, options = {}) {
   const full = await readMeet(true);
   if (full && full.ok) {
     current.people = (full.people || [])
-      .filter((p) => !isPresentationName(p.name))
+      .filter((p) => !isPresentationName(p.name) && !isNoiseOrIcon(p.name))
       .map((p) => ({ ...p, name: cleanPersonName(p.name) }))
-      .filter((p) => !!p.name && !isPresentationName(p.name));
+      .filter((p) => !!p.name && !isPresentationName(p.name) && !isNoiseOrIcon(p.name));
     presentKeys = new Set(current.people.filter((p) => p.present).map((p) => keyOf(p.name)));
     const added = syncRoster(m, current.people);
     ensureRound(m, newRound);
@@ -771,12 +793,12 @@ $("includeAbsent").addEventListener("change", async (e) => {
 $("btnAdd").addEventListener("click", async () => {
   const m = meeting();
   const raw = $("newName").value.trim();
-  if (isPresentationName(raw)) {
-    setStatus("Präsentationen können nicht als Personen hinzugefügt werden.");
+  if (isPresentationName(raw) || isNoiseOrIcon(raw)) {
+    setStatus("Ungültiger Personenname.");
     return;
   }
   const name = cleanPersonName(raw);
-  if (!name || !m || isPresentationName(name)) return;
+  if (!name || !m || isPresentationName(name) || isNoiseOrIcon(name)) return;
   const k = keyOf(name);
   if (!m.people[k]) m.people[k] = { name, last: 0, prev: null };
   $("newName").value = "";

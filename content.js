@@ -10,13 +10,18 @@
   const CODE_RE = /^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i;
 
   const ICON_WORDS = new Set([
-    "mic", "mic_off", "videocam", "videocam_off", "more_vert", "push_pin",
+    "mic", "mic_off", "videocam", "videocam_off", "more_vert", "more_horiz", "push_pin",
     "present_to_all", "devices", "person_add", "domain_disabled",
     "keep", "keep_off", "visual_effects", "raise_hand", "front_hand",
-    "arrow_drop_down", "close", "search", "check", "star", "block"
+    "arrow_drop_down", "close", "search", "check", "star", "block",
+    "reframe", "framing", "auto_framing", "auto_awesome", "crop_free", "fit_screen",
+    "fullscreen", "fullscreen_exit", "settings", "tune", "volume_up", "volume_off",
+    "closed_caption", "closed_caption_off", "chat", "chat_bubble", "info", "info_outline",
+    "pan_tool", "call_end", "expand_more", "expand_less", "chevron_right", "chevron_left",
+    "drag_indicator", "grid_view", "screen_search_desktop"
   ]);
 
-  const NOISE = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in call|contributors|weitere optionen|more options|teilnehmer|participants|personen|people|suchen|search)$/i;
+  const NOISE = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in call|contributors|weitere optionen|more options|teilnehmer|participants|personen|people|suchen|search|reframe|framing|auto-framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio)$/i;
 
   const clean = (s) => (s || "").replace(/\s+/g, " ").trim();
 
