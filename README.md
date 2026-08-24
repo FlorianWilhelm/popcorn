@@ -30,18 +30,24 @@ Bei Ad-hoc-Meetings ohne Kalendertermin steht im Seitentitel nur der Meeting-Cod
 4. Beim nächsten Termin mit demselben Namen läuft es ab Schritt 2 weiter.
 
 - **Weitere Personen**: erzwingt eine neue Auswahl der nächsten Kandidaten. Nach sechs Stunden passiert das automatisch.
-- **Aktualisieren (Icon)**: liest die Anwesenheit manuell neu ein, behält aber die aktuelle Auswahl bei, damit beim Abhaken nichts wegspringt.
+- **Aktualisieren (🔄 Icon)**: liest die Anwesenheit manuell neu ein, behält aber die aktuelle Auswahl bei, damit beim Abhaken nichts wegspringt.
 - **Abwesende einbeziehen**: nimmt auch Personen auf, die gerade nicht im Call sind.
 
-## Tabs
+## Tabs & Navigation
 
-- **Update**: die aktuellen Kandidaten für das nächste Update.
-- **Personen**: vollständige Liste des Meetings, Personen hinzufügen oder entfernen, Zeitstempel per Toggle korrigieren.
-- **Meetings**: alle getrackten Meetings. Name direkt bearbeiten, **Öffnen** wechselt zur Liste, **×** löscht das Tracking. Pro Meeting gibt es zwei Export-Buttons:
-  - **In Zwischenablage kopieren (Icon)**: kopiert die Personenliste als lesbare Markdown-Tabelle.
-  - **Als Datei herunterladen (Icon)**: speichert das Meeting als `.md`-Datei.
-  - **+ Symbol**: importiert ein Meeting aus einer `.md`-Datei (überschreibt bestehende Daten nach Bestätigung).
-- **Einstellungen**: Anzahl der Update-Kandidaten konfigurieren (Standard: 5), automatisches Live-Aktualisieren einstellen (Standard: alle 5 Sekunden) und gesamtes JSON-Backup exportieren.
+- **Update**: die aktuellen Kandidaten für das nächste Update im laufenden Meeting.
+- **Personen**: vollständige Liste des Meetings, Personen hinzufügen (`+`), per Mülleimer-Icon (`🗑`) entfernen oder Zeitstempel per Toggle korrigieren.
+- **Meetings**: alle getrackten Meetings.
+  - Name direkt im Textfeld bearbeiten.
+  - **Öffnen**: wechselt zur Personenliste dieses Meetings.
+  - **Mülleimer (🗑)**: beendet das Tracking und löscht den gespeicherten Verlauf des Meetings.
+  - **Zwischenablage (📋)**: kopiert die Personenliste als Markdown-Tabelle in die Zwischenablage.
+  - **Herunterladen (⬇)**: exportiert das Meeting als lesbare `.md`-Datei.
+  - **+ Symbol (Toolbar)**: importiert ein Meeting aus einer Markdown-Datei (fragt bei bestehendem Namen vor dem Überschreiben).
+- **Einstellungen (⚙️ Zahnrad)**:
+  - Anzahl der Update-Kandidaten konfigurieren (Standard: 5).
+  - Automatisches Live-Aktualisieren im Meeting einstellen (Standard: alle 5 Sekunden).
+  - **Gesamtes Backup exportieren (JSON)**: vollständiger Export aller Meetings und Einstellungen.
 
 ## Wenn sich der Kalendertitel ändert
 
@@ -54,7 +60,21 @@ Alte Namen bleiben als Erkennung gespeichert. Ein Rückbenennen im Kalender bric
 
 ## Speicherung & Export
 
-Die Daten liegen in `chrome.storage.local`. Einzelne Meetings können direkt als Markdown (`.md`) kopiert/exportiert werden, vollständige Backups aller Meetings als JSON.
+Die Daten liegen in `chrome.storage.local`.
+
+### Markdown-Export (einzelnes Meeting)
+
+```markdown
+# Team Weekly DS & NLP
+
+| Person | Letztes Update |
+| --- | --- |
+| Max Mustermann | 24.08.2026, 10:15:00 |
+| Erika Musterfrau | 17.08.2026, 09:30:00 |
+| Collin Rogowski | noch nie |
+```
+
+### JSON-Backup (alle Meetings)
 
 ```json
 {
@@ -73,7 +93,7 @@ Die Daten liegen in `chrome.storage.local`. Einzelne Meetings können direkt als
 }
 ```
 
-`last` ist ein Unix-Zeitstempel in Millisekunden, `0` heißt noch nie vorgetragen. Beim Import fragt die Erweiterung, ob ersetzt oder zusammengeführt werden soll. Beim Zusammenführen gewinnt pro Person der jüngere Zeitstempel.
+`last` ist ein Unix-Zeitstempel in Millisekunden, `0` heißt noch nie vorgetragen. Beim JSON-Import fragt die Erweiterung, ob ersetzt oder zusammengeführt werden soll. Beim Markdown-Import wird bei Namensübereinstimmung nach Bestätigung überschrieben.
 
 ## Grenzen
 
