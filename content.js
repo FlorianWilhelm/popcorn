@@ -183,6 +183,15 @@
     return Array.from(seen.values());
   }
 
+  function findViewEveryoneButton() {
+    const clickable = Array.from(document.querySelectorAll('button, [role="button"], div[role="button"], a'));
+    return clickable.find((b) => {
+      const txt = (b.textContent || "").toLowerCase();
+      const aria = (b.getAttribute("aria-label") || "").toLowerCase();
+      return /view everyone|alle in diesem anruf|alle teilnehmer anzeigen|everyone in this call/.test(txt + " " + aria);
+    });
+  }
+
   function findPanelButton() {
     const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
     return buttons.find((b) => {
@@ -201,6 +210,12 @@
     let openedPanel = false;
 
     if (withPeople) {
+      const viewEveryone = findViewEveryoneButton();
+      if (viewEveryone) {
+        viewEveryone.click();
+        await wait(500);
+      }
+
       people = collect();
       if (people.length < 2) {
         const btn = findPanelButton();
@@ -208,6 +223,13 @@
           btn.click();
           openedPanel = true;
           await wait(900);
+
+          const innerViewEveryone = findViewEveryoneButton();
+          if (innerViewEveryone) {
+            innerViewEveryone.click();
+            await wait(500);
+          }
+
           people = collect();
         }
       }
