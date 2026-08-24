@@ -34,6 +34,16 @@ const getTopN = () => (data.settings && Number(data.settings.topN)) || DEFAULT_T
 const getAutoRefresh = () => (data.settings ? data.settings.autoRefresh !== false : true);
 const getRefreshInterval = () => (data.settings && Number(data.settings.refreshInterval)) || DEFAULT_REFRESH_INTERVAL;
 
+const isPresentationName = (s) => {
+  if (!s) return false;
+  const str = (s || "").replace(/\s+/g, " ").trim();
+  if (/^(?:dein\s+bildschirm|your\s+screen|deine\s+präsentation|your\s+presentation|bildschirmübertragung|screen\s*share)$/i.test(str)) return true;
+  if (/^(?:presentation|präsentation|praesentation)(?:\s+(?:von|of|by)\s+.*)?$/i.test(str)) return true;
+  if (/(?:\x27s|’s|s|\x27|’)\s*(?:presentation|präsentation|praesentation|screen|bildschirm|bildschirmfreigabe|bildschirmübertragung)$/i.test(str)) return true;
+  if (/\((?:präsentation|presentation|bildschirm|screen|dein bildschirm|your presentation)\)/i.test(str)) return true;
+  return false;
+};
+
 const cleanPersonName = (raw) => {
   let s = (raw || "").replace(/\s+/g, " ").trim();
   if (!s) return "";
@@ -67,7 +77,15 @@ function sanitizeMeetingData(m) {
 
   for (const [oldKey, p] of Object.entries(m.people)) {
     const rawName = (p && p.name) ? p.name : oldKey;
+    if (isPresentationName(rawName) || isPresentationName(oldKey)) {
+      changed = true;
+      continue;
+    }
     const clean = cleanPersonName(rawName) || rawName;
+    if (isPresentationName(clean)) {
+      changed = true;
+      continue;
+    }
     const newKey = keyOf(clean);
 
     if (newKey !== oldKey || (p && p.name !== clean)) {
@@ -95,8 +113,8 @@ function sanitizeMeetingData(m) {
     const updatedRoundKeys = [];
     const seenRound = new Set();
     for (const k of m.round.keys) {
-      const mappedKey = keyMap.get(k) || k;
-      if (m.people[mappedKey] && !seenRound.has(mappedKey)) {
+      const mappedKey = keyMap.get(k);
+      if (mappedKey && m.people[mappedKey] && !seenRound.has(mappedKey)) {
         seenRound.add(mappedKey);
         updatedRoundKeys.push(mappedKey);
       }
@@ -221,8 +239,9 @@ function addAlias(m, value) {
 function syncRoster(m, people) {
   let added = 0;
   for (const p of people) {
+    if (isPresentationName(p.name)) continue;
     const clean = cleanPersonName(p.name);
-    if (!clean) continue;
+    if (!clean || isPresentationName(clean)) continue;
     const k = keyOf(clean);
     if (!m.people[k]) {
       m.people[k] = { name: clean, last: 0, prev: null };
@@ -592,8 +611,9 @@ async function refresh(newRound = false, options = {}) {
   const full = await readMeet(true);
   if (full && full.ok) {
     current.people = (full.people || [])
+      .filter((p) => !isPresentationName(p.name))
       .map((p) => ({ ...p, name: cleanPersonName(p.name) }))
-      .filter((p) => !!p.name);
+      .filter((p) => !!p.name && !isPresentationName(p.name));
     presentKeys = new Set(current.people.filter((p) => p.present).map((p) => keyOf(p.name)));
     const added = syncRoster(m, current.people);
     ensureRound(m, newRound);
@@ -751,8 +771,12 @@ $("includeAbsent").addEventListener("change", async (e) => {
 $("btnAdd").addEventListener("click", async () => {
   const m = meeting();
   const raw = $("newName").value.trim();
+  if (isPresentationName(raw)) {
+    setStatus("Präsentationen können nicht als Personen hinzugefügt werden.");
+    return;
+  }
   const name = cleanPersonName(raw);
-  if (!name || !m) return;
+  if (!name || !m || isPresentationName(name)) return;
   const k = keyOf(name);
   if (!m.people[k]) m.people[k] = { name, last: 0, prev: null };
   $("newName").value = "";

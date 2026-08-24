@@ -45,6 +45,16 @@
     return clean(s);
   }
 
+  function isPresentation(raw) {
+    if (!raw) return false;
+    const str = clean(raw);
+    if (/^(?:dein\s+bildschirm|your\s+screen|deine\s+präsentation|your\s+presentation|bildschirmübertragung|screen\s*share)$/i.test(str)) return true;
+    if (/^(?:presentation|präsentation|praesentation)(?:\s+(?:von|of|by)\s+.*)?$/i.test(str)) return true;
+    if (/(?:\x27s|’s|s|\x27|’)\s*(?:presentation|präsentation|praesentation|screen|bildschirm|bildschirmfreigabe|bildschirmübertragung)$/i.test(str)) return true;
+    if (/\((?:präsentation|presentation|bildschirm|screen|dein bildschirm|your presentation)\)/i.test(str)) return true;
+    return false;
+  }
+
   function stripQualifier(name) {
     return cleanPersonName(name);
   }
@@ -54,6 +64,7 @@
     if (s.length < 2 || s.length > 70) return false;
     if (NOISE.test(s)) return false;
     if (ICON_WORDS.has(s.toLowerCase())) return false;
+    if (isPresentation(s)) return false;
     if (/^[a-z0-9]+(_[a-z0-9]+)+$/i.test(s)) return false;
     if (!/[a-zA-ZÀ-ÿ]/.test(s)) return false;
     if (/^\d+$/.test(s)) return false;
@@ -64,6 +75,7 @@
   function extractName(item) {
     const selfName = item.getAttribute("data-self-name");
     if (selfName) {
+      if (isPresentation(selfName)) return null;
       const c = cleanPersonName(selfName);
       if (looksLikeName(c)) return c;
     }
@@ -77,20 +89,24 @@
       (el) => !el.closest('button, [role="button"], [role="menu"], [role="menuitem"], [aria-haspopup="true"]')
     );
     for (const leaf of nonButtonLeaves) {
+      if (isPresentation(leaf.textContent)) return null;
       const t = cleanPersonName(leaf.textContent);
       if (looksLikeName(t)) return t;
     }
 
     // Fallback if needed
     for (const leaf of allLeaves) {
+      if (isPresentation(leaf.textContent)) return null;
       const t = cleanPersonName(leaf.textContent);
       if (looksLikeName(t)) return t;
     }
 
     const aria = cleanPersonName(item.getAttribute("aria-label") || "");
+    if (isPresentation(aria)) return null;
     if (looksLikeName(aria)) return aria.split(",")[0].trim();
 
     const direct = cleanPersonName(item.textContent);
+    if (isPresentation(direct)) return null;
     return looksLikeName(direct) ? direct : null;
   }
 
@@ -138,8 +154,11 @@
       const inPeopleList = hasId || !!item.closest('[role="list"]');
       if (!inPeopleList) continue;
 
+      if (item.getAttribute("data-is-screen-share") === "true" || item.getAttribute("data-is-presenting") === "true") continue;
+      if (isPresentation(item.textContent) || isPresentation(item.getAttribute("aria-label"))) continue;
+
       const name = extractName(item);
-      if (!name) continue;
+      if (!name || isPresentation(name)) continue;
 
       const key = name.toLowerCase();
       const prev = seen.get(key);
@@ -148,8 +167,10 @@
 
     if (seen.size === 0) {
       for (const tile of document.querySelectorAll("[data-participant-id]")) {
+        if (tile.getAttribute("data-is-screen-share") === "true" || tile.getAttribute("data-is-presenting") === "true") continue;
+        if (isPresentation(tile.textContent) || isPresentation(tile.getAttribute("aria-label"))) continue;
         const name = extractName(tile);
-        if (!name) continue;
+        if (!name || isPresentation(name)) continue;
         seen.set(name.toLowerCase(), { name, present: true });
       }
     }
