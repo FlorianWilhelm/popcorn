@@ -29,8 +29,8 @@ Bei Ad-hoc-Meetings ohne Kalendertermin steht im Seitentitel nur der Meeting-Cod
 3. Die Top 5 mit Toggle. Toggle an setzt das heutige Datum, Toggle aus stellt den vorherigen Zeitstempel wieder her.
 4. Beim nächsten Termin mit demselben Namen läuft es ab Schritt 2 weiter.
 
-- **Aktualisieren**: liest die Anwesenheit neu ein, behält aber die aktuelle Fünferauswahl bei, damit beim Abhaken nichts wegspringt.
-- **Neue Runde**: erzwingt eine neue Auswahl. Nach sechs Stunden passiert das automatisch.
+- **Weitere Personen**: erzwingt eine neue Auswahl der nächsten Kandidaten. Nach sechs Stunden passiert das automatisch.
+- **Aktualisieren (Icon)**: liest die Anwesenheit manuell neu ein, behält aber die aktuelle Auswahl bei, damit beim Abhaken nichts wegspringt.
 - **Abwesende einbeziehen**: nimmt auch Personen auf, die gerade nicht im Call sind.
 
 ## Tabs
