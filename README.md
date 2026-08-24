@@ -35,9 +35,10 @@ Bei Ad-hoc-Meetings ohne Kalendertermin steht im Seitentitel nur der Meeting-Cod
 
 ## Tabs
 
-- **Runde**: die aktuellen fünf Kandidaten.
+- **Update**: die aktuellen Kandidaten für das nächste Update.
 - **Personen**: vollständige Liste des Meetings, Personen hinzufügen oder entfernen, Zeitstempel per Toggle korrigieren.
 - **Meetings**: alle getrackten Meetings. Name direkt im Feld bearbeiten, **Öffnen** wechselt zur Liste eines anderen Meetings, **×** beendet das Tracking und löscht den Verlauf.
+- **Einstellungen**: Anzahl der Update-Kandidaten konfigurieren (Standard: 5) und automatisches Live-Aktualisieren einstellen (Standard: alle 5 Sekunden).
 
 ## Wenn sich der Kalendertitel ändert
 

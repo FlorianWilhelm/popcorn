@@ -5,20 +5,110 @@
 
 const STORE_KEY = "mur_v1"; // Schluessel bleibt, Migration laeuft im Code
 const ROUND_TTL = 6 * 60 * 60 * 1000;
-const TOP_N = 5;
+const DEFAULT_TOP_N = 5;
+const DEFAULT_REFRESH_INTERVAL = 5;
 
 const $ = (id) => document.getElementById(id);
 
-let data = { version: 2, meetings: {} };
+let data = {
+  version: 2,
+  meetings: {},
+  settings: {
+    topN: DEFAULT_TOP_N,
+    autoRefresh: true,
+    refreshInterval: DEFAULT_REFRESH_INTERVAL
+  }
+};
 let current = null; // { inMeet, code, title, people }
 let currentId = null; // getracktes Meeting, das gerade laeuft
 let selectedId = null; // manuell aus der Meetingliste geoeffnet
 let presentKeys = new Set();
 let view = "round";
+let refreshTimer = null;
 
 const norm = (s) => (s || "").normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
 const keyOf = (name) => norm(name);
 const uid = () => `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+
+const getTopN = () => (data.settings && Number(data.settings.topN)) || DEFAULT_TOP_N;
+const getAutoRefresh = () => (data.settings ? data.settings.autoRefresh !== false : true);
+const getRefreshInterval = () => (data.settings && Number(data.settings.refreshInterval)) || DEFAULT_REFRESH_INTERVAL;
+
+const cleanPersonName = (raw) => {
+  let s = (raw || "").replace(/\s+/g, " ").trim();
+  if (!s) return "";
+
+  // Action prefixes and suffixes from Meet UI / accessibility labels
+  s = s.replace(/^pin\s+(.+?)\s+to\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
+  s = s.replace(/^unpin\s+(.+?)\s+from\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
+  s = s.replace(/^pin\s+(.+?)\s+to\s+screen$/i, "$1");
+  s = s.replace(/^unpin\s+(.+?)\s+from\s+screen$/i, "$1");
+  s = s.replace(/^(.+?)\s+an\s+(?:den\s+)?(?:hauptbildschirm|bildschirm)\s+anpinnen$/i, "$1");
+  s = s.replace(/^(.+?)\s+vom\s+(?:hauptbildschirm|bildschirm)\s+(?:lösen|entfernen|entpinnen)$/i, "$1");
+  s = s.replace(/^(.+?)\s+(?:nicht\s+mehr\s+anpinnen|anpinnen|anheften)$/i, "$1");
+  s = s.replace(/^(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für)\s+(.+)$/i, "$1");
+  s = s.replace(/^(?:mute|unmute|stummschalten\s+für)\s+(.+)$/i, "$1");
+  s = s.replace(/^(.+?)\s+stummschalten$/i, "$1");
+  s = s.replace(/^(?:video\s+von\s+|video\s+of\s+)(.+)$/i, "$1");
+  s = s.replace(/^(.+?)'s\s+video$/i, "$1");
+
+  // Remove parenthetical qualifiers: (Du), (You), (Host), (Presentation), etc.
+  s = s.replace(/\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal)\)/gi, "");
+  s = s.replace(/[·•]/g, " ");
+
+  return s.replace(/\s+/g, " ").trim();
+};
+
+function sanitizeMeetingData(m) {
+  if (!m || !m.people) return false;
+  let changed = false;
+  const newPeople = {};
+  const keyMap = new Map();
+
+  for (const [oldKey, p] of Object.entries(m.people)) {
+    const rawName = (p && p.name) ? p.name : oldKey;
+    const clean = cleanPersonName(rawName) || rawName;
+    const newKey = keyOf(clean);
+
+    if (newKey !== oldKey || (p && p.name !== clean)) {
+      changed = true;
+    }
+
+    if (!newPeople[newKey]) {
+      newPeople[newKey] = {
+        name: clean,
+        last: (p && p.last) || 0,
+        prev: p && p.prev != null ? p.prev : null
+      };
+    } else {
+      newPeople[newKey].last = Math.max(newPeople[newKey].last || 0, (p && p.last) || 0);
+      if (p && p.prev != null && newPeople[newKey].prev == null) {
+        newPeople[newKey].prev = p.prev;
+      }
+    }
+    keyMap.set(oldKey, newKey);
+  }
+
+  m.people = newPeople;
+
+  if (m.round && Array.isArray(m.round.keys)) {
+    const updatedRoundKeys = [];
+    const seenRound = new Set();
+    for (const k of m.round.keys) {
+      const mappedKey = keyMap.get(k) || k;
+      if (m.people[mappedKey] && !seenRound.has(mappedKey)) {
+        seenRound.add(mappedKey);
+        updatedRoundKeys.push(mappedKey);
+      }
+    }
+    if (updatedRoundKeys.length !== m.round.keys.length || updatedRoundKeys.some((k, i) => k !== m.round.keys[i])) {
+      changed = true;
+    }
+    m.round.keys = updatedRoundKeys;
+  }
+
+  return changed;
+}
 
 const activeId = () => selectedId || currentId;
 const meeting = () => (activeId() ? data.meetings[activeId()] : null);
@@ -28,25 +118,54 @@ const meeting = () => (activeId() ? data.meetings[activeId()] : null);
 async function load() {
   const res = await chrome.storage.local.get(STORE_KEY);
   const raw = res[STORE_KEY];
-  if (!raw) return { version: 2, meetings: {} };
-  if (raw.meetings) return raw;
+  let loadedData = {
+    version: 2,
+    meetings: {},
+    settings: {
+      topN: DEFAULT_TOP_N,
+      autoRefresh: true,
+      refreshInterval: DEFAULT_REFRESH_INTERVAL
+    }
+  };
 
-  // Migration v1: Gruppen hingen am Meeting-Code
-  const migrated = { version: 2, meetings: {} };
-  for (const [gid, g] of Object.entries(raw.groups || {})) {
-    const id = uid();
-    migrated.meetings[id] = {
-      id,
-      name: g.name || gid,
-      aliases: [norm(g.name || gid)],
-      codes: g.codes || (gid ? [gid] : []),
-      people: g.people || {},
-      round: g.round || null,
-      includeAbsent: !!g.includeAbsent,
-      createdAt: Date.now()
-    };
+  if (raw && raw.meetings) {
+    loadedData = raw;
+  } else if (raw && raw.groups) {
+    // Migration v1: Gruppen hingen am Meeting-Code
+    for (const [gid, g] of Object.entries(raw.groups || {})) {
+      const id = uid();
+      loadedData.meetings[id] = {
+        id,
+        name: g.name || gid,
+        aliases: [norm(g.name || gid)],
+        codes: g.codes || (gid ? [gid] : []),
+        people: g.people || {},
+        round: g.round || null,
+        includeAbsent: !!g.includeAbsent,
+        createdAt: Date.now()
+      };
+    }
   }
-  return migrated;
+
+  if (!loadedData.settings) {
+    loadedData.settings = { topN: DEFAULT_TOP_N, autoRefresh: true, refreshInterval: DEFAULT_REFRESH_INTERVAL };
+  } else {
+    loadedData.settings.topN = Math.max(1, Math.min(20, Number(loadedData.settings.topN) || DEFAULT_TOP_N));
+    loadedData.settings.autoRefresh = loadedData.settings.autoRefresh !== false;
+    loadedData.settings.refreshInterval = Math.max(2, Math.min(60, Number(loadedData.settings.refreshInterval) || DEFAULT_REFRESH_INTERVAL));
+  }
+
+  let needsSave = false;
+  for (const m of Object.values(loadedData.meetings || {})) {
+    if (sanitizeMeetingData(m)) {
+      needsSave = true;
+    }
+  }
+  if (needsSave) {
+    await chrome.storage.local.set({ [STORE_KEY]: loadedData });
+  }
+
+  return loadedData;
 }
 
 async function save() {
@@ -102,12 +221,14 @@ function addAlias(m, value) {
 function syncRoster(m, people) {
   let added = 0;
   for (const p of people) {
-    const k = keyOf(p.name);
+    const clean = cleanPersonName(p.name);
+    if (!clean) continue;
+    const k = keyOf(clean);
     if (!m.people[k]) {
-      m.people[k] = { name: p.name, last: 0, prev: null };
+      m.people[k] = { name: clean, last: 0, prev: null };
       added++;
     } else {
-      m.people[k].name = p.name;
+      m.people[k].name = clean;
     }
   }
   return added;
@@ -122,15 +243,24 @@ function candidates(m) {
 }
 
 function ensureRound(m, force) {
+  const topCount = getTopN();
   const fresh = m.round && Date.now() - m.round.createdAt < ROUND_TTL;
   if (!force && fresh) {
     const valid = m.round.keys.filter((k) => m.people[k]);
     if (valid.length) {
-      m.round.keys = valid;
+      if (valid.length < topCount) {
+        const pool = candidates(m).map((p) => p.key);
+        for (const k of pool) {
+          if (!valid.includes(k) && valid.length < topCount) {
+            valid.push(k);
+          }
+        }
+      }
+      m.round.keys = valid.slice(0, topCount);
       return;
     }
   }
-  m.round = { keys: candidates(m).slice(0, TOP_N).map((p) => p.key), createdAt: Date.now() };
+  m.round = { keys: candidates(m).slice(0, topCount).map((p) => p.key), createdAt: Date.now() };
 }
 
 /* ---------- Bausteine ---------- */
@@ -297,7 +427,7 @@ function setStatus(text) {
 }
 
 function show(id) {
-  for (const s of ["viewOff", "viewRound", "viewPeople", "viewMeetings"]) {
+  for (const s of ["viewOff", "viewRound", "viewPeople", "viewMeetings", "viewSettings"]) {
     $(s).classList.toggle("hidden", s !== id);
   }
 }
@@ -322,11 +452,13 @@ function render() {
   // Tabs
   for (const t of document.querySelectorAll(".tab")) {
     t.classList.toggle("active", t.dataset.view === view);
-    if (t.dataset.view !== "meetings") t.disabled = !m;
+    if (t.dataset.view !== "meetings" && t.dataset.view !== "settings") t.disabled = !m;
   }
 
   // Ansicht waehlen
-  if (view === "meetings" || (!m && !inMeet)) {
+  if (view === "settings") {
+    show("viewSettings");
+  } else if (view === "meetings" || (!m && !inMeet)) {
     show("viewMeetings");
   } else if (!m) {
     show("viewOff");
@@ -362,7 +494,7 @@ function render() {
     }
   }
 
-  // Runde
+  // Runde / Update
   const list = $("list");
   list.innerHTML = "";
   if (m) {
@@ -393,11 +525,26 @@ function render() {
   const meetings = Object.values(data.meetings).sort((a, b) => a.name.localeCompare(b.name, "de"));
   meetings.forEach((g) => ml.appendChild(buildMeetingItem(g)));
   $("meetingsEmpty").classList.toggle("hidden", meetings.length > 0);
+
+  // Einstellungen
+  if ($("settingTopN") && document.activeElement !== $("settingTopN")) {
+    $("settingTopN").value = getTopN();
+  }
+  if ($("settingAutoRefresh")) {
+    $("settingAutoRefresh").checked = getAutoRefresh();
+  }
+  if ($("settingRefreshInterval") && document.activeElement !== $("settingRefreshInterval")) {
+    $("settingRefreshInterval").value = getRefreshInterval();
+  }
+  if ($("fieldRefreshInterval")) {
+    $("fieldRefreshInterval").classList.toggle("hidden", !getAutoRefresh());
+    $("hintRefreshInterval").classList.toggle("hidden", !getAutoRefresh());
+  }
 }
 
 /* ---------- Ablauf ---------- */
 
-async function refresh(newRound = false) {
+async function refresh(newRound = false, options = {}) {
   data = await load();
 
   // Phase 1: nur Name und Code lesen, Personenliste unberuehrt lassen
@@ -410,18 +557,20 @@ async function refresh(newRound = false) {
   presentKeys = new Set();
 
   if (!current.inMeet) {
-    setStatus(
-      probe && probe.reason === "noinject"
-        ? "Meet-Tab gefunden, aber noch nicht lesbar. Lade die Meet-Seite neu."
-        : ""
-    );
+    if (!options.background) {
+      setStatus(
+        probe && probe.reason === "noinject"
+          ? "Meet-Tab gefunden, aber noch nicht lesbar. Lade die Meet-Seite neu."
+          : ""
+      );
+    }
     render();
     return;
   }
 
   const hit = matchMeeting(current.title, current.code);
   if (!hit) {
-    setStatus("");
+    if (!options.background) setStatus("");
     render();
     return;
   }
@@ -442,7 +591,9 @@ async function refresh(newRound = false) {
   // Phase 2: erst jetzt die Personenliste lesen
   const full = await readMeet(true);
   if (full && full.ok) {
-    current.people = full.people || [];
+    current.people = (full.people || [])
+      .map((p) => ({ ...p, name: cleanPersonName(p.name) }))
+      .filter((p) => !!p.name);
     presentKeys = new Set(current.people.filter((p) => p.present).map((p) => keyOf(p.name)));
     const added = syncRoster(m, current.people);
     ensureRound(m, newRound);
@@ -461,6 +612,24 @@ async function refresh(newRound = false) {
   }
 }
 
+function setupAutoRefresh() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+  const auto = getAutoRefresh();
+  const sec = getRefreshInterval();
+  if (auto && sec > 0) {
+    refreshTimer = setInterval(async () => {
+      if (document.hidden) return;
+      const activeEl = document.activeElement;
+      const isEditingText = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") && (activeEl.type === "text" || activeEl.type === "number");
+      if (isEditingText && view !== "round") return;
+      await refresh(false, { background: true });
+    }, sec * 1000);
+  }
+}
+
 /* ---------- Import und Export ---------- */
 
 function exportData() {
@@ -474,6 +643,7 @@ function exportData() {
 
 function mergeInto(target, incoming) {
   for (const [id, g] of Object.entries(incoming.meetings || {})) {
+    sanitizeMeetingData(g);
     const existing =
       target.meetings[id] ||
       Object.values(target.meetings).find((x) => norm(x.name) === norm(g.name));
@@ -487,6 +657,7 @@ function mergeInto(target, incoming) {
     }
     for (const a of g.aliases || []) addAlias(existing, a);
     for (const c of g.codes || []) if (!existing.codes.includes(c)) existing.codes.push(c);
+    sanitizeMeetingData(existing);
   }
   return target;
 }
@@ -509,6 +680,9 @@ async function importFile(file) {
   );
   if (replace) {
     data = parsed.meetings ? parsed : { version: 2, meetings: {} };
+    for (const m of Object.values(data.meetings || {})) {
+      sanitizeMeetingData(m);
+    }
   } else {
     mergeInto(data, parsed);
   }
@@ -576,7 +750,8 @@ $("includeAbsent").addEventListener("change", async (e) => {
 
 $("btnAdd").addEventListener("click", async () => {
   const m = meeting();
-  const name = $("newName").value.trim();
+  const raw = $("newName").value.trim();
+  const name = cleanPersonName(raw);
   if (!name || !m) return;
   const k = keyOf(name);
   if (!m.people[k]) m.people[k] = { name, last: 0, prev: null };
@@ -589,6 +764,35 @@ $("newName").addEventListener("keydown", (e) => {
   if (e.key === "Enter") $("btnAdd").click();
 });
 
+$("settingTopN").addEventListener("change", async (e) => {
+  const val = Math.max(1, Math.min(20, parseInt(e.target.value, 10) || DEFAULT_TOP_N));
+  data.settings = data.settings || {};
+  data.settings.topN = val;
+  $("settingTopN").value = val;
+  const m = meeting();
+  if (m) ensureRound(m, true);
+  await save();
+  render();
+});
+
+$("settingAutoRefresh").addEventListener("change", async (e) => {
+  data.settings = data.settings || {};
+  data.settings.autoRefresh = e.target.checked;
+  $("fieldRefreshInterval").classList.toggle("hidden", !e.target.checked);
+  $("hintRefreshInterval").classList.toggle("hidden", !e.target.checked);
+  await save();
+  setupAutoRefresh();
+});
+
+$("settingRefreshInterval").addEventListener("change", async (e) => {
+  const val = Math.max(2, Math.min(60, parseInt(e.target.value, 10) || DEFAULT_REFRESH_INTERVAL));
+  data.settings = data.settings || {};
+  data.settings.refreshInterval = val;
+  $("settingRefreshInterval").value = val;
+  await save();
+  setupAutoRefresh();
+});
+
 $("btnExport").addEventListener("click", exportData);
 $("btnImport").addEventListener("click", () => $("fileInput").click());
 $("fileInput").addEventListener("change", (e) => {
@@ -597,4 +801,6 @@ $("fileInput").addEventListener("change", (e) => {
   e.target.value = "";
 });
 
-refresh(false);
+refresh(false).then(() => {
+  setupAutoRefresh();
+});

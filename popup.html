@@ -14,9 +14,10 @@
     </header>
 
     <nav class="tabs">
-      <button data-view="round" class="tab active">Runde</button>
+      <button data-view="round" class="tab active">Update</button>
       <button data-view="people" class="tab">Personen</button>
       <button data-view="meetings" class="tab">Meetings</button>
+      <button data-view="settings" class="tab">Einstellungen</button>
     </nav>
 
     <div id="status" class="status hidden"></div>
@@ -50,7 +51,7 @@
       </p>
       <div class="row">
         <button id="btnRefresh" class="primary">Aktualisieren</button>
-        <button id="btnNewRound" class="ghost">Neue Runde</button>
+        <button id="btnNewRound" class="ghost">Neues Update</button>
       </div>
       <label class="check">
         <input type="checkbox" id="includeAbsent" />
@@ -80,6 +81,27 @@
         <button id="btnImport" class="ghost">Importieren</button>
       </div>
       <input type="file" id="fileInput" accept="application/json" hidden />
+    </section>
+
+    <!-- Einstellungen -->
+    <section id="viewSettings" class="hidden">
+      <label class="field">
+        <span>Anzahl der Update-Kandidaten</span>
+        <input id="settingTopN" type="number" min="1" max="20" value="5" />
+      </label>
+      <p class="hint">Wie viele Personen pro Runde für das Projektupdate vorgeschlagen werden (Standard: 5).</p>
+
+      <label class="check">
+        <input type="checkbox" id="settingAutoRefresh" checked />
+        Automatisches Aktualisieren
+      </label>
+      <p class="hint">Aktualisiert Anwesenheit und neu beigetretene Personen im laufenden Meeting automatisch.</p>
+
+      <label class="field" id="fieldRefreshInterval">
+        <span>Aktualisierungsintervall (Sekunden)</span>
+        <input id="settingRefreshInterval" type="number" min="2" max="60" value="5" />
+      </label>
+      <p class="hint" id="hintRefreshInterval">Intervall für die automatische Aktualisierung (Standard: 5 Sekunden).</p>
     </section>
 
     <script src="popup.js"></script>
