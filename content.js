@@ -20,41 +20,77 @@
 
   const clean = (s) => (s || "").replace(/\s+/g, " ").trim();
 
+  function cleanPersonName(raw) {
+    let s = clean(raw);
+    if (!s) return "";
+
+    // Action prefixes and suffixes from Meet UI / accessibility labels
+    s = s.replace(/^pin\s+(.+?)\s+to\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
+    s = s.replace(/^unpin\s+(.+?)\s+from\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
+    s = s.replace(/^pin\s+(.+?)\s+to\s+screen$/i, "$1");
+    s = s.replace(/^unpin\s+(.+?)\s+from\s+screen$/i, "$1");
+    s = s.replace(/^(.+?)\s+an\s+(?:den\s+)?(?:hauptbildschirm|bildschirm)\s+anpinnen$/i, "$1");
+    s = s.replace(/^(.+?)\s+vom\s+(?:hauptbildschirm|bildschirm)\s+(?:lösen|entfernen|entpinnen)$/i, "$1");
+    s = s.replace(/^(.+?)\s+(?:nicht\s+mehr\s+anpinnen|anpinnen|anheften)$/i, "$1");
+    s = s.replace(/^(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für)\s+(.+)$/i, "$1");
+    s = s.replace(/^(?:mute|unmute|stummschalten\s+für)\s+(.+)$/i, "$1");
+    s = s.replace(/^(.+?)\s+stummschalten$/i, "$1");
+    s = s.replace(/^(?:video\s+von\s+|video\s+of\s+)(.+)$/i, "$1");
+    s = s.replace(/^(.+?)'s\s+video$/i, "$1");
+
+    // Remove parenthetical qualifiers: (Du), (You), (Host), (Presentation), etc.
+    s = s.replace(/\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal)\)/gi, "");
+    s = s.replace(/[·•]/g, " ");
+
+    return clean(s);
+  }
+
   function stripQualifier(name) {
-    return clean(
-      name
-        .replace(/\((du|you|sie|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host)\)/gi, "")
-        .replace(/[·•]/g, " ")
-    );
+    return cleanPersonName(name);
   }
 
   function looksLikeName(s) {
     if (!s) return false;
     if (s.length < 2 || s.length > 70) return false;
     if (NOISE.test(s)) return false;
-    if (ICON_WORDS.has(s)) return false;
-    if (/^[a-z0-9]+(_[a-z0-9]+)+$/.test(s)) return false;
+    if (ICON_WORDS.has(s.toLowerCase())) return false;
+    if (/^[a-z0-9]+(_[a-z0-9]+)+$/i.test(s)) return false;
     if (!/[a-zA-ZÀ-ÿ]/.test(s)) return false;
     if (/^\d+$/.test(s)) return false;
+    if (/^(pin|unpin)\s+.*to\s+.*screen$/i.test(s)) return false;
     return true;
   }
 
   function extractName(item) {
     const selfName = item.getAttribute("data-self-name");
-    if (selfName && looksLikeName(clean(selfName))) return stripQualifier(selfName);
+    if (selfName) {
+      const c = cleanPersonName(selfName);
+      if (looksLikeName(c)) return c;
+    }
 
-    const leaves = Array.from(item.querySelectorAll("*")).filter(
+    const allLeaves = Array.from(item.querySelectorAll("*")).filter(
       (el) => el.children.length === 0 && clean(el.textContent).length > 0
     );
-    for (const leaf of leaves) {
-      const t = stripQualifier(clean(leaf.textContent));
+
+    // Prioritize leaf nodes not inside action buttons / menus
+    const nonButtonLeaves = allLeaves.filter(
+      (el) => !el.closest('button, [role="button"], [role="menu"], [role="menuitem"], [aria-haspopup="true"]')
+    );
+    for (const leaf of nonButtonLeaves) {
+      const t = cleanPersonName(leaf.textContent);
       if (looksLikeName(t)) return t;
     }
 
-    const aria = stripQualifier(clean(item.getAttribute("aria-label") || ""));
+    // Fallback if needed
+    for (const leaf of allLeaves) {
+      const t = cleanPersonName(leaf.textContent);
+      if (looksLikeName(t)) return t;
+    }
+
+    const aria = cleanPersonName(item.getAttribute("aria-label") || "");
     if (looksLikeName(aria)) return aria.split(",")[0].trim();
 
-    const direct = stripQualifier(clean(item.textContent));
+    const direct = cleanPersonName(item.textContent);
     return looksLikeName(direct) ? direct : null;
   }
 
