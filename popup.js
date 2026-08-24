@@ -380,9 +380,10 @@ function buildPersonItem(m, person, index, oldest, opts = {}) {
 
   if (opts.deletable) {
     const del = document.createElement("button");
-    del.className = "mini ghost";
-    del.textContent = "×";
+    del.className = "mini ghost icon-btn";
     del.title = "Person entfernen";
+    del.setAttribute("aria-label", "Person entfernen");
+    del.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
     del.addEventListener("click", async () => {
       delete m.people[person.key];
       if (m.round) m.round.keys = m.round.keys.filter((k) => k !== person.key);
@@ -454,8 +455,9 @@ function buildMeetingItem(m) {
   });
 
   const open = document.createElement("button");
-  open.className = "mini ghost";
-  open.textContent = "Öffnen";
+  open.className = "mini ghost btn-with-icon";
+  open.title = "Personenliste dieses Meetings öffnen";
+  open.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg><span>Öffnen</span>`;
   open.addEventListener("click", () => {
     selectedId = m.id;
     view = "people";
@@ -463,9 +465,10 @@ function buildMeetingItem(m) {
   });
 
   const del = document.createElement("button");
-  del.className = "mini ghost";
-  del.textContent = "×";
+  del.className = "mini ghost icon-btn";
   del.title = "Tracking beenden und Verlauf löschen";
+  del.setAttribute("aria-label", "Meeting löschen");
+  del.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
   del.addEventListener("click", async () => {
     if (!confirm(`Tracking für "${m.name}" beenden? Der gespeicherte Verlauf wird gelöscht.`)) return;
     delete data.meetings[m.id];

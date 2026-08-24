@@ -193,6 +193,18 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .primary:hover { filter: brightness(1.08); }
 .ghost { flex: 0 0 auto; }
 
+.btn-with-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-with-icon svg {
+  flex: none;
+  display: block;
+}
+
 .icon-btn {
   flex: 0 0 auto;
   display: inline-flex;
@@ -262,6 +274,7 @@ input[type="number"] {
 
 .tabs {
   display: flex;
+  align-items: stretch;
   gap: 2px;
   padding: 8px 12px 0;
   border-bottom: 1px solid var(--line);
@@ -277,6 +290,19 @@ input[type="number"] {
   background: transparent;
   color: var(--muted);
   font-size: 12px;
+}
+
+.tab.icon-tab {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 10px;
+}
+
+.tab.icon-tab svg {
+  display: block;
+  pointer-events: none;
 }
 
 .tab:hover { color: var(--text); border-color: var(--line); }
