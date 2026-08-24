@@ -847,6 +847,11 @@ $("fileInput").addEventListener("change", (e) => {
   e.target.value = "";
 });
 
+try {
+  const v = chrome.runtime.getManifest().version;
+  if ($("appVersion")) $("appVersion").textContent = v;
+} catch {}
+
 refresh(false).then(() => {
   setupAutoRefresh();
 });
