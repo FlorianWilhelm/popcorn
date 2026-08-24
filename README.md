@@ -37,8 +37,11 @@ Bei Ad-hoc-Meetings ohne Kalendertermin steht im Seitentitel nur der Meeting-Cod
 
 - **Update**: die aktuellen Kandidaten für das nächste Update.
 - **Personen**: vollständige Liste des Meetings, Personen hinzufügen oder entfernen, Zeitstempel per Toggle korrigieren.
-- **Meetings**: alle getrackten Meetings. Name direkt im Feld bearbeiten, **Öffnen** wechselt zur Liste eines anderen Meetings, **×** beendet das Tracking und löscht den Verlauf.
-- **Einstellungen**: Anzahl der Update-Kandidaten konfigurieren (Standard: 5) und automatisches Live-Aktualisieren einstellen (Standard: alle 5 Sekunden).
+- **Meetings**: alle getrackten Meetings. Name direkt bearbeiten, **Öffnen** wechselt zur Liste, **×** löscht das Tracking. Pro Meeting gibt es zwei Export-Buttons:
+  - **In Zwischenablage kopieren (Icon)**: kopiert die Personenliste als lesbare Markdown-Tabelle.
+  - **Als Datei herunterladen (Icon)**: speichert das Meeting als `.md`-Datei.
+  - **+ Symbol**: importiert ein Meeting aus einer `.md`-Datei (überschreibt bestehende Daten nach Bestätigung).
+- **Einstellungen**: Anzahl der Update-Kandidaten konfigurieren (Standard: 5), automatisches Live-Aktualisieren einstellen (Standard: alle 5 Sekunden) und gesamtes JSON-Backup exportieren.
 
 ## Wenn sich der Kalendertitel ändert
 
@@ -49,9 +52,9 @@ Zwei Wege, beide unkritisch:
 
 Alte Namen bleiben als Erkennung gespeichert. Ein Rückbenennen im Kalender bricht also nichts.
 
-## Speicherung
+## Speicherung & Export
 
-Die Daten liegen in `chrome.storage.local`, nicht in einem Cookie. Das ist stabiler, überlebt das Löschen von Website-Daten und ist an das Chrome-Profil gebunden. Export und Import laufen über eine JSON-Datei.
+Die Daten liegen in `chrome.storage.local`. Einzelne Meetings können direkt als Markdown (`.md`) kopiert/exportiert werden, vollständige Backups aller Meetings als JSON.
 
 ```json
 {

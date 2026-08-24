@@ -432,6 +432,27 @@ function buildMeetingItem(m) {
   const actions = document.createElement("div");
   actions.className = "actions";
 
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "mini ghost icon-btn";
+  copyBtn.title = "Als Markdown in Zwischenablage kopieren";
+  copyBtn.setAttribute("aria-label", "Als Markdown kopieren");
+  copyBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+  copyBtn.addEventListener("click", async () => {
+    await copyMeetingMarkdown(m);
+    copyBtn.classList.add("copied");
+    setStatus(`Markdown für "${m.name}" kopiert.`);
+    setTimeout(() => copyBtn.classList.remove("copied"), 1500);
+  });
+
+  const dlBtn = document.createElement("button");
+  dlBtn.className = "mini ghost icon-btn";
+  dlBtn.title = "Als Markdown-Datei exportieren (.md)";
+  dlBtn.setAttribute("aria-label", "Als Markdown-Datei exportieren");
+  dlBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+  dlBtn.addEventListener("click", () => {
+    downloadMeetingMarkdown(m);
+  });
+
   const open = document.createElement("button");
   open.className = "mini ghost";
   open.textContent = "Öffnen";
@@ -454,7 +475,7 @@ function buildMeetingItem(m) {
     render();
   });
 
-  actions.append(open, del);
+  actions.append(copyBtn, dlBtn, open, del);
   li.append(left, actions);
   return li;
 }
@@ -672,7 +693,93 @@ function setupAutoRefresh() {
   }
 }
 
-/* ---------- Import und Export ---------- */
+/* ---------- Import und Export (Markdown & JSON) ---------- */
+
+function meetingToMarkdown(m) {
+  const rows = Object.values(m.people || {})
+    .sort((a, b) => (b.last || 0) - (a.last || 0) || a.name.localeCompare(b.name))
+    .map((p) => {
+      const timeStr = p.last ? new Date(p.last).toLocaleString() : "noch nie";
+      return `| ${p.name} | ${timeStr} |`;
+    });
+  return `# ${m.name}\n\n| Person | Letztes Update |\n| --- | --- |\n${rows.join("\n")}\n`;
+}
+
+function downloadMeetingMarkdown(m) {
+  const md = meetingToMarkdown(m);
+  const slug = (m.name || "meeting")
+    .toLowerCase()
+    .replace(/[^a-z0-9äöüß]+/gi, "-")
+    .replace(/^-+|-+$/g, "");
+  const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${slug || "meeting"}.md`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+async function copyMeetingMarkdown(m) {
+  const md = meetingToMarkdown(m);
+  try {
+    await navigator.clipboard.writeText(md);
+    return true;
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = md;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    return true;
+  }
+}
+
+function parseDateTimeString(str) {
+  if (!str) return 0;
+  const s = str.trim().toLowerCase();
+  if (!s || s === "noch nie" || s === "never" || s === "-" || s === "–" || s === "0") return 0;
+
+  // Format DD.MM.YYYY[ ,][HH:mm[:ss]]
+  const deMatch = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (deMatch) {
+    const [, d, m, y, h, min, sec] = deMatch;
+    const date = new Date(Number(y), Number(m) - 1, Number(d), Number(h || 0), Number(min || 0), Number(sec || 0));
+    if (!isNaN(date.getTime())) return date.getTime();
+  }
+
+  const parsed = Date.parse(str);
+  if (!isNaN(parsed)) return parsed;
+
+  return 0;
+}
+
+function parseMarkdownMeeting(mdText) {
+  const lines = mdText.split(/\r?\n/);
+  let meetingName = "";
+  const people = {};
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!meetingName && line.startsWith("#")) {
+      meetingName = line.replace(/^#+\s*/, "").trim();
+      continue;
+    }
+    if (line.startsWith("|")) {
+      const cols = line.split("|").map((c) => c.trim());
+      if (cols.length >= 3) {
+        const col1 = cols[1];
+        const col2 = cols[2];
+        if (!col1 || /^[-:\s]+$/.test(col1) || /^person$/i.test(col1)) continue;
+        const cleanName = cleanPersonName(col1);
+        if (!cleanName || isPresentationName(cleanName) || isNoiseOrIcon(cleanName)) continue;
+        const last = parseDateTimeString(col2);
+        people[keyOf(cleanName)] = { name: cleanName, last, prev: null };
+      }
+    }
+  }
+  return { meetingName, people };
+}
 
 function exportData() {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -706,15 +813,53 @@ function mergeInto(target, incoming) {
 
 async function importFile(file) {
   const text = await file.text();
+
+  // 1. Zuerst als Markdown-Meeting prüfen
+  if (text.includes("|") && text.includes("#")) {
+    const md = parseMarkdownMeeting(text);
+    if (md.meetingName && Object.keys(md.people).length > 0) {
+      const existing = Object.values(data.meetings).find(
+        (x) => norm(x.name) === norm(md.meetingName) || (x.aliases || []).includes(norm(md.meetingName))
+      );
+      if (existing) {
+        const overwrite = confirm(
+          `Das Meeting "${existing.name}" existiert bereits.\n\nSoll es mit den Daten aus "${file.name}" überschrieben werden?`
+        );
+        if (!overwrite) return;
+        existing.people = md.people;
+        existing.round = null;
+        sanitizeMeetingData(existing);
+      } else {
+        const id = uid();
+        data.meetings[id] = {
+          id,
+          name: md.meetingName,
+          aliases: [norm(md.meetingName)],
+          codes: [],
+          people: md.people,
+          round: null,
+          includeAbsent: false,
+          createdAt: Date.now()
+        };
+        sanitizeMeetingData(data.meetings[id]);
+      }
+      await save();
+      await refresh();
+      setStatus(`Meeting "${md.meetingName}" (${Object.keys(md.people).length} Personen) importiert.`);
+      return;
+    }
+  }
+
+  // 2. Als JSON-Backup importieren
   let parsed;
   try {
     parsed = JSON.parse(text);
   } catch {
-    setStatus("Die Datei ist kein gültiges JSON.");
+    setStatus("Die Datei konnte weder als Markdown noch als JSON gelesen werden.");
     return;
   }
   if (!parsed || typeof parsed !== "object" || !(parsed.meetings || parsed.groups)) {
-    setStatus("In der Datei fehlt das Feld meetings.");
+    setStatus("In der JSON-Datei fehlt das Feld meetings.");
     return;
   }
   const replace = confirm(
@@ -839,13 +984,15 @@ $("settingRefreshInterval").addEventListener("change", async (e) => {
   setupAutoRefresh();
 });
 
-$("btnExport").addEventListener("click", exportData);
-$("btnImport").addEventListener("click", () => $("fileInput").click());
-$("fileInput").addEventListener("change", (e) => {
-  const f = e.target.files[0];
-  if (f) importFile(f);
-  e.target.value = "";
-});
+if ($("btnImportPlus")) $("btnImportPlus").addEventListener("click", () => $("fileInput").click());
+if ($("btnExportJson")) $("btnExportJson").addEventListener("click", exportData);
+if ($("fileInput")) {
+  $("fileInput").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (f) importFile(f);
+    e.target.value = "";
+  });
+}
 
 try {
   const v = chrome.runtime.getManifest().version;

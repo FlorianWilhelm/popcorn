@@ -333,6 +333,38 @@ input[type="number"] {
   border-top: 1px solid var(--line);
 }
 
+.section-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 4px;
+}
+
+.toolbar-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.icon-btn.mini {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 5px;
+}
+
+.icon-btn.mini svg {
+  width: 13px;
+  height: 13px;
+}
+
+.icon-btn.copied {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .meeting {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -353,7 +385,7 @@ input[type="number"] {
 }
 
 .meeting .meta { margin-top: 5px; }
-.meeting .actions { display: flex; gap: 4px; }
+.meeting .actions { display: flex; align-items: center; gap: 4px; }
 
 section { padding-bottom: 4px; }
 

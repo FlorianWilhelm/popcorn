@@ -78,16 +78,21 @@
 
     <!-- Alle getrackten Meetings -->
     <section id="viewMeetings" class="hidden">
+      <div class="row section-toolbar">
+        <span class="toolbar-title">Getrackte Meetings</span>
+        <button id="btnImportPlus" class="ghost icon-btn mini" title="Meeting importieren (Markdown oder JSON)" aria-label="Meeting importieren">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div>
       <ul id="meetingList" class="list plain"></ul>
       <p id="meetingsEmpty" class="hint hidden">
         Noch kein Meeting getrackt. Öffne ein Meeting in Google Meet und
-        aktiviere das Tracking dort.
+        aktiviere das Tracking dort oder importiere eine Markdown-Liste über das +-Symbol.
       </p>
-      <div class="row">
-        <button id="btnExport" class="ghost">Exportieren</button>
-        <button id="btnImport" class="ghost">Importieren</button>
-      </div>
-      <input type="file" id="fileInput" accept="application/json" hidden />
+      <input type="file" id="fileInput" accept=".md,.txt,.json,application/json,text/markdown" hidden />
     </section>
 
     <!-- Einstellungen -->
@@ -110,8 +115,12 @@
       </label>
       <p class="hint" id="hintRefreshInterval">Intervall für die automatische Aktualisierung (Standard: 5 Sekunden).</p>
 
+      <div class="row" style="margin-top: 12px;">
+        <button id="btnExportJson" class="ghost">Gesamtes Backup exportieren (JSON)</button>
+      </div>
+
       <div class="version-info">
-        <span>Meet Update Rotator v<span id="appVersion">0.8</span></span>
+        <span>Meet Update Rotator v<span id="appVersion">0.9</span></span>
       </div>
     </section>
 
