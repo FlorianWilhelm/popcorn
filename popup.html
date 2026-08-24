@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="bar-main">
+        <span class="eyebrow" id="headEyebrow">Aktuelles Meeting</span>
+        <h1 id="headName">Kein Meeting</h1>
+      </div>
+      <span class="badge off" id="badge">aus</span>
+    </header>
+
+    <nav class="tabs">
+      <button data-view="round" class="tab active">Runde</button>
+      <button data-view="people" class="tab">Personen</button>
+      <button data-view="meetings" class="tab">Meetings</button>
+    </nav>
+
+    <div id="status" class="status hidden"></div>
+
+    <!-- Meeting wird nicht getrackt -->
+    <section id="viewOff" class="hidden">
+      <p class="hint">
+        Für dieses Meeting läuft kein Tracking. Aktiviere es hier, dann merkt
+        sich die Erweiterung den Namen und schlägt ab sofort Kandidaten vor.
+      </p>
+      <label class="field">
+        <span>Meeting-Name</span>
+        <input id="activateName" type="text" placeholder="z. B. Team Weekly DS &amp; NLP" />
+      </label>
+      <div class="row">
+        <button id="btnActivate" class="primary">Tracking aktivieren</button>
+      </div>
+      <p class="hint sep">Oder diesem Meeting eine bestehende Liste zuordnen, falls sich der Kalendertitel geändert hat.</p>
+      <div class="row">
+        <select id="linkTarget"></select>
+        <button id="btnLink" class="ghost">Zuordnen</button>
+      </div>
+    </section>
+
+    <!-- Vorschlagsliste -->
+    <section id="viewRound" class="hidden">
+      <ol id="list" class="list"></ol>
+      <p id="emptyHint" class="hint hidden">
+        Keine anwesenden Personen gefunden. Öffne in Meet die Personenliste und
+        tippe auf Aktualisieren.
+      </p>
+      <div class="row">
+        <button id="btnRefresh" class="primary">Aktualisieren</button>
+        <button id="btnNewRound" class="ghost">Neue Runde</button>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="includeAbsent" />
+        Abwesende einbeziehen
+      </label>
+    </section>
+
+    <!-- Personen des gewaehlten Meetings -->
+    <section id="viewPeople" class="hidden">
+      <div class="row add">
+        <input id="newName" type="text" placeholder="Name hinzufügen" />
+        <button id="btnAdd" class="primary">Hinzufügen</button>
+      </div>
+      <ul id="allList" class="list plain"></ul>
+      <p id="peopleEmpty" class="hint hidden">Noch keine Personen erfasst.</p>
+    </section>
+
+    <!-- Alle getrackten Meetings -->
+    <section id="viewMeetings" class="hidden">
+      <ul id="meetingList" class="list plain"></ul>
+      <p id="meetingsEmpty" class="hint hidden">
+        Noch kein Meeting getrackt. Öffne ein Meeting in Google Meet und
+        aktiviere das Tracking dort.
+      </p>
+      <div class="row">
+        <button id="btnExport" class="ghost">Exportieren</button>
+        <button id="btnImport" class="ghost">Importieren</button>
+      </div>
+      <input type="file" id="fileInput" accept="application/json" hidden />
+    </section>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
