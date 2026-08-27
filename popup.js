@@ -43,10 +43,39 @@ const NOISE_WORDS = new Set([
   "fullscreen", "fullscreen_exit", "settings", "tune", "volume_up", "volume_off",
   "closed_caption", "closed_caption_off", "chat", "chat_bubble", "info", "info_outline",
   "pan_tool", "call_end", "expand_more", "expand_less", "chevron_right", "chevron_left",
-  "drag_indicator", "grid_view", "screen_search_desktop"
+  "drag_indicator", "grid_view", "screen_search_desktop",
+  "accepted", "zugesagt", "angenommen",
+  "declined", "abgelehnt", "abgesagt",
+  "maybe", "vielleicht", "mit vorbehalt", "tentative",
+  "awaiting", "awaiting response", "no response", "ausstehend", "antwort ausstehend",
+  "noch keine antwort", "keine antwort", "unbeantwortet", "needs action",
+  "invited", "eingeladen", "also invited", "ebenfalls eingeladen",
+  "in call", "in the call", "in this call", "not in call", "not in the call",
+  "im anruf", "nicht im anruf", "in dieser besprechung", "in diesem anruf",
+  "in meeting", "im meeting", "not in meeting", "nicht im meeting",
+  "contributors", "beitragende", "everyone in this call", "alle in diesem anruf",
+  "everyone", "alle", "all", "people", "personen", "teilnehmer", "participants",
+  "backgrounds and effects", "backgrounds & effects", "backgrounds", "effects",
+  "hintergründe und effekte", "hintergründe & effekte", "hintergrund und effekte", "hintergründe", "effekte",
+  "apply visual effects", "visuelle effekte anwenden", "visuelle effekte", "visual effects",
+  "virtual background", "virtueller hintergrund",
+  "add people", "personen hinzufügen", "teilnehmer hinzufügen", "invite people",
+  "jemanden einladen", "invite someone", "share joining info", "teilnahmeinformationen teilen",
+  "besprechungslink kopieren", "copy joining info",
+  "host controls", "steuerelemente für den host", "host-steuerelemente",
+  "meeting safety", "besprechungssicherheit",
+  "activities", "aktivitäten", "chat", "chatnachrichten", "messages", "in-call messages",
+  "nachrichten im anruf", "details", "meeting details", "besprechungsdetails",
+  "polls", "umfragen", "q&a", "fragen und antworten", "whiteboard", "breakout rooms",
+  "gruppensitzungen", "recording", "aufzeichnung", "transcripts", "transkripte",
+  "captions", "untertitel", "search for people", "nach personen suchen",
+  "search people", "teilnehmer suchen", "personen suchen", "suchen", "search",
+  "mute all", "alle stummschalten", "turn off all mics", "alle mikrofone deaktivieren",
+  "pinned", "angepinnt", "stummgeschaltet", "muted", "hand raised", "hand gehoben",
+  "joined", "beigetreten", "left", "verlassen", "calling", "ringing"
 ]);
 
-const NOISE_PATTERN = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in call|contributors|weitere optionen|more options|teilnehmer|participants|personen|people|suchen|search|reframe|framing|auto-framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio)$/i;
+const NOISE_PATTERN = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten)$/i;
 
 const isNoiseOrIcon = (s) => {
   if (!s) return true;
@@ -70,6 +99,10 @@ const cleanPersonName = (raw) => {
   let s = (raw || "").replace(/\s+/g, " ").trim();
   if (!s) return "";
 
+  // Remove count suffixes e.g. (12) or · 12
+  s = s.replace(/\s*\(\d+\)\s*$/g, "");
+  s = s.replace(/\s*·\s*\d+\s*$/g, "");
+
   // Action prefixes and suffixes from Meet UI / accessibility labels
   s = s.replace(/^pin\s+(.+?)\s+to\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
   s = s.replace(/^unpin\s+(.+?)\s+from\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
@@ -79,13 +112,15 @@ const cleanPersonName = (raw) => {
   s = s.replace(/^(.+?)\s+vom\s+(?:hauptbildschirm|bildschirm)\s+(?:lösen|entfernen|entpinnen)$/i, "$1");
   s = s.replace(/^(.+?)\s+(?:nicht\s+mehr\s+anpinnen|anpinnen|anheften)$/i, "$1");
   s = s.replace(/^(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für)\s+(.+)$/i, "$1");
+  s = s.replace(/^(?:send\s+a\s+message\s+to|nachricht\s+an)\s+(.+?)(?:\s+senden)?$/i, "$1");
+  s = s.replace(/^(?:chat\s+with|chatten\s+mit)\s+(.+)$/i, "$1");
   s = s.replace(/^(?:mute|unmute|stummschalten\s+für)\s+(.+)$/i, "$1");
   s = s.replace(/^(.+?)\s+stummschalten$/i, "$1");
   s = s.replace(/^(?:video\s+von\s+|video\s+of\s+)(.+)$/i, "$1");
   s = s.replace(/^(.+?)'s\s+video$/i, "$1");
 
-  // Remove parenthetical qualifiers: (Du), (You), (Host), (Presentation), etc.
-  s = s.replace(/\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal)\)/gi, "");
+  // Remove parenthetical qualifiers: (Du), (You), (Host), (Presentation), (abwesend), etc.
+  s = s.replace(/\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal|contributor|beitragende|beitragender|abwesend|absent)\)/gi, "");
   s = s.replace(/[·•]/g, " ");
 
   return s.replace(/\s+/g, " ").trim();
