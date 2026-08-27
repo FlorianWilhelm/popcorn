@@ -253,6 +253,19 @@
     return Array.from(seen.values());
   }
 
+  const sessionRoster = new Map();
+
+  function isPanelOpen() {
+    return !!(
+      document.querySelector('aside[aria-label="Side panel"]') ||
+      document.querySelector('div[data-panel-id="1"]') ||
+      document.querySelector('div[role="list"][aria-label*="Participant"]') ||
+      document.querySelector('div[role="list"][aria-label*="Teilnehmer"]') ||
+      document.querySelector('span[role="region"][aria-label="In call"]') ||
+      document.querySelector('span[role="region"][aria-label="Im Anruf"]')
+    );
+  }
+
   function findViewEveryoneButton() {
     const clickable = Array.from(document.querySelectorAll('button, [role="button"], div[role="button"], a'));
     return clickable.find((b) => {
@@ -266,9 +279,31 @@
     const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
     return buttons.find((b) => {
       const label = (b.getAttribute("aria-label") || "").toLowerCase();
-      return /personen|teilnehmer|people|everyone|participants/.test(label);
+      return /personen|teilnehmer|people|everyone|participants|show everyone/.test(label);
     });
   }
+
+  function expandCollapsedSections() {
+    const toggles = Array.from(document.querySelectorAll('div[role="button"][aria-expanded="false"], button[aria-expanded="false"]'));
+    for (const t of toggles) {
+      const text = ((t.textContent || "") + " " + (t.getAttribute("aria-label") || "")).toLowerCase();
+      if (/in call|im anruf|in this meeting|in the meeting|in der besprechung|contributors|beitragende|participants|teilnehmer|everyone|alle/.test(text)) {
+        t.click();
+      }
+    }
+  }
+
+  function updateLiveRoster() {
+    if (!meetCode()) return;
+    const currentCollected = collect();
+    const now = Date.now();
+    for (const p of currentCollected) {
+      const k = p.name.toLowerCase();
+      sessionRoster.set(k, { name: p.name, present: p.present, lastSeen: now });
+    }
+  }
+
+  setInterval(updateLiveRoster, 1000);
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -280,27 +315,52 @@
     let openedPanel = false;
 
     if (withPeople) {
+      expandCollapsedSections();
       const viewEveryone = findViewEveryoneButton();
       if (viewEveryone) {
         viewEveryone.click();
-        await wait(500);
+        await wait(200);
       }
 
       people = collect();
-      if (people.length < 2) {
+
+      if (people.length < 2 && !isPanelOpen()) {
         const btn = findPanelButton();
-        if (btn) {
+        if (btn && btn.getAttribute("aria-pressed") !== "true" && btn.getAttribute("aria-selected") !== "true") {
           btn.click();
           openedPanel = true;
-          await wait(900);
+
+          // Poll every 100ms up to 800ms for fast rendering
+          for (let i = 0; i < 8; i++) {
+            await wait(100);
+            expandCollapsedSections();
+            people = collect();
+            if (people.length >= 2) break;
+          }
 
           const innerViewEveryone = findViewEveryoneButton();
           if (innerViewEveryone) {
             innerViewEveryone.click();
-            await wait(500);
+            await wait(200);
+            people = collect();
           }
+        }
+      }
 
-          people = collect();
+      const now = Date.now();
+      for (const p of people) {
+        sessionRoster.set(p.name.toLowerCase(), { name: p.name, present: p.present, lastSeen: now });
+      }
+
+      if (people.length < 2 && sessionRoster.size > people.length) {
+        const merged = new Map();
+        for (const [k, v] of sessionRoster.entries()) {
+          if (now - v.lastSeen < 60000) {
+            merged.set(k, { name: v.name, present: v.present });
+          }
+        }
+        if (merged.size > people.length) {
+          people = Array.from(merged.values());
         }
       }
     }

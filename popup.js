@@ -6,7 +6,7 @@
 const STORE_KEY = "mur_v1"; // Schluessel bleibt, Migration laeuft im Code
 const ROUND_TTL = 6 * 60 * 60 * 1000;
 const DEFAULT_TOP_N = 5;
-const DEFAULT_REFRESH_INTERVAL = 5;
+const DEFAULT_REFRESH_INTERVAL = 2;
 
 const $ = (id) => document.getElementById(id);
 
@@ -327,22 +327,23 @@ function candidates(m) {
 function ensureRound(m, force) {
   const topCount = getTopN();
   const fresh = m.round && Date.now() - m.round.createdAt < ROUND_TTL;
-  if (!force && fresh) {
-    const valid = m.round.keys.filter((k) => m.people[k]);
-    if (valid.length) {
-      if (valid.length < topCount) {
-        const pool = candidates(m).map((p) => p.key);
-        for (const k of pool) {
-          if (!valid.includes(k) && valid.length < topCount) {
-            valid.push(k);
-          }
-        }
+  const pool = candidates(m).map((p) => p.key);
+
+  if (!force && fresh && m.round && Array.isArray(m.round.keys)) {
+    let valid = m.round.keys.filter((k) => m.people[k] && (m.includeAbsent || presentKeys.size === 0 || presentKeys.has(k)));
+    for (const k of pool) {
+      if (valid.length >= topCount) break;
+      if (!valid.includes(k)) {
+        valid.push(k);
       }
+    }
+    if (valid.length > 0) {
       m.round.keys = valid.slice(0, topCount);
       return;
     }
   }
-  m.round = { keys: candidates(m).slice(0, topCount).map((p) => p.key), createdAt: Date.now() };
+
+  m.round = { keys: pool.slice(0, topCount), createdAt: Date.now() };
 }
 
 /* ---------- Bausteine ---------- */
@@ -968,8 +969,15 @@ $("btnLink").addEventListener("click", async () => {
   setStatus(`Dieses Meeting nutzt jetzt die Liste "${m.name}".`);
 });
 
-$("btnRefresh").addEventListener("click", () => refresh(false));
-$("btnNewRound").addEventListener("click", () => refresh(true));
+$("btnRefresh").addEventListener("click", async () => {
+  await refresh(false);
+  setTimeout(() => refresh(false, { background: true }), 400);
+});
+
+$("btnNewRound").addEventListener("click", async () => {
+  await refresh(true);
+  setTimeout(() => refresh(false, { background: true }), 400);
+});
 
 $("includeAbsent").addEventListener("change", async (e) => {
   const m = meeting();
@@ -1020,7 +1028,7 @@ $("settingAutoRefresh").addEventListener("change", async (e) => {
 });
 
 $("settingRefreshInterval").addEventListener("change", async (e) => {
-  const val = Math.max(2, Math.min(60, parseInt(e.target.value, 10) || DEFAULT_REFRESH_INTERVAL));
+  const val = Math.max(1, Math.min(60, parseInt(e.target.value, 10) || DEFAULT_REFRESH_INTERVAL));
   data.settings = data.settings || {};
   data.settings.refreshInterval = val;
   $("settingRefreshInterval").value = val;
@@ -1045,4 +1053,6 @@ try {
 
 refresh(false).then(() => {
   setupAutoRefresh();
+  setTimeout(() => refresh(false, { background: true }), 400);
+  setTimeout(() => refresh(false, { background: true }), 1000);
 });
