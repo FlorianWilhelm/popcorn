@@ -19,6 +19,7 @@
     "closed_caption", "closed_caption_off", "chat", "chat_bubble", "info", "info_outline",
     "pan_tool", "call_end", "expand_more", "expand_less", "chevron_right", "chevron_left",
     "drag_indicator", "grid_view", "screen_search_desktop",
+    "keyboard_arrow_down", "keyboard_arrow_up",
     "accepted", "zugesagt", "angenommen",
     "declined", "abgelehnt", "abgesagt",
     "maybe", "vielleicht", "mit vorbehalt", "tentative",
@@ -27,7 +28,10 @@
     "invited", "eingeladen", "also invited", "ebenfalls eingeladen",
     "in call", "in the call", "in this call", "not in call", "not in the call",
     "im anruf", "nicht im anruf", "in dieser besprechung", "in diesem anruf",
-    "in meeting", "im meeting", "not in meeting", "nicht im meeting",
+    "in meeting", "im meeting", "in the meeting", "in der besprechung", "not in meeting", "nicht im meeting",
+    "waiting to join", "warten auf beitritt", "wartet auf teilnahme",
+    "waiting to pair with you", "wartet auf kopplung",
+    "visitor badge", "besucher-badge", "visitor", "besucher",
     "contributors", "beitragende", "everyone in this call", "alle in diesem anruf",
     "everyone", "alle", "all", "people", "personen", "teilnehmer", "participants",
     "backgrounds and effects", "backgrounds & effects", "backgrounds", "effects",
@@ -47,10 +51,11 @@
     "search people", "teilnehmer suchen", "personen suchen", "suchen", "search",
     "mute all", "alle stummschalten", "turn off all mics", "alle mikrofone deaktivieren",
     "pinned", "angepinnt", "stummgeschaltet", "muted", "hand raised", "hand gehoben",
-    "joined", "beigetreten", "left", "verlassen", "calling", "ringing"
+    "joined", "beigetreten", "left", "verlassen", "calling", "ringing",
+    "more actions", "weitere aktionen", "back", "zurück"
   ]);
 
-  const NOISE = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten)$/i;
+  const NOISE = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in the meeting|in der besprechung|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|waiting to join|warten auf beitritt|wartet auf teilnahme|waiting to pair with you|wartet auf kopplung|visitor badge|besucher-badge|visitor|besucher|more actions|weitere aktionen|back|zurück|keyboard_arrow_down|keyboard_arrow_up|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten)$/i;
 
   const clean = (s) => (s || "").replace(/\s+/g, " ").trim();
 
@@ -63,6 +68,7 @@
     s = s.replace(/\s*·\s*\d+\s*$/g, "");
 
     // Action prefixes and suffixes from Meet UI / accessibility labels
+    s = s.replace(/^(?:you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von)\s+(.+?)(?:(?:\x27s|s)?\s+microphone|\s+nicht\s+stummschalten)?$/i, "$1");
     s = s.replace(/^pin\s+(.+?)\s+to\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
     s = s.replace(/^unpin\s+(.+?)\s+from\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
     s = s.replace(/^pin\s+(.+?)\s+to\s+screen$/i, "$1");
@@ -78,8 +84,8 @@
     s = s.replace(/^(?:video\s+von\s+|video\s+of\s+)(.+)$/i, "$1");
     s = s.replace(/^(.+?)'s\s+video$/i, "$1");
 
-    // Remove parenthetical qualifiers: (Du), (You), (Host), (Presentation), (abwesend), etc.
-    s = s.replace(/\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal|contributor|beitragende|beitragender|abwesend|absent)\)/gi, "");
+    // Remove parenthetical qualifiers: (Du), (You), (Host), (Presentation), (Visitor), (abwesend), etc.
+    s = s.replace(/\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal|contributor|beitragende|beitragender|abwesend|absent|visitor|besucher)\)/gi, "");
     s = s.replace(/[·•]/g, " ");
 
     return clean(s);
@@ -113,23 +119,37 @@
   }
 
   function extractName(item) {
-    // 0. Skip accordion toggles and section headings
+    // 0. Skip accordion toggles, section headings, and tabs
     if (item.getAttribute("aria-expanded") !== null) return null;
-    if (item.matches && item.matches('[role="heading"], [role="tab"]')) return null;
+    if (item.matches && item.matches('[role="heading"], [role="tab"], h1, h2, h3, h4, h5, h6')) return null;
 
-    // 1. Action buttons with explicit participant names in aria-label
+    // 1. Google Meet standard name span in people panel
+    const nameSpan = item.querySelector(".zWGUib");
+    if (nameSpan && nameSpan.textContent) {
+      const zName = cleanPersonName(nameSpan.textContent);
+      if (looksLikeName(zName)) return zName;
+    }
+
+    // 2. Direct aria-label on listitem
+    const selfAria = cleanPersonName(item.getAttribute("aria-label") || "");
+    if (selfAria && looksLikeName(selfAria)) {
+      const firstPart = selfAria.split(",")[0].trim();
+      if (looksLikeName(firstPart)) return firstPart;
+    }
+
+    // 3. Action buttons with explicit participant names in aria-label
     const actionElements = [item, ...Array.from(item.querySelectorAll("[aria-label]"))];
     for (const el of actionElements) {
       const aria = el.getAttribute("aria-label");
       if (!aria) continue;
-      const match = aria.match(/(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für|nachricht\s+an|send\s+a\s+message\s+to|chat\s+with|chatten\s+mit)\s+(.+)$/i);
+      const match = aria.match(/(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für|nachricht\s+an|send\s+a\s+message\s+to|chat\s+with|chatten\s+mit|you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von)\s+(.+)$/i);
       if (match && match[1]) {
         const cleaned = cleanPersonName(match[1]);
         if (looksLikeName(cleaned)) return cleaned;
       }
     }
 
-    // 2. data-self-name on item or descendant
+    // 4. data-self-name on item or descendant
     const selfEl = item.hasAttribute("data-self-name") ? item : item.querySelector("[data-self-name]");
     if (selfEl) {
       const selfName = selfEl.getAttribute("data-self-name");
@@ -139,13 +159,13 @@
       }
     }
 
-    // 3. Leaf nodes not inside buttons or menus
+    // 5. Leaf nodes not inside buttons, menus, tooltips, or badges
     const allLeaves = Array.from(item.querySelectorAll("*")).filter(
       (el) => el.children.length === 0 && clean(el.textContent).length > 0
     );
 
     const nonButtonLeaves = allLeaves.filter(
-      (el) => !el.closest('button, [role="button"], [role="menu"], [role="menuitem"], [aria-haspopup="true"]')
+      (el) => !el.closest('button, [role="button"], [role="menu"], [role="menuitem"], [role="tooltip"], [role="img"], [aria-haspopup="true"], .d93U2d')
     );
     for (const leaf of nonButtonLeaves) {
       if (isPresentation(leaf.textContent)) return null;
@@ -153,16 +173,12 @@
       if (looksLikeName(t)) return t;
     }
 
-    // 4. Fallback across all leaves
+    // 6. Fallback across all leaves
     for (const leaf of allLeaves) {
       if (isPresentation(leaf.textContent)) return null;
       const t = cleanPersonName(leaf.textContent);
       if (looksLikeName(t)) return t;
     }
-
-    const aria = cleanPersonName(item.getAttribute("aria-label") || "");
-    if (isPresentation(aria)) return null;
-    if (looksLikeName(aria)) return aria.split(",")[0].trim();
 
     const direct = cleanPersonName(item.textContent);
     if (isPresentation(direct)) return null;
