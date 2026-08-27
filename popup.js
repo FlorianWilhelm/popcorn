@@ -969,15 +969,8 @@ $("btnLink").addEventListener("click", async () => {
   setStatus(`Dieses Meeting nutzt jetzt die Liste "${m.name}".`);
 });
 
-$("btnRefresh").addEventListener("click", async () => {
-  await refresh(false);
-  setTimeout(() => refresh(false, { background: true }), 400);
-});
-
-$("btnNewRound").addEventListener("click", async () => {
-  await refresh(true);
-  setTimeout(() => refresh(false, { background: true }), 400);
-});
+$("btnRefresh").addEventListener("click", () => refresh(false));
+$("btnNewRound").addEventListener("click", () => refresh(true));
 
 $("includeAbsent").addEventListener("change", async (e) => {
   const m = meeting();
@@ -1053,6 +1046,4 @@ try {
 
 refresh(false).then(() => {
   setupAutoRefresh();
-  setTimeout(() => refresh(false, { background: true }), 400);
-  setTimeout(() => refresh(false, { background: true }), 1000);
 });
