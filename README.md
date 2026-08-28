@@ -67,11 +67,11 @@ Die Daten liegen in `chrome.storage.local`.
 ```markdown
 # Team Weekly DS & NLP
 
-| Person | Letztes Update |
+| Person | Last Update |
 | --- | --- |
 | Max Mustermann | 24.08.2026, 10:15:00 |
 | Erika Musterfrau | 17.08.2026, 09:30:00 |
-| Collin Rogowski | noch nie |
+| Collin Rogowski |  |
 ```
 
 ### JSON-Backup (alle Meetings)

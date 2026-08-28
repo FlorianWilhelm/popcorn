@@ -744,10 +744,10 @@ function meetingToMarkdown(m) {
   const rows = Object.values(m.people || {})
     .sort((a, b) => (b.last || 0) - (a.last || 0) || a.name.localeCompare(b.name))
     .map((p) => {
-      const timeStr = p.last ? new Date(p.last).toLocaleString() : "noch nie";
+      const timeStr = p.last ? new Date(p.last).toLocaleString() : "";
       return `| ${p.name} | ${timeStr} |`;
     });
-  return `# ${m.name}\n\n| Person | Letztes Update |\n| --- | --- |\n${rows.join("\n")}\n`;
+  return `# ${m.name}\n\n| Person | Last Update |\n| --- | --- |\n${rows.join("\n")}\n`;
 }
 
 function downloadMeetingMarkdown(m) {
@@ -815,7 +815,7 @@ function parseMarkdownMeeting(mdText) {
       if (cols.length >= 3) {
         const col1 = cols[1];
         const col2 = cols[2];
-        if (!col1 || /^[-:\s]+$/.test(col1) || /^person$/i.test(col1)) continue;
+        if (!col1 || /^[-:\s]+$/.test(col1) || /^person$/i.test(col1) || /^last update$/i.test(col2) || /^letztes update$/i.test(col2)) continue;
         const cleanName = cleanPersonName(col1);
         if (!cleanName || isPresentationName(cleanName) || isNoiseOrIcon(cleanName)) continue;
         const last = parseDateTimeString(col2);
