@@ -124,7 +124,7 @@ h1 {
 .done .name { color: var(--muted); text-decoration: line-through; }
 .done .bar-wait span { background: var(--done); }
 .absent .name::after {
-  content: " abwesend";
+  content: " absent";
   font-family: var(--mono);
   font-size: 9.5px;
   color: var(--muted);
@@ -374,6 +374,12 @@ input[type="number"] {
   color: var(--muted);
 }
 
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .icon-btn.mini {
   width: 26px;
   height: 26px;
@@ -386,32 +392,80 @@ input[type="number"] {
   height: 13px;
 }
 
+.btn-with-icon.mini {
+  height: 26px;
+  padding: 0 7px;
+  font-size: 11px;
+  border-radius: 5px;
+  gap: 4px;
+}
+
 .icon-btn.copied {
   color: var(--accent);
   border-color: var(--accent);
 }
 
 .meeting {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 0;
+  gap: 6px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--line);
 }
 
 .meeting:last-child { border-bottom: none; }
-.meeting.current { box-shadow: inset 2px 0 0 var(--accent); padding-left: 10px; }
-
-.meeting input[type="text"] {
-  width: 100%;
-  padding: 6px 8px;
-  font-size: 12.5px;
-  font-weight: 500;
+.meeting.current {
+  box-shadow: inset 2px 0 0 var(--accent);
+  padding-left: 8px;
 }
 
-.meeting .meta { margin-top: 5px; }
-.meeting .actions { display: flex; align-items: center; gap: 4px; }
+.meeting input[type="text"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 26px;
+  padding: 0 7px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 5px;
+}
+
+.meeting-count {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  padding: 0 6px;
+  height: 26px;
+  border-radius: 5px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1;
+  user-select: none;
+}
+
+.meeting-count svg {
+  display: block;
+  color: var(--muted);
+}
+
+.meeting.current .meeting-count {
+  border-color: var(--accent-soft);
+  color: var(--accent);
+}
+
+.meeting.current .meeting-count svg {
+  color: var(--accent);
+}
+
+.meeting .actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
 
 section { padding-bottom: 4px; }
 
@@ -423,4 +477,71 @@ section { padding-bottom: 4px; }
   font-size: 11px;
   color: var(--muted);
   text-align: center;
+}
+
+/* --- Fallback Paste Modal --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.modal-box {
+  width: 100%;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.modal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.modal-hint {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.modal-box textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.modal-box textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
 }

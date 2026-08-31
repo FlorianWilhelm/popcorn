@@ -1,9 +1,9 @@
-/* Meet Update Rotator - Popup-Logik
- * Tracking haengt am Meeting-Namen, nicht am Termin oder Wochentag.
- * Ein Meeting wird erst verfolgt, wenn es hier ausdruecklich aktiviert wurde.
+/* Meet Update Rotator - Popup logic
+ * Tracking is based on the meeting name, not the specific calendar event or weekday.
+ * A meeting is only tracked once explicitly enabled here.
  */
 
-const STORE_KEY = "mur_v1"; // Schluessel bleibt, Migration laeuft im Code
+const STORE_KEY = "mur_v1"; // Key remains unchanged, migration happens in code
 const ROUND_TTL = 6 * 60 * 60 * 1000;
 const DEFAULT_TOP_N = 5;
 const DEFAULT_REFRESH_INTERVAL = 2;
@@ -349,11 +349,11 @@ function ensureRound(m, force) {
 /* ---------- Bausteine ---------- */
 
 function waitedText(last) {
-  if (!last) return "noch nie";
+  if (!last) return "never";
   const days = Math.floor((Date.now() - last) / 86400000);
-  const date = new Date(last).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" });
-  if (days <= 0) return `heute · ${date}`;
-  return `vor ${days} ${days === 1 ? "Tag" : "Tagen"} · ${date}`;
+  const date = new Date(last).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit", year: "2-digit" });
+  if (days <= 0) return `today · ${date}`;
+  return `${days} ${days === 1 ? "day" : "days"} ago · ${date}`;
 }
 
 function waitRatio(last, oldest) {
@@ -396,7 +396,7 @@ function buildPersonItem(m, person, index, oldest, opts = {}) {
 
   const toggle = document.createElement("label");
   toggle.className = "toggle";
-  toggle.title = "Hat vorgetragen";
+  toggle.title = "Gave update";
   const input = document.createElement("input");
   input.type = "checkbox";
   input.checked = !!doneToday;
@@ -423,8 +423,8 @@ function buildPersonItem(m, person, index, oldest, opts = {}) {
   if (opts.deletable) {
     const del = document.createElement("button");
     del.className = "mini ghost icon-btn";
-    del.title = "Person entfernen";
-    del.setAttribute("aria-label", "Person entfernen");
+    del.title = "Remove person";
+    del.setAttribute("aria-label", "Remove person");
     del.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
     del.addEventListener("click", async () => {
       delete m.people[person.key];
@@ -443,11 +443,10 @@ function buildMeetingItem(m) {
   const li = document.createElement("li");
   li.className = "meeting" + (m.id === currentId ? " current" : "");
 
-  const left = document.createElement("div");
   const input = document.createElement("input");
   input.type = "text";
   input.value = m.name;
-  input.title = "Name bearbeiten";
+  input.title = "Edit name";
   input.addEventListener("change", async () => {
     const v = input.value.trim();
     if (!v) {
@@ -458,39 +457,38 @@ function buildMeetingItem(m) {
     addAlias(m, v);
     await save();
     render();
-    setStatus(`Umbenannt in ${v}. Der alte Name bleibt als Erkennung erhalten.`);
+    setStatus(`Renamed to "${v}". The old name is kept for recognition.`);
   });
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") input.blur();
   });
 
-  const meta = document.createElement("div");
-  meta.className = "meta";
   const count = Object.keys(m.people).length;
-  const parts = [`${count} ${count === 1 ? "Person" : "Personen"}`];
-  if (m.id === currentId) parts.push("läuft gerade");
-  meta.textContent = parts.join(" · ");
-  left.append(input, meta);
+  const countBadge = document.createElement("div");
+  countBadge.className = "meeting-count";
+  const countText = `${count} ${count === 1 ? "person" : "people"}`;
+  countBadge.title = m.id === currentId ? `${countText} (in progress)` : countText;
+  countBadge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>${count}</span>`;
 
   const actions = document.createElement("div");
   actions.className = "actions";
 
   const copyBtn = document.createElement("button");
   copyBtn.className = "mini ghost icon-btn";
-  copyBtn.title = "Als Markdown in Zwischenablage kopieren";
-  copyBtn.setAttribute("aria-label", "Als Markdown kopieren");
+  copyBtn.title = "Copy to clipboard as Markdown";
+  copyBtn.setAttribute("aria-label", "Copy as Markdown");
   copyBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
   copyBtn.addEventListener("click", async () => {
     await copyMeetingMarkdown(m);
     copyBtn.classList.add("copied");
-    setStatus(`Markdown für "${m.name}" kopiert.`);
+    setStatus(`Markdown for "${m.name}" copied.`);
     setTimeout(() => copyBtn.classList.remove("copied"), 1500);
   });
 
   const dlBtn = document.createElement("button");
   dlBtn.className = "mini ghost icon-btn";
-  dlBtn.title = "Als Markdown-Datei exportieren (.md)";
-  dlBtn.setAttribute("aria-label", "Als Markdown-Datei exportieren");
+  dlBtn.title = "Export as Markdown file (.md)";
+  dlBtn.setAttribute("aria-label", "Export as Markdown file");
   dlBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
   dlBtn.addEventListener("click", () => {
     downloadMeetingMarkdown(m);
@@ -498,8 +496,8 @@ function buildMeetingItem(m) {
 
   const open = document.createElement("button");
   open.className = "mini ghost btn-with-icon";
-  open.title = "Personenliste dieses Meetings öffnen";
-  open.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg><span>Öffnen</span>`;
+  open.title = "Open people list for this meeting";
+  open.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg><span>Open</span>`;
   open.addEventListener("click", () => {
     selectedId = m.id;
     view = "people";
@@ -508,11 +506,11 @@ function buildMeetingItem(m) {
 
   const del = document.createElement("button");
   del.className = "mini ghost icon-btn";
-  del.title = "Tracking beenden und Verlauf löschen";
-  del.setAttribute("aria-label", "Meeting löschen");
+  del.title = "Stop tracking and delete history";
+  del.setAttribute("aria-label", "Delete meeting");
   del.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
   del.addEventListener("click", async () => {
-    if (!confirm(`Tracking für "${m.name}" beenden? Der gespeicherte Verlauf wird gelöscht.`)) return;
+    if (!confirm(`Stop tracking "${m.name}"? The saved history will be deleted.`)) return;
     delete data.meetings[m.id];
     if (currentId === m.id) currentId = null;
     if (selectedId === m.id) selectedId = null;
@@ -521,7 +519,7 @@ function buildMeetingItem(m) {
   });
 
   actions.append(copyBtn, dlBtn, open, del);
-  li.append(left, actions);
+  li.append(input, countBadge, actions);
   return li;
 }
 
@@ -543,16 +541,16 @@ function render() {
   const m = meeting();
   const inMeet = !!(current && current.inMeet);
 
-  // Kopfzeile
+  // Header
   if (inMeet) {
-    $("headEyebrow").textContent = "Aktuelles Meeting";
-    $("headName").textContent = current.title || current.code || "Meeting ohne Namen";
-    $("badge").textContent = currentId ? "aktiv" : "aus";
+    $("headEyebrow").textContent = "Current Meeting";
+    $("headName").textContent = current.title || current.code || "Untitled Meeting";
+    $("badge").textContent = currentId ? "active" : "off";
     $("badge").className = `badge ${currentId ? "on" : "off"}`;
     $("badge").classList.remove("hidden");
   } else {
-    $("headEyebrow").textContent = m ? "Ausgewählte Liste" : "Kein Meet-Tab";
-    $("headName").textContent = m ? m.name : "Kein Meeting";
+    $("headEyebrow").textContent = m ? "Selected List" : "No Meet Tab";
+    $("headName").textContent = m ? m.name : "No Meeting";
     $("badge").classList.add("hidden");
   }
 
@@ -562,7 +560,7 @@ function render() {
     if (t.dataset.view !== "meetings" && t.dataset.view !== "settings") t.disabled = !m;
   }
 
-  // Ansicht waehlen
+  // Choose view
   if (view === "settings") {
     show("viewSettings");
   } else if (view === "meetings" || (!m && !inMeet)) {
@@ -575,7 +573,7 @@ function render() {
     show("viewRound");
   }
 
-  // Aktivierungsansicht
+  // Activation view
   if (!m && inMeet) {
     if (!$("activateName").value) {
       $("activateName").value = current.title || (current.code ? `Meeting ${current.code}` : "");
@@ -585,7 +583,7 @@ function render() {
     const all = Object.values(data.meetings);
     if (all.length === 0) {
       const opt = document.createElement("option");
-      opt.textContent = "Keine Liste vorhanden";
+      opt.textContent = "No lists available";
       sel.appendChild(opt);
       sel.disabled = true;
       $("btnLink").disabled = true;
@@ -601,7 +599,7 @@ function render() {
     }
   }
 
-  // Runde / Update
+  // Round / Update
   const list = $("list");
   list.innerHTML = "";
   if (m) {
@@ -614,13 +612,13 @@ function render() {
     $("includeAbsent").checked = !!m.includeAbsent;
   }
 
-  // Personen
+  // People
   const all = $("allList");
   all.innerHTML = "";
   if (m) {
     const everyone = Object.entries(m.people)
       .map(([k, v]) => ({ key: k, ...v }))
-      .sort((a, b) => a.last - b.last || a.name.localeCompare(b.name, "de"));
+      .sort((a, b) => a.last - b.last || a.name.localeCompare(b.name, "en"));
     const oldestAll = Math.min(...everyone.map((p) => p.last || 0), Date.now());
     everyone.forEach((p) => all.appendChild(buildPersonItem(m, p, null, oldestAll, { deletable: true })));
     $("peopleEmpty").classList.toggle("hidden", everyone.length > 0);
@@ -629,11 +627,11 @@ function render() {
   // Meetings
   const ml = $("meetingList");
   ml.innerHTML = "";
-  const meetings = Object.values(data.meetings).sort((a, b) => a.name.localeCompare(b.name, "de"));
+  const meetings = Object.values(data.meetings).sort((a, b) => a.name.localeCompare(b.name, "en"));
   meetings.forEach((g) => ml.appendChild(buildMeetingItem(g)));
   $("meetingsEmpty").classList.toggle("hidden", meetings.length > 0);
 
-  // Einstellungen
+  // Settings
   if ($("settingTopN") && document.activeElement !== $("settingTopN")) {
     $("settingTopN").value = getTopN();
   }
@@ -649,12 +647,12 @@ function render() {
   }
 }
 
-/* ---------- Ablauf ---------- */
+/* ---------- Workflow ---------- */
 
 async function refresh(newRound = false, options = {}) {
   data = await load();
 
-  // Phase 1: nur Name und Code lesen, Personenliste unberuehrt lassen
+  // Phase 1: read title and code only, leave roster untouched
   const probe = await readMeet(false);
   current = probe && probe.ok
     ? { inMeet: true, code: probe.code, title: probe.title, people: [] }
@@ -667,7 +665,7 @@ async function refresh(newRound = false, options = {}) {
     if (!options.background) {
       setStatus(
         probe && probe.reason === "noinject"
-          ? "Meet-Tab gefunden, aber noch nicht lesbar. Lade die Meet-Seite neu."
+          ? "Meet tab found, but not yet readable. Please reload the Meet page."
           : ""
       );
     }
@@ -688,14 +686,14 @@ async function refresh(newRound = false, options = {}) {
 
   if (hit.via === "code" && current.title && norm(current.title) !== norm(m.name)) {
     addAlias(m, current.title);
-    setStatus(`Der Kalendertitel lautet jetzt "${current.title}". Die Liste wurde zugeordnet.`);
+    setStatus(`Calendar title is now "${current.title}". The list has been linked.`);
   }
   if (current.code && !(m.codes || []).includes(current.code)) {
     m.codes = m.codes || [];
     m.codes.push(current.code);
   }
 
-  // Phase 2: erst jetzt die Personenliste lesen
+  // Phase 2: now read people list
   const full = await readMeet(true);
   if (full && full.ok) {
     current.people = (full.people || [])
@@ -709,9 +707,9 @@ async function refresh(newRound = false, options = {}) {
     render();
 
     const total = Object.keys(m.people).length;
-    const parts = [`${presentKeys.size} anwesend von ${total}`];
-    if (added) parts.push(`${added} neu aufgenommen`);
-    if (current.people.length === 0) parts.push("Öffne in Meet die Personenliste");
+    const parts = [`${presentKeys.size} present of ${total}`];
+    if (added) parts.push(`${added} newly added`);
+    if (current.people.length === 0) parts.push("Open the people list in Meet");
     setStatus(parts.join(" · "));
   } else {
     ensureRound(m, newRound);
@@ -856,59 +854,111 @@ function mergeInto(target, incoming) {
   return target;
 }
 
-async function importFile(file) {
-  const text = await file.text();
+async function importMarkdownText(text, sourceLabel = "clipboard") {
+  if (!text || typeof text !== "string") {
+    setStatus("The clipboard is empty or does not contain text.");
+    return false;
+  }
+  const md = parseMarkdownMeeting(text);
+  const peopleCount = Object.keys(md.people).length;
+  if (peopleCount === 0) {
+    setStatus("No valid Markdown meeting table found.");
+    return false;
+  }
 
-  // 1. Zuerst als Markdown-Meeting prüfen
-  if (text.includes("|") && text.includes("#")) {
+  const meetingName = md.meetingName || "Imported Meeting";
+  const existing = Object.values(data.meetings).find(
+    (x) => norm(x.name) === norm(meetingName) || (x.aliases || []).includes(norm(meetingName))
+  );
+
+  if (existing) {
+    const overwrite = confirm(
+      `The meeting "${existing.name}" already exists.\n\nDo you want to overwrite it with data from ${sourceLabel}?`
+    );
+    if (!overwrite) return false;
+    existing.people = md.people;
+    existing.round = null;
+    sanitizeMeetingData(existing);
+  } else {
+    const id = uid();
+    data.meetings[id] = {
+      id,
+      name: meetingName,
+      aliases: [norm(meetingName)],
+      codes: [],
+      people: md.people,
+      round: null,
+      includeAbsent: false,
+      createdAt: Date.now()
+    };
+    sanitizeMeetingData(data.meetings[id]);
+  }
+
+  await save();
+  await refresh();
+  setStatus(`Meeting "${meetingName}" (${peopleCount} ${peopleCount === 1 ? "person" : "people"}) imported.`);
+  return true;
+}
+
+function openPasteModal(initialText = "") {
+  const modal = $("pasteModal");
+  const textarea = $("pasteTextarea");
+  if (!modal || !textarea) return;
+  textarea.value = initialText;
+  modal.classList.remove("hidden");
+  setTimeout(() => textarea.focus(), 50);
+}
+
+function closePasteModal() {
+  const modal = $("pasteModal");
+  if (modal) modal.classList.add("hidden");
+}
+
+async function handlePasteImport() {
+  let text = "";
+  try {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      text = await navigator.clipboard.readText();
+    }
+  } catch {
+    // Clipboard permission denied or unavailable
+  }
+
+  if (text && text.trim() && text.includes("|")) {
     const md = parseMarkdownMeeting(text);
-    if (md.meetingName && Object.keys(md.people).length > 0) {
-      const existing = Object.values(data.meetings).find(
-        (x) => norm(x.name) === norm(md.meetingName) || (x.aliases || []).includes(norm(md.meetingName))
-      );
-      if (existing) {
-        const overwrite = confirm(
-          `Das Meeting "${existing.name}" existiert bereits.\n\nSoll es mit den Daten aus "${file.name}" überschrieben werden?`
-        );
-        if (!overwrite) return;
-        existing.people = md.people;
-        existing.round = null;
-        sanitizeMeetingData(existing);
-      } else {
-        const id = uid();
-        data.meetings[id] = {
-          id,
-          name: md.meetingName,
-          aliases: [norm(md.meetingName)],
-          codes: [],
-          people: md.people,
-          round: null,
-          includeAbsent: false,
-          createdAt: Date.now()
-        };
-        sanitizeMeetingData(data.meetings[id]);
-      }
-      await save();
-      await refresh();
-      setStatus(`Meeting "${md.meetingName}" (${Object.keys(md.people).length} Personen) importiert.`);
+    if (Object.keys(md.people).length > 0) {
+      await importMarkdownText(text, "clipboard");
       return;
     }
   }
 
-  // 2. Als JSON-Backup importieren
+  // If clipboard was empty, unreadable, or invalid Markdown, open fallback modal
+  openPasteModal(text || "");
+}
+
+async function importFile(file) {
+  const text = await file.text();
+
+  // 1. First check if it is a Markdown meeting
+  if (text.includes("|") && text.includes("#")) {
+    const success = await importMarkdownText(text, `"${file.name}"`);
+    if (success) return;
+  }
+
+  // 2. Import as JSON backup
   let parsed;
   try {
     parsed = JSON.parse(text);
   } catch {
-    setStatus("Die Datei konnte weder als Markdown noch als JSON gelesen werden.");
+    setStatus("The file could not be parsed as Markdown or JSON.");
     return;
   }
   if (!parsed || typeof parsed !== "object" || !(parsed.meetings || parsed.groups)) {
-    setStatus("In der JSON-Datei fehlt das Feld meetings.");
+    setStatus("The JSON file is missing the 'meetings' property.");
     return;
   }
   const replace = confirm(
-    "OK ersetzt alle gespeicherten Listen durch die Datei.\nAbbrechen führt die Datei mit den bestehenden Listen zusammen."
+    "OK replaces all saved lists with the file.\nCancel merges the file into the existing lists."
   );
   if (replace) {
     data = parsed.meetings ? parsed : { version: 2, meetings: {} };
@@ -920,10 +970,10 @@ async function importFile(file) {
   }
   await save();
   await refresh();
-  setStatus(replace ? "Listen ersetzt." : "Listen zusammengeführt.");
+  setStatus(replace ? "Lists replaced." : "Lists merged.");
 }
 
-/* ---------- Ereignisse ---------- */
+/* ---------- Events ---------- */
 
 for (const t of document.querySelectorAll(".tab")) {
   t.addEventListener("click", () => {
@@ -936,7 +986,7 @@ for (const t of document.querySelectorAll(".tab")) {
 $("btnActivate").addEventListener("click", async () => {
   const name = $("activateName").value.trim();
   if (!name) {
-    setStatus("Bitte einen Meeting-Namen eintragen.");
+    setStatus("Please enter a meeting name.");
     return;
   }
   const id = uid();
@@ -954,7 +1004,7 @@ $("btnActivate").addEventListener("click", async () => {
   await save();
   view = "round";
   await refresh(true);
-  setStatus(`Tracking für "${name}" aktiviert.`);
+  setStatus(`Tracking enabled for "${name}".`);
 });
 
 $("btnLink").addEventListener("click", async () => {
@@ -966,7 +1016,7 @@ $("btnLink").addEventListener("click", async () => {
   await save();
   view = "round";
   await refresh(false);
-  setStatus(`Dieses Meeting nutzt jetzt die Liste "${m.name}".`);
+  setStatus(`This meeting is now linked to "${m.name}".`);
 });
 
 $("btnRefresh").addEventListener("click", () => refresh(false));
@@ -984,7 +1034,7 @@ $("btnAdd").addEventListener("click", async () => {
   const m = meeting();
   const raw = $("newName").value.trim();
   if (isPresentationName(raw) || isNoiseOrIcon(raw)) {
-    setStatus("Ungültiger Personenname.");
+    setStatus("Invalid person name.");
     return;
   }
   const name = cleanPersonName(raw);
@@ -1030,12 +1080,34 @@ $("settingRefreshInterval").addEventListener("change", async (e) => {
 });
 
 if ($("btnImportPlus")) $("btnImportPlus").addEventListener("click", () => $("fileInput").click());
+if ($("btnImportPaste")) $("btnImportPaste").addEventListener("click", handlePasteImport);
 if ($("btnExportJson")) $("btnExportJson").addEventListener("click", exportData);
 if ($("fileInput")) {
   $("fileInput").addEventListener("change", (e) => {
     const f = e.target.files[0];
     if (f) importFile(f);
     e.target.value = "";
+  });
+}
+
+if ($("btnPasteCancel")) $("btnPasteCancel").addEventListener("click", closePasteModal);
+if ($("btnPasteCancel2")) $("btnPasteCancel2").addEventListener("click", closePasteModal);
+if ($("btnPasteSubmit")) {
+  $("btnPasteSubmit").addEventListener("click", async () => {
+    const val = $("pasteTextarea").value.trim();
+    if (!val) {
+      setStatus("Please paste a Markdown table.");
+      return;
+    }
+    const success = await importMarkdownText(val, "pasted text");
+    if (success) {
+      closePasteModal();
+    }
+  });
+}
+if ($("pasteModal")) {
+  $("pasteModal").addEventListener("click", (e) => {
+    if (e.target === $("pasteModal")) closePasteModal();
   });
 }
 

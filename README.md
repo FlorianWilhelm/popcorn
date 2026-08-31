@@ -1,68 +1,69 @@
 # Meet Update Rotator
 
-Chrome-Erweiterung, die in einem ausgewählten Google Meet die fünf anwesenden Personen vorschlägt, deren letztes Projektupdate am längsten zurückliegt.
+Chrome extension that suggests the five attendees present in a Google Meet whose last project update was the longest ago.
 
-Das Tracking hängt am **Namen des Meetings**, nicht am Termin, Wochentag oder Meeting-Code. Ein Meeting, das mal montags und mal donnerstags stattfindet, wird trotzdem als dasselbe erkannt.
+Tracking is linked to the **name of the meeting**, not to the specific calendar event, weekday, or meeting code. A meeting occurring on Mondays some weeks and Thursdays other weeks is still recognized as the same meeting.
 
 ## Installation
 
-1. ZIP entpacken.
-2. In Chrome `chrome://extensions` öffnen.
-3. Oben rechts **Entwicklermodus** aktivieren.
-4. **Entpackte Erweiterung laden** klicken und den Ordner `meet-update-rotator` auswählen.
-5. Erweiterung an die Symbolleiste pinnen.
+1. Unzip the archive.
+2. In Chrome, open `chrome://extensions`.
+3. Enable **Developer mode** in the top right corner.
+4. Click **Load unpacked** and select the `meet-update-rotator` folder.
+5. Pin the extension to your toolbar.
 
-## Grundprinzip
+## Core Principle
 
-Standardmäßig ist die Erweiterung in jedem Meeting **aus**. Sie liest dann nur den Meeting-Namen, sonst nichts, und rührt die Personenliste nicht an.
+By default, the extension is **off** in every meeting. It only reads the meeting name without touching the participant list.
 
-### Tracking aktivieren
+### Enabling Tracking
 
-Im gewünschten Meeting auf das Symbol klicken. Die Erweiterung zeigt den erkannten Namen, zum Beispiel `Team Weekly DS & NLP`. Der Name lässt sich vor dem Aktivieren noch anpassen, dann **Tracking aktivieren**.
+Click the extension icon during the desired meeting. The extension displays the recognized name, for example `Team Weekly DS & NLP`. You can adjust the name before enabling, then click **Enable Tracking**.
 
-Bei Ad-hoc-Meetings ohne Kalendertermin steht im Seitentitel nur der Meeting-Code. Dann bleibt das Namensfeld leer und du tippst den Namen selbst ein. Ab dann wird über diesen Namen gematcht.
+For ad-hoc meetings without a calendar event, the page title only contains the meeting code. In this case, the name field remains empty and you enter the name manually. Tracking will match on this name from then on.
 
-### Ablauf im getrackten Meeting
+### Flow in a Tracked Meeting
 
-1. Beim ersten Öffnen kommen alle gefundenen Personen mit Zeitstempel 0 in die Liste, also 1. Januar 1970.
-2. Angezeigt werden die anwesenden Personen, aufsteigend nach letztem Update.
-3. Die Top 5 mit Toggle. Toggle an setzt das heutige Datum, Toggle aus stellt den vorherigen Zeitstempel wieder her.
-4. Beim nächsten Termin mit demselben Namen läuft es ab Schritt 2 weiter.
+1. On first launch, all detected attendees are added with timestamp 0 (January 1, 1970).
+2. Present attendees are displayed, sorted in ascending order by their last update.
+3. The top 5 are shown with toggles. Enabling the toggle sets today's date; disabling it restores the previous timestamp.
+4. On subsequent meetings with the same name, it continues from step 2.
 
-- **Weitere Personen**: erzwingt eine neue Auswahl der nächsten Kandidaten. Nach sechs Stunden passiert das automatisch.
-- **Aktualisieren (🔄 Icon)**: liest die Anwesenheit manuell neu ein, behält aber die aktuelle Auswahl bei, damit beim Abhaken nichts wegspringt.
-- **Abwesende einbeziehen**: nimmt auch Personen auf, die gerade nicht im Call sind.
+- **More People**: forces a new selection of the next candidates. This happens automatically after six hours.
+- **Refresh (🔄 icon)**: re-reads attendance manually while keeping the current selection intact so items don't shift while checking off.
+- **Include absent**: also includes participants who are not currently in the call.
 
 ## Tabs & Navigation
 
-- **Update**: die aktuellen Kandidaten für das nächste Update im laufenden Meeting.
-- **Personen**: vollständige Liste des Meetings, Personen hinzufügen (`+`), per Mülleimer-Icon (`🗑`) entfernen oder Zeitstempel per Toggle korrigieren.
-- **Meetings**: alle getrackten Meetings.
-  - Name direkt im Textfeld bearbeiten.
-  - **Öffnen**: wechselt zur Personenliste dieses Meetings.
-  - **Mülleimer (🗑)**: beendet das Tracking und löscht den gespeicherten Verlauf des Meetings.
-  - **Zwischenablage (📋)**: kopiert die Personenliste als Markdown-Tabelle in die Zwischenablage.
-  - **Herunterladen (⬇)**: exportiert das Meeting als lesbare `.md`-Datei.
-  - **+ Symbol (Toolbar)**: importiert ein Meeting aus einer Markdown-Datei (fragt bei bestehendem Namen vor dem Überschreiben).
-- **Einstellungen (⚙️ Zahnrad)**:
-  - Anzahl der Update-Kandidaten konfigurieren (Standard: 5).
-  - Automatisches Live-Aktualisieren im Meeting einstellen (Standard: alle 5 Sekunden).
-  - **Gesamtes Backup exportieren (JSON)**: vollständiger Export aller Meetings und Einstellungen.
+- **Update**: current candidates for the next update in the active meeting.
+- **People**: full participant list of the meeting; add people (`+`), remove via trash icon (`🗑`), or adjust timestamps using toggles.
+- **Meetings**: all tracked meetings.
+  - Edit names directly in the text field.
+  - **Open**: switches to the people list of this meeting.
+  - **Trash (🗑)**: stops tracking and deletes the saved history of the meeting.
+  - **Clipboard (📋)**: copies the people list as a Markdown table to your clipboard.
+  - **Download (⬇)**: exports the meeting as a readable `.md` file.
+  - **Paste Button (📋 in toolbar)**: imports a meeting directly from your clipboard Markdown table with 1 click (or opens a paste dialog fallback).
+  - **+ Button (toolbar)**: imports a meeting from a Markdown or JSON file from disk (prompts before overwriting existing names).
+- **Settings (⚙️ gear)**:
+  - Configure the number of update candidates (default: 5).
+  - Configure automatic live refresh during meetings (default: every 2 seconds).
+  - **Export full backup (JSON)**: complete export of all meetings and settings.
 
-## Wenn sich der Kalendertitel ändert
+## When Calendar Titles Change
 
-Zwei Wege, beide unkritisch:
+Two seamless approaches:
 
-- Meist erkennt die Erweiterung das Meeting weiter am Meeting-Code und ordnet den neuen Titel automatisch als weiteren Erkennungsnamen zu. Sie sagt das im Statusbereich.
-- Sonst erscheint die Aktivierungsansicht. Dort unten die bestehende Liste auswählen und **Zuordnen** klicken. Der neue Titel wird ergänzt, der Verlauf bleibt erhalten.
+- The extension usually continues recognizing the meeting by its meeting code and automatically associates the new title as an alias, indicating this in the status area.
+- Otherwise, the activation screen appears. Select the existing list in the dropdown and click **Link**. The new title is added as an alias and the history is preserved.
 
-Alte Namen bleiben als Erkennung gespeichert. Ein Rückbenennen im Kalender bricht also nichts.
+Old names remain saved for recognition, so renaming back in your calendar won't break anything.
 
-## Speicherung & Export
+## Storage & Export
 
-Die Daten liegen in `chrome.storage.local`.
+Data is stored in `chrome.storage.local`.
 
-### Markdown-Export (einzelnes Meeting)
+### Markdown Export (Single Meeting)
 
 ```markdown
 # Team Weekly DS & NLP
@@ -74,7 +75,7 @@ Die Daten liegen in `chrome.storage.local`.
 | Collin Rogowski |  |
 ```
 
-### JSON-Backup (alle Meetings)
+### JSON Backup (All Meetings)
 
 ```json
 {
@@ -83,7 +84,7 @@ Die Daten liegen in `chrome.storage.local`.
     "m_abc123_x9f2k": {
       "id": "m_abc123_x9f2k",
       "name": "Team Weekly DS & NLP",
-      "aliases": ["team weekly ds & nlp", "team weekly ds und nlp"],
+      "aliases": ["team weekly ds & nlp", "team weekly ds and nlp"],
       "codes": ["abc-defg-hij"],
       "people": {
         "erika mustermann": { "name": "Erika Mustermann", "last": 1755000000000, "prev": 0 }
@@ -93,10 +94,10 @@ Die Daten liegen in `chrome.storage.local`.
 }
 ```
 
-`last` ist ein Unix-Zeitstempel in Millisekunden, `0` heißt noch nie vorgetragen. Beim JSON-Import fragt die Erweiterung, ob ersetzt oder zusammengeführt werden soll. Beim Markdown-Import wird bei Namensübereinstimmung nach Bestätigung überschrieben.
+`last` is a Unix timestamp in milliseconds (`0` means never updated). When importing JSON, the extension asks whether to replace or merge lists. When importing Markdown, matching meeting names will prompt before overwriting.
 
-## Grenzen
+## Limitations
 
-- Google Meet hat keine öffentliche Browser-API für Teilnehmerliste und Meeting-Titel. Die Erweiterung liest den DOM und `document.title`. Ändert Google das Markup, muss `content.js` nachgezogen werden. Der Code stützt sich bewusst nur auf `role="listitem"`, `data-participant-id` und den Seitentitel statt auf obfuskierte Klassennamen.
-- Eingeladene, aber nicht erschienene Personen zeigt Meet nur bei bestimmten Kalender-Setups an. Fehlende Personen lassen sich im Tab Personen von Hand ergänzen.
-- Namen sind der Schlüssel. Zwei Personen mit identischem Anzeigenamen werden als eine geführt.
+- Google Meet does not provide a public browser API for attendee lists or meeting titles. The extension reads the DOM and `document.title`. If Google changes the markup, `content.js` may need adjustments. The code relies on stable attributes like `role="listitem"`, `data-participant-id`, and the page title rather than obfuscated class names.
+- Invited attendees who have not joined are only displayed by Meet in specific calendar configurations. Missing participants can be added manually in the People tab.
+- Names serve as keys. Two participants with identical display names are tracked as one person.
