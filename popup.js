@@ -443,8 +443,12 @@ function buildMeetingItem(m) {
   const li = document.createElement("li");
   li.className = "meeting" + (m.id === currentId ? " current" : "");
 
+  const box = document.createElement("div");
+  box.className = "meeting-box";
+
   const input = document.createElement("input");
   input.type = "text";
+  input.className = "meeting-name-input";
   input.value = m.name;
   input.title = "Edit name";
   input.addEventListener("change", async () => {
@@ -468,21 +472,31 @@ function buildMeetingItem(m) {
   countBadge.className = "meeting-count";
   const countText = `${count} ${count === 1 ? "person" : "people"}`;
   countBadge.title = m.id === currentId ? `${countText} (in progress)` : countText;
-  countBadge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>${count}</span>`;
+  countBadge.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>${count}</span>`;
+
+  const openBtn = document.createElement("button");
+  openBtn.className = "meeting-open-btn";
+  openBtn.title = "Open people list for this meeting";
+  openBtn.setAttribute("aria-label", "Open meeting");
+  openBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
+  openBtn.addEventListener("click", () => {
+    selectedId = m.id;
+    view = "people";
+    render();
+  });
+
+  box.append(input, countBadge, openBtn);
 
   const actions = document.createElement("div");
   actions.className = "actions";
 
-  const copyBtn = document.createElement("button");
-  copyBtn.className = "mini ghost icon-btn";
-  copyBtn.title = "Copy to clipboard as Markdown";
-  copyBtn.setAttribute("aria-label", "Copy as Markdown");
-  copyBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-  copyBtn.addEventListener("click", async () => {
-    await copyMeetingMarkdown(m);
-    copyBtn.classList.add("copied");
-    setStatus(`Markdown for "${m.name}" copied.`);
-    setTimeout(() => copyBtn.classList.remove("copied"), 1500);
+  const editBtn = document.createElement("button");
+  editBtn.className = "mini ghost icon-btn";
+  editBtn.title = "View, edit, or copy Markdown";
+  editBtn.setAttribute("aria-label", "Edit Markdown");
+  editBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>`;
+  editBtn.addEventListener("click", () => {
+    openMarkdownModal(m.id);
   });
 
   const dlBtn = document.createElement("button");
@@ -494,18 +508,8 @@ function buildMeetingItem(m) {
     downloadMeetingMarkdown(m);
   });
 
-  const open = document.createElement("button");
-  open.className = "mini ghost btn-with-icon";
-  open.title = "Open people list for this meeting";
-  open.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg><span>Open</span>`;
-  open.addEventListener("click", () => {
-    selectedId = m.id;
-    view = "people";
-    render();
-  });
-
   const del = document.createElement("button");
-  del.className = "mini ghost icon-btn";
+  del.className = "mini ghost icon-btn danger";
   del.title = "Stop tracking and delete history";
   del.setAttribute("aria-label", "Delete meeting");
   del.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
@@ -518,8 +522,8 @@ function buildMeetingItem(m) {
     render();
   });
 
-  actions.append(copyBtn, dlBtn, open, del);
-  li.append(input, countBadge, actions);
+  actions.append(editBtn, dlBtn, del);
+  li.append(box, actions);
   return li;
 }
 
@@ -900,44 +904,115 @@ async function importMarkdownText(text, sourceLabel = "clipboard") {
   return true;
 }
 
-function openPasteModal(initialText = "") {
-  const modal = $("pasteModal");
-  const textarea = $("pasteTextarea");
+let editingMeetingId = null;
+
+function openMarkdownModal(meetingId = null) {
+  editingMeetingId = meetingId;
+  const modal = $("markdownModal");
+  const textarea = $("markdownTextarea");
+  const titleEl = $("modalTitle");
+  const hintEl = $("modalHint");
+  const saveBtn = $("btnModalSave");
   if (!modal || !textarea) return;
-  textarea.value = initialText;
+
+  if (meetingId && data.meetings[meetingId]) {
+    const m = data.meetings[meetingId];
+    if (titleEl) titleEl.textContent = `Edit "${m.name}"`;
+    if (hintEl) hintEl.textContent = "View, edit, or copy the Markdown table of this meeting:";
+    textarea.value = meetingToMarkdown(m);
+    if (saveBtn) saveBtn.textContent = "Save Changes";
+  } else {
+    editingMeetingId = null;
+    if (titleEl) titleEl.textContent = "New Meeting / Import";
+    if (hintEl) hintEl.textContent = "Paste a Markdown table or load a file from disk:";
+    textarea.value = "";
+    if (saveBtn) saveBtn.textContent = "Import";
+  }
+
   modal.classList.remove("hidden");
   setTimeout(() => textarea.focus(), 50);
 }
 
-function closePasteModal() {
-  const modal = $("pasteModal");
+function closeMarkdownModal() {
+  const modal = $("markdownModal");
   if (modal) modal.classList.add("hidden");
+  editingMeetingId = null;
 }
 
-async function handlePasteImport() {
-  let text = "";
+async function copyModalText() {
+  const textarea = $("markdownTextarea");
+  if (!textarea || !textarea.value.trim()) return;
+  const copyBtn = $("btnModalCopy");
   try {
-    if (navigator.clipboard && navigator.clipboard.readText) {
-      text = await navigator.clipboard.readText();
-    }
+    await navigator.clipboard.writeText(textarea.value);
   } catch {
-    // Clipboard permission denied or unavailable
+    textarea.select();
+    document.execCommand("copy");
+  }
+  if (copyBtn) {
+    const origHtml = copyBtn.innerHTML;
+    copyBtn.classList.add("copied");
+    copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Copied!</span>`;
+    setTimeout(() => {
+      copyBtn.classList.remove("copied");
+      copyBtn.innerHTML = origHtml;
+    }, 1500);
+  }
+  setStatus("Markdown copied to clipboard.");
+}
+
+async function saveMarkdownModal() {
+  const textarea = $("markdownTextarea");
+  if (!textarea) return;
+  const text = textarea.value.trim();
+  if (!text) {
+    setStatus("Please enter or paste a Markdown table.");
+    return;
   }
 
-  if (text && text.trim() && text.includes("|")) {
-    const md = parseMarkdownMeeting(text);
-    if (Object.keys(md.people).length > 0) {
-      await importMarkdownText(text, "clipboard");
-      return;
+  const md = parseMarkdownMeeting(text);
+  const peopleCount = Object.keys(md.people).length;
+  if (peopleCount === 0) {
+    setStatus("No valid Markdown table with people found.");
+    return;
+  }
+
+  if (editingMeetingId && data.meetings[editingMeetingId]) {
+    const m = data.meetings[editingMeetingId];
+    if (md.meetingName && md.meetingName !== m.name) {
+      m.name = md.meetingName;
+      addAlias(m, md.meetingName);
     }
+    m.people = md.people;
+    m.round = null;
+    sanitizeMeetingData(m);
+    await save();
+    await refresh();
+    setStatus(`Meeting "${m.name}" (${peopleCount} ${peopleCount === 1 ? "person" : "people"}) updated.`);
+    closeMarkdownModal();
+    return;
   }
 
-  // If clipboard was empty, unreadable, or invalid Markdown, open fallback modal
-  openPasteModal(text || "");
+  // New meeting / import
+  const success = await importMarkdownText(text, "editor");
+  if (success) {
+    closeMarkdownModal();
+  }
 }
 
 async function importFile(file) {
   const text = await file.text();
+
+  // If the Markdown modal is open, load content directly into the editor
+  const modal = $("markdownModal");
+  if (modal && !modal.classList.contains("hidden")) {
+    const textarea = $("markdownTextarea");
+    if (textarea) {
+      textarea.value = text;
+      setStatus(`Loaded "${file.name}" into editor.`);
+      return;
+    }
+  }
 
   // 1. First check if it is a Markdown meeting
   if (text.includes("|") && text.includes("#")) {
@@ -1079,8 +1154,7 @@ $("settingRefreshInterval").addEventListener("change", async (e) => {
   setupAutoRefresh();
 });
 
-if ($("btnImportPlus")) $("btnImportPlus").addEventListener("click", () => $("fileInput").click());
-if ($("btnImportPaste")) $("btnImportPaste").addEventListener("click", handlePasteImport);
+if ($("btnNewMeeting")) $("btnNewMeeting").addEventListener("click", () => openMarkdownModal(null));
 if ($("btnExportJson")) $("btnExportJson").addEventListener("click", exportData);
 if ($("fileInput")) {
   $("fileInput").addEventListener("change", (e) => {
@@ -1090,24 +1164,14 @@ if ($("fileInput")) {
   });
 }
 
-if ($("btnPasteCancel")) $("btnPasteCancel").addEventListener("click", closePasteModal);
-if ($("btnPasteCancel2")) $("btnPasteCancel2").addEventListener("click", closePasteModal);
-if ($("btnPasteSubmit")) {
-  $("btnPasteSubmit").addEventListener("click", async () => {
-    const val = $("pasteTextarea").value.trim();
-    if (!val) {
-      setStatus("Please paste a Markdown table.");
-      return;
-    }
-    const success = await importMarkdownText(val, "pasted text");
-    if (success) {
-      closePasteModal();
-    }
-  });
-}
-if ($("pasteModal")) {
-  $("pasteModal").addEventListener("click", (e) => {
-    if (e.target === $("pasteModal")) closePasteModal();
+if ($("btnModalClose")) $("btnModalClose").addEventListener("click", closeMarkdownModal);
+if ($("btnModalCancel")) $("btnModalCancel").addEventListener("click", closeMarkdownModal);
+if ($("btnModalSave")) $("btnModalSave").addEventListener("click", saveMarkdownModal);
+if ($("btnModalCopy")) $("btnModalCopy").addEventListener("click", copyModalText);
+if ($("btnModalLoadFile")) $("btnModalLoadFile").addEventListener("click", () => $("fileInput").click());
+if ($("markdownModal")) {
+  $("markdownModal").addEventListener("click", (e) => {
+    if (e.target === $("markdownModal")) closeMarkdownModal();
   });
 }
 

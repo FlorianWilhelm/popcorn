@@ -100,25 +100,17 @@
     <section id="viewMeetings" class="hidden">
       <div class="row section-toolbar">
         <span class="toolbar-title">Tracked Meetings</span>
-        <div class="toolbar-actions">
-          <button id="btnImportPaste" class="ghost icon-btn mini" title="Paste Markdown meeting from clipboard" aria-label="Paste meeting from clipboard">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-            </svg>
-          </button>
-          <button id="btnImportPlus" class="ghost icon-btn mini" title="Import meeting file (.md or .json)" aria-label="Import meeting file">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
-        </div>
+        <button id="btnNewMeeting" class="ghost icon-btn mini" title="New meeting or import Markdown" aria-label="New meeting">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
       </div>
       <ul id="meetingList" class="list plain"></ul>
       <p id="meetingsEmpty" class="hint hidden">
         No meetings tracked yet. Open a meeting in Google Meet and
-        enable tracking there, or import a Markdown list using the + button.
+        enable tracking there, or create a meeting using the + button.
       </p>
       <input type="file" id="fileInput" accept=".md,.txt,.json,application/json,text/markdown" hidden />
     </section>
@@ -155,27 +147,44 @@
       </div>
 
       <div class="version-info">
-        <span>Meet Update Rotator v<span id="appVersion">0.17</span></span>
+        <span>Meet Update Rotator v<span id="appVersion">0.18</span></span>
       </div>
     </section>
 
-    <!-- Fallback Paste Modal -->
-    <div id="pasteModal" class="modal-backdrop hidden">
+    <!-- Markdown Editor / Import Modal -->
+    <div id="markdownModal" class="modal-backdrop hidden">
       <div class="modal-box">
         <div class="modal-header">
-          <span class="modal-title">Paste Markdown Meeting</span>
-          <button id="btnPasteCancel" class="ghost icon-btn mini" title="Close" aria-label="Close">
+          <span id="modalTitle" class="modal-title">Edit Meeting</span>
+          <button id="btnModalClose" class="ghost icon-btn mini" title="Close" aria-label="Close">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
         </div>
-        <p class="modal-hint">Paste the Markdown table of your meeting below:</p>
-        <textarea id="pasteTextarea" rows="6" placeholder="# Meeting Name&#10;&#10;| Person | Last Update |&#10;| --- | --- |&#10;| Name | 24.08.2026, 10:00:00 |"></textarea>
-        <div class="modal-actions">
-          <button id="btnPasteCancel2" class="ghost mini">Cancel</button>
-          <button id="btnPasteSubmit" class="primary mini">Import</button>
+        <p id="modalHint" class="modal-hint">View, edit, or copy the Markdown table of this meeting:</p>
+        <textarea id="markdownTextarea" rows="8" placeholder="# Meeting Name&#10;&#10;| Person | Last Update |&#10;| --- | --- |&#10;| Name | 24.08.2026, 10:00:00 |"></textarea>
+        <div class="modal-footer">
+          <div class="modal-footer-left">
+            <button id="btnModalCopy" class="ghost mini btn-with-icon" title="Copy Markdown to clipboard">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy</span>
+            </button>
+            <button id="btnModalLoadFile" class="ghost mini btn-with-icon" title="Load Markdown file from disk">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span>Load file</span>
+            </button>
+          </div>
+          <div class="modal-footer-right">
+            <button id="btnModalCancel" class="ghost mini">Cancel</button>
+            <button id="btnModalSave" class="primary mini">Save Changes</button>
+          </div>
         </div>
       </div>
     </div>

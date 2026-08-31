@@ -419,29 +419,49 @@ input[type="number"] {
   padding-left: 8px;
 }
 
-.meeting input[type="text"] {
+.meeting-box {
   flex: 1 1 auto;
   min-width: 0;
-  height: 26px;
-  padding: 0 7px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 8px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--ink);
+  transition: border-color 0.15s ease;
+}
+
+.meeting-box:focus-within {
+  border-color: var(--accent);
+}
+
+.meeting-box .meeting-name-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--sans);
   font-size: 12px;
   font-weight: 500;
-  border-radius: 5px;
+  outline: none;
 }
 
 .meeting-count {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 3.5px;
-  padding: 0 6px;
-  height: 26px;
-  border-radius: 5px;
+  gap: 3px;
+  padding: 2px 5px;
+  border-radius: 4px;
   background: var(--ink-2);
-  border: 1px solid var(--line);
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 10.5px;
   line-height: 1;
   user-select: none;
 }
@@ -452,12 +472,36 @@ input[type="number"] {
 }
 
 .meeting.current .meeting-count {
-  border-color: var(--accent-soft);
   color: var(--accent);
 }
 
 .meeting.current .meeting-count svg {
   color: var(--accent);
+}
+
+.meeting-open-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.meeting-open-btn:hover {
+  background: var(--line);
+  color: var(--text);
+}
+
+.meeting-open-btn svg {
+  display: block;
+  pointer-events: none;
 }
 
 .meeting .actions {
@@ -479,7 +523,7 @@ section { padding-bottom: 4px; }
   text-align: center;
 }
 
-/* --- Fallback Paste Modal --- */
+/* --- Markdown Modal --- */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -522,7 +566,7 @@ section { padding-bottom: 4px; }
 
 .modal-box textarea {
   width: 100%;
-  min-height: 110px;
+  min-height: 140px;
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -539,9 +583,22 @@ section { padding-bottom: 4px; }
   outline-offset: 1px;
 }
 
-.modal-actions {
+.modal-footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-top: 10px;
+}
+
+.modal-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modal-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }

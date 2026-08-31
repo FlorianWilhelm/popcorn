@@ -38,13 +38,11 @@ For ad-hoc meetings without a calendar event, the page title only contains the m
 - **Update**: current candidates for the next update in the active meeting.
 - **People**: full participant list of the meeting; add people (`+`), remove via trash icon (`🗑`), or adjust timestamps using toggles.
 - **Meetings**: all tracked meetings.
-  - Edit names directly in the text field.
-  - **Open**: switches to the people list of this meeting.
+  - **Meeting Box**: inline editable name, attendee count badge (`👤 36`), and integrated open icon (`↗`) to switch to its participant list.
+  - **Pencil (✏️)**: opens the Markdown editor modal to view, edit, or copy the Markdown table to your clipboard.
+  - **Download (⬇)**: exports the meeting directly as a readable `.md` file.
   - **Trash (🗑)**: stops tracking and deletes the saved history of the meeting.
-  - **Clipboard (📋)**: copies the people list as a Markdown table to your clipboard.
-  - **Download (⬇)**: exports the meeting as a readable `.md` file.
-  - **Paste Button (📋 in toolbar)**: imports a meeting directly from your clipboard Markdown table with 1 click (or opens a paste dialog fallback).
-  - **+ Button (toolbar)**: imports a meeting from a Markdown or JSON file from disk (prompts before overwriting existing names).
+  - **+ Button (toolbar)**: opens the modal to create a new meeting from pasted Markdown or load a file from disk.
 - **Settings (⚙️ gear)**:
   - Configure the number of update candidates (default: 5).
   - Configure automatic live refresh during meetings (default: every 2 seconds).
