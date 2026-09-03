@@ -36,7 +36,11 @@ For ad-hoc meetings without a calendar event, the page title only contains the m
 ## Tabs & Navigation
 
 - **Update**: current candidates for the next update in the active meeting.
-- **People**: full participant list of the meeting; add people (`+`), remove via trash icon (`🗑`), or adjust timestamps using toggles.
+- **People**: full participant list of the meeting:
+  - **Ignore (👁️ / 🚫)**: toggle to permanently exclude a participant from update rounds even if present in the meeting. Ignored people are dimmed and placed at the bottom.
+  - **Delete Mode (🗑 icon in toolbar)**: toggles delete mode, revealing individual delete buttons on each row to remove participants.
+  - **Toggles**: check off or restore update timestamps manually.
+  - **Add (`+`)**: manually add a person by name.
 - **Meetings**: all tracked meetings.
   - **Meeting Box**: inline editable name, attendee count badge (`👤 36`), and integrated open icon (`↗`) to switch to its participant list.
   - **Pencil (✏️)**: opens the Markdown editor modal to view, edit, or copy the Markdown table to your clipboard.
@@ -69,7 +73,7 @@ Data is stored in `chrome.storage.local`.
 | Person | Last Update |
 | --- | --- |
 | Max Mustermann | 24.08.2026, 10:15:00 |
-| Erika Musterfrau | 17.08.2026, 09:30:00 |
+| Erika Musterfrau | 17.08.2026, 09:30:00 (ignored) |
 | Collin Rogowski |  |
 ```
 

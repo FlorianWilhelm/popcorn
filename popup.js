@@ -25,6 +25,7 @@ let selectedId = null; // manuell aus der Meetingliste geoeffnet
 let presentKeys = new Set();
 let view = "round";
 let refreshTimer = null;
+let deleteMode = false;
 
 const norm = (s) => (s || "").normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
 const keyOf = (name) => norm(name);
@@ -159,12 +160,16 @@ function sanitizeMeetingData(m) {
       newPeople[newKey] = {
         name: clean,
         last: (p && p.last) || 0,
-        prev: p && p.prev != null ? p.prev : null
+        prev: p && p.prev != null ? p.prev : null,
+        ignored: !!(p && p.ignored)
       };
     } else {
       newPeople[newKey].last = Math.max(newPeople[newKey].last || 0, (p && p.last) || 0);
       if (p && p.prev != null && newPeople[newKey].prev == null) {
         newPeople[newKey].prev = p.prev;
+      }
+      if (p && p.ignored) {
+        newPeople[newKey].ignored = true;
       }
     }
     keyMap.set(oldKey, newKey);
@@ -177,7 +182,7 @@ function sanitizeMeetingData(m) {
     const seenRound = new Set();
     for (const k of m.round.keys) {
       const mappedKey = keyMap.get(k);
-      if (mappedKey && m.people[mappedKey] && !seenRound.has(mappedKey)) {
+      if (mappedKey && m.people[mappedKey] && !m.people[mappedKey].ignored && !seenRound.has(mappedKey)) {
         seenRound.add(mappedKey);
         updatedRoundKeys.push(mappedKey);
       }
@@ -307,7 +312,7 @@ function syncRoster(m, people) {
     if (!clean || isPresentationName(clean) || isNoiseOrIcon(clean)) continue;
     const k = keyOf(clean);
     if (!m.people[k]) {
-      m.people[k] = { name: clean, last: 0, prev: null };
+      m.people[k] = { name: clean, last: 0, prev: null, ignored: false };
       added++;
     } else {
       m.people[k].name = clean;
@@ -319,8 +324,8 @@ function syncRoster(m, people) {
 function candidates(m) {
   const pool = Object.entries(m.people)
     .map(([k, v]) => ({ key: k, ...v }))
-    .filter((p) => m.includeAbsent || presentKeys.size === 0 || presentKeys.has(p.key));
-  pool.sort((a, b) => a.last - b.last || a.name.localeCompare(b.name, "de"));
+    .filter((p) => !p.ignored && (m.includeAbsent || presentKeys.size === 0 || presentKeys.has(p.key)));
+  pool.sort((a, b) => a.last - b.last || a.name.localeCompare(b.name, "en"));
   return pool;
 }
 
@@ -330,7 +335,7 @@ function ensureRound(m, force) {
   const pool = candidates(m).map((p) => p.key);
 
   if (!force && fresh && m.round && Array.isArray(m.round.keys)) {
-    let valid = m.round.keys.filter((k) => m.people[k] && (m.includeAbsent || presentKeys.size === 0 || presentKeys.has(k)));
+    let valid = m.round.keys.filter((k) => m.people[k] && !m.people[k].ignored && (m.includeAbsent || presentKeys.size === 0 || presentKeys.has(k)));
     for (const k of pool) {
       if (valid.length >= topCount) break;
       if (!valid.includes(k)) {
@@ -369,6 +374,7 @@ function buildPersonItem(m, person, index, oldest, opts = {}) {
   const doneToday = person.last && Date.now() - person.last < 86400000;
   if (doneToday) li.classList.add("done");
   if (presentKeys.size && !presentKeys.has(person.key)) li.classList.add("absent");
+  if (person.ignored) li.classList.add("ignored");
 
   const pos = document.createElement("div");
   pos.className = "pos";
@@ -384,48 +390,22 @@ function buildPersonItem(m, person, index, oldest, opts = {}) {
   const bar = document.createElement("div");
   bar.className = "bar-wait";
   const fill = document.createElement("span");
-  fill.style.width = `${Math.round(waitRatio(person.last, oldest) * 100)}%`;
+  fill.style.width = person.ignored ? "0%" : `${Math.round(waitRatio(person.last, oldest) * 100)}%`;
   bar.appendChild(fill);
   const label = document.createElement("span");
-  label.textContent = waitedText(person.last);
+  label.textContent = person.ignored ? "ignored" : waitedText(person.last);
   meta.append(label, bar);
   main.append(name, meta);
 
   const right = document.createElement("div");
   right.className = "actions";
 
-  const toggle = document.createElement("label");
-  toggle.className = "toggle";
-  toggle.title = "Gave update";
-  const input = document.createElement("input");
-  input.type = "checkbox";
-  input.checked = !!doneToday;
-  const track = document.createElement("span");
-  track.className = "track";
-  toggle.append(input, track);
-
-  input.addEventListener("change", async () => {
-    const p = m.people[person.key];
-    if (!p) return;
-    if (input.checked) {
-      p.prev = p.last;
-      p.last = Date.now();
-    } else {
-      p.last = p.prev != null ? p.prev : 0;
-      p.prev = null;
-    }
-    await save();
-    render();
-  });
-
-  right.appendChild(toggle);
-
-  if (opts.deletable) {
+  if (opts.inPeopleView && deleteMode) {
     const del = document.createElement("button");
-    del.className = "mini ghost icon-btn";
-    del.title = "Remove person";
-    del.setAttribute("aria-label", "Remove person");
-    del.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+    del.className = "mini ghost icon-btn danger";
+    del.title = `Delete "${person.name}"`;
+    del.setAttribute("aria-label", "Delete person");
+    del.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
     del.addEventListener("click", async () => {
       delete m.people[person.key];
       if (m.round) m.round.keys = m.round.keys.filter((k) => k !== person.key);
@@ -433,6 +413,60 @@ function buildPersonItem(m, person, index, oldest, opts = {}) {
       render();
     });
     right.appendChild(del);
+  } else {
+    const toggle = document.createElement("label");
+    toggle.className = "toggle";
+    toggle.title = "Gave update";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = !!doneToday;
+    const track = document.createElement("span");
+    track.className = "track";
+    toggle.append(input, track);
+
+    input.addEventListener("change", async () => {
+      const p = m.people[person.key];
+      if (!p) return;
+      if (input.checked) {
+        p.prev = p.last;
+        p.last = Date.now();
+      } else {
+        p.last = p.prev != null ? p.prev : 0;
+        p.prev = null;
+      }
+      await save();
+      render();
+    });
+
+    right.appendChild(toggle);
+
+    if (opts.inPeopleView) {
+      const ignoreBtn = document.createElement("button");
+      ignoreBtn.className = "mini ghost icon-btn ignore-btn" + (person.ignored ? " ignored" : "");
+      ignoreBtn.title = person.ignored ? "Ignored (click to include in updates)" : "Include in updates (click to ignore)";
+      ignoreBtn.setAttribute("aria-label", person.ignored ? "Unignore person" : "Ignore person");
+
+      if (person.ignored) {
+        ignoreBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+      } else {
+        ignoreBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+      }
+
+      ignoreBtn.addEventListener("click", async () => {
+        const p = m.people[person.key];
+        if (!p) return;
+        p.ignored = !p.ignored;
+        if (p.ignored && m.round) {
+          m.round.keys = (m.round.keys || []).filter((k) => k !== person.key);
+          ensureRound(m);
+        }
+        await save();
+        render();
+        setStatus(p.ignored ? `"${person.name}" is now ignored.` : `"${person.name}" will be included in updates.`);
+      });
+
+      right.appendChild(ignoreBtn);
+    }
   }
 
   li.append(pos, main, right);
@@ -482,6 +516,7 @@ function buildMeetingItem(m) {
   openBtn.addEventListener("click", () => {
     selectedId = m.id;
     view = "people";
+    deleteMode = false;
     render();
   });
 
@@ -622,10 +657,18 @@ function render() {
   if (m) {
     const everyone = Object.entries(m.people)
       .map(([k, v]) => ({ key: k, ...v }))
-      .sort((a, b) => a.last - b.last || a.name.localeCompare(b.name, "en"));
-    const oldestAll = Math.min(...everyone.map((p) => p.last || 0), Date.now());
-    everyone.forEach((p) => all.appendChild(buildPersonItem(m, p, null, oldestAll, { deletable: true })));
+      .sort((a, b) => {
+        if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
+        return a.last - b.last || a.name.localeCompare(b.name, "en");
+      });
+    const nonIgnored = everyone.filter((p) => !p.ignored);
+    const oldestAll = nonIgnored.length > 0 ? Math.min(...nonIgnored.map((p) => p.last || 0), Date.now()) : Date.now();
+    everyone.forEach((p) => all.appendChild(buildPersonItem(m, p, null, oldestAll, { inPeopleView: true })));
     $("peopleEmpty").classList.toggle("hidden", everyone.length > 0);
+  }
+  if ($("btnToggleDeleteMode")) {
+    $("btnToggleDeleteMode").classList.toggle("active", deleteMode);
+    $("btnToggleDeleteMode").title = deleteMode ? "Exit delete mode" : "Toggle delete mode";
   }
 
   // Meetings
@@ -744,10 +787,17 @@ function setupAutoRefresh() {
 
 function meetingToMarkdown(m) {
   const rows = Object.values(m.people || {})
-    .sort((a, b) => (b.last || 0) - (a.last || 0) || a.name.localeCompare(b.name))
+    .sort((a, b) => {
+      if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
+      return (b.last || 0) - (a.last || 0) || a.name.localeCompare(b.name);
+    })
     .map((p) => {
       const timeStr = p.last ? new Date(p.last).toLocaleString() : "";
-      return `| ${p.name} | ${timeStr} |`;
+      let val = timeStr;
+      if (p.ignored) {
+        val = timeStr ? `${timeStr} (ignored)` : "ignored";
+      }
+      return `| ${p.name} | ${val} |`;
     });
   return `# ${m.name}\n\n| Person | Last Update |\n| --- | --- |\n${rows.join("\n")}\n`;
 }
@@ -820,8 +870,10 @@ function parseMarkdownMeeting(mdText) {
         if (!col1 || /^[-:\s]+$/.test(col1) || /^person$/i.test(col1) || /^last update$/i.test(col2) || /^letztes update$/i.test(col2)) continue;
         const cleanName = cleanPersonName(col1);
         if (!cleanName || isPresentationName(cleanName) || isNoiseOrIcon(cleanName)) continue;
-        const last = parseDateTimeString(col2);
-        people[keyOf(cleanName)] = { name: cleanName, last, prev: null };
+        const isIgnored = /\b(ignored|ignoriert)\b/i.test(col2);
+        const datePart = col2.replace(/\s*[\(\[]?\b(ignored|ignoriert)\b[\)\]]?/gi, "").trim();
+        const last = parseDateTimeString(datePart);
+        people[keyOf(cleanName)] = { name: cleanName, last, prev: null, ignored: isIgnored };
       }
     }
   }
@@ -848,8 +900,12 @@ function mergeInto(target, incoming) {
       continue;
     }
     for (const [k, p] of Object.entries(g.people || {})) {
-      if (!existing.people[k]) existing.people[k] = p;
-      else existing.people[k].last = Math.max(existing.people[k].last || 0, p.last || 0);
+      if (!existing.people[k]) {
+        existing.people[k] = p;
+      } else {
+        existing.people[k].last = Math.max(existing.people[k].last || 0, p.last || 0);
+        if (p.ignored) existing.people[k].ignored = true;
+      }
     }
     for (const a of g.aliases || []) addAlias(existing, a);
     for (const c of g.codes || []) if (!existing.codes.includes(c)) existing.codes.push(c);
@@ -1054,6 +1110,7 @@ for (const t of document.querySelectorAll(".tab")) {
   t.addEventListener("click", () => {
     view = t.dataset.view;
     if (view === "meetings") selectedId = selectedId;
+    deleteMode = false;
     render();
   });
 }
@@ -1115,7 +1172,7 @@ $("btnAdd").addEventListener("click", async () => {
   const name = cleanPersonName(raw);
   if (!name || !m || isPresentationName(name) || isNoiseOrIcon(name)) return;
   const k = keyOf(name);
-  if (!m.people[k]) m.people[k] = { name, last: 0, prev: null };
+  if (!m.people[k]) m.people[k] = { name, last: 0, prev: null, ignored: false };
   $("newName").value = "";
   await save();
   render();
@@ -1154,6 +1211,12 @@ $("settingRefreshInterval").addEventListener("change", async (e) => {
   setupAutoRefresh();
 });
 
+if ($("btnToggleDeleteMode")) {
+  $("btnToggleDeleteMode").addEventListener("click", () => {
+    deleteMode = !deleteMode;
+    render();
+  });
+}
 if ($("btnNewMeeting")) $("btnNewMeeting").addEventListener("click", () => openMarkdownModal(null));
 if ($("btnExportJson")) $("btnExportJson").addEventListener("click", exportData);
 if ($("fileInput")) {
