@@ -334,8 +334,25 @@ function ensureRound(m, force) {
   const fresh = m.round && Date.now() - m.round.createdAt < ROUND_TTL;
   const pool = candidates(m).map((p) => p.key);
 
+  const isDoneToday = (k) => {
+    const p = m.people[k];
+    return p && p.last && (Date.now() - p.last < 86400000);
+  };
+  const isEligible = (k) => {
+    const p = m.people[k];
+    return p && !p.ignored && (m.includeAbsent || presentKeys.size === 0 || presentKeys.has(k));
+  };
+
   if (!force && fresh && m.round && Array.isArray(m.round.keys)) {
-    let valid = m.round.keys.filter((k) => m.people[k] && !m.people[k].ignored && (m.includeAbsent || presentKeys.size === 0 || presentKeys.has(k)));
+    let valid = m.round.keys.filter((k) => isEligible(k));
+    // Fill with candidates not done today first
+    for (const k of pool) {
+      if (valid.length >= topCount) break;
+      if (!valid.includes(k) && !isDoneToday(k)) {
+        valid.push(k);
+      }
+    }
+    // Fill remaining if needed
     for (const k of pool) {
       if (valid.length >= topCount) break;
       if (!valid.includes(k)) {
@@ -348,7 +365,71 @@ function ensureRound(m, force) {
     }
   }
 
-  m.round = { keys: pool.slice(0, topCount), createdAt: Date.now() };
+  // Generate initial round: candidates not done today first
+  const initial = [];
+  for (const k of pool) {
+    if (initial.length >= topCount) break;
+    if (!isDoneToday(k)) initial.push(k);
+  }
+  for (const k of pool) {
+    if (initial.length >= topCount) break;
+    if (!initial.includes(k)) initial.push(k);
+  }
+
+  m.round = { keys: initial.slice(0, topCount), createdAt: Date.now() };
+}
+
+function advanceRound(m) {
+  if (!m) return;
+  const topCount = getTopN();
+  const pool = candidates(m).map((p) => p.key);
+  const currentKeys = Array.isArray(m.round && m.round.keys) ? m.round.keys : [];
+
+  const isDoneToday = (k) => {
+    const p = m.people[k];
+    return p && p.last && (Date.now() - p.last < 86400000);
+  };
+  const isEligible = (k) => {
+    const p = m.people[k];
+    return p && !p.ignored && (m.includeAbsent || presentKeys.size === 0 || presentKeys.has(k));
+  };
+
+  const checkedKeys = currentKeys.filter((k) => isDoneToday(k));
+  const uncheckedKeys = currentKeys.filter((k) => isEligible(k) && !isDoneToday(k));
+
+  if (checkedKeys.length > 0) {
+    // Keep all unchecked candidates, drop checked ones, and replenish from oldest
+    const newKeys = [...uncheckedKeys];
+    for (const k of pool) {
+      if (newKeys.length >= topCount) break;
+      if (!newKeys.includes(k) && !isDoneToday(k)) {
+        newKeys.push(k);
+      }
+    }
+    // If all available people have given an update, fill remaining slots from the pool
+    for (const k of pool) {
+      if (newKeys.length >= topCount) break;
+      if (!newKeys.includes(k)) {
+        newKeys.push(k);
+      }
+    }
+    m.round = { keys: newKeys.slice(0, topCount), createdAt: Date.now() };
+  } else {
+    // 0 candidates checked: cycle to the next batch from the candidate pool
+    const lastKey = currentKeys[currentKeys.length - 1];
+    const lastIndex = lastKey ? pool.indexOf(lastKey) : -1;
+    let nextIndex = lastIndex >= 0 ? (lastIndex + 1) % pool.length : 0;
+
+    const newKeys = [];
+    for (let i = 0; i < pool.length && newKeys.length < topCount; i++) {
+      const idx = (nextIndex + i) % pool.length;
+      const k = pool[idx];
+      if (!newKeys.includes(k)) {
+        newKeys.push(k);
+      }
+    }
+    m.round = { keys: newKeys, createdAt: Date.now() };
+  }
 }
 
 /* ---------- Bausteine ---------- */
@@ -358,17 +439,10 @@ function waitedText(last) {
   const days = Math.floor((Date.now() - last) / 86400000);
   const date = new Date(last).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit", year: "2-digit" });
   if (days <= 0) return `today · ${date}`;
-  return `${days} ${days === 1 ? "day" : "days"} ago · ${date}`;
+  return `${days}d ago · ${date}`;
 }
 
-function waitRatio(last, oldest) {
-  if (!last) return 1;
-  const span = Date.now() - (oldest || last);
-  if (span <= 0) return 0.08;
-  return Math.max(0.08, Math.min(1, (Date.now() - last) / span));
-}
-
-function buildPersonItem(m, person, index, oldest, opts = {}) {
+function buildPersonItem(m, person, index, opts = {}) {
   const li = document.createElement("li");
   li.className = "item";
   const doneToday = person.last && Date.now() - person.last < 86400000;
@@ -376,30 +450,15 @@ function buildPersonItem(m, person, index, oldest, opts = {}) {
   if (presentKeys.size && !presentKeys.has(person.key)) li.classList.add("absent");
   if (person.ignored) li.classList.add("ignored");
 
-  const pos = document.createElement("div");
-  pos.className = "pos";
-  pos.textContent = index === null ? "" : String(index + 1).padStart(2, "0");
+  // Position indicator for Round view
+  if (index !== null && index !== undefined) {
+    const pos = document.createElement("div");
+    pos.className = "pos";
+    pos.textContent = String(index + 1).padStart(2, "0");
+    li.appendChild(pos);
+  }
 
-  const main = document.createElement("div");
-  const name = document.createElement("div");
-  name.className = "name";
-  name.textContent = person.name;
-
-  const meta = document.createElement("div");
-  meta.className = "meta";
-  const bar = document.createElement("div");
-  bar.className = "bar-wait";
-  const fill = document.createElement("span");
-  fill.style.width = person.ignored ? "0%" : `${Math.round(waitRatio(person.last, oldest) * 100)}%`;
-  bar.appendChild(fill);
-  const label = document.createElement("span");
-  label.textContent = person.ignored ? "ignored" : waitedText(person.last);
-  meta.append(label, bar);
-  main.append(name, meta);
-
-  const right = document.createElement("div");
-  right.className = "actions";
-
+  // Checkbox or Delete button on the left
   if (opts.inPeopleView && deleteMode) {
     const del = document.createElement("button");
     del.className = "mini ghost icon-btn danger";
@@ -412,17 +471,14 @@ function buildPersonItem(m, person, index, oldest, opts = {}) {
       await save();
       render();
     });
-    right.appendChild(del);
+    li.appendChild(del);
   } else {
-    const toggle = document.createElement("label");
-    toggle.className = "toggle";
-    toggle.title = "Gave update";
+    const checkLabel = document.createElement("label");
+    checkLabel.className = "check-item";
+    checkLabel.title = "Gave update";
     const input = document.createElement("input");
     input.type = "checkbox";
     input.checked = !!doneToday;
-    const track = document.createElement("span");
-    track.className = "track";
-    toggle.append(input, track);
 
     input.addEventListener("change", async () => {
       const p = m.people[person.key];
@@ -438,38 +494,56 @@ function buildPersonItem(m, person, index, oldest, opts = {}) {
       render();
     });
 
-    right.appendChild(toggle);
-
-    if (opts.inPeopleView) {
-      const ignoreBtn = document.createElement("button");
-      ignoreBtn.className = "mini ghost icon-btn ignore-btn" + (person.ignored ? " ignored" : "");
-      ignoreBtn.title = person.ignored ? "Ignored (click to include in updates)" : "Include in updates (click to ignore)";
-      ignoreBtn.setAttribute("aria-label", person.ignored ? "Unignore person" : "Ignore person");
-
-      if (person.ignored) {
-        ignoreBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
-      } else {
-        ignoreBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
-      }
-
-      ignoreBtn.addEventListener("click", async () => {
-        const p = m.people[person.key];
-        if (!p) return;
-        p.ignored = !p.ignored;
-        if (p.ignored && m.round) {
-          m.round.keys = (m.round.keys || []).filter((k) => k !== person.key);
-          ensureRound(m);
-        }
-        await save();
-        render();
-        setStatus(p.ignored ? `"${person.name}" is now ignored.` : `"${person.name}" will be included in updates.`);
-      });
-
-      right.appendChild(ignoreBtn);
-    }
+    checkLabel.appendChild(input);
+    li.appendChild(checkLabel);
   }
 
-  li.append(pos, main, right);
+  // Name wrap with inline ignore eye icon
+  const nameWrap = document.createElement("div");
+  nameWrap.className = "name-wrap";
+
+  const name = document.createElement("span");
+  name.className = "name";
+  name.textContent = person.name;
+  nameWrap.appendChild(name);
+
+  const ignoreBtn = document.createElement("button");
+  ignoreBtn.className = "mini ghost icon-btn ignore-btn" + (person.ignored ? " ignored" : "");
+  ignoreBtn.title = person.ignored ? "Ignored (click to include in updates)" : "Include in updates (click to ignore)";
+  ignoreBtn.setAttribute("aria-label", person.ignored ? "Unignore person" : "Ignore person");
+
+  if (person.ignored) {
+    ignoreBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+  } else {
+    ignoreBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+  }
+
+  ignoreBtn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const p = m.people[person.key];
+    if (!p) return;
+    p.ignored = !p.ignored;
+    if (p.ignored && m.round) {
+      m.round.keys = (m.round.keys || []).filter((k) => k !== person.key);
+      ensureRound(m);
+    }
+    await save();
+    render();
+    setStatus(p.ignored ? `"${person.name}" is now ignored.` : `"${person.name}" will be included in updates.`);
+  });
+
+  nameWrap.appendChild(ignoreBtn);
+  li.appendChild(nameWrap);
+
+  // Date on the far right
+  const dateSpan = document.createElement("span");
+  dateSpan.className = "date";
+  dateSpan.textContent = person.ignored ? "ignored" : waitedText(person.last);
+  if (person.last) {
+    dateSpan.title = new Date(person.last).toLocaleString();
+  }
+  li.appendChild(dateSpan);
+
   return li;
 }
 
@@ -645,8 +719,7 @@ function render() {
     const shown = (m.round ? m.round.keys : [])
       .map((k) => (m.people[k] ? { key: k, ...m.people[k] } : null))
       .filter(Boolean);
-    const oldest = Math.min(...shown.map((p) => p.last || 0), Date.now());
-    shown.forEach((p, i) => list.appendChild(buildPersonItem(m, p, i, oldest)));
+    shown.forEach((p, i) => list.appendChild(buildPersonItem(m, p, i)));
     $("emptyHint").classList.toggle("hidden", shown.length > 0);
     $("includeAbsent").checked = !!m.includeAbsent;
   }
@@ -661,9 +734,7 @@ function render() {
         if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
         return a.last - b.last || a.name.localeCompare(b.name, "en");
       });
-    const nonIgnored = everyone.filter((p) => !p.ignored);
-    const oldestAll = nonIgnored.length > 0 ? Math.min(...nonIgnored.map((p) => p.last || 0), Date.now()) : Date.now();
-    everyone.forEach((p) => all.appendChild(buildPersonItem(m, p, null, oldestAll, { inPeopleView: true })));
+    everyone.forEach((p) => all.appendChild(buildPersonItem(m, p, null, { inPeopleView: true })));
     $("peopleEmpty").classList.toggle("hidden", everyone.length > 0);
   }
   if ($("btnToggleDeleteMode")) {
@@ -1152,14 +1223,30 @@ $("btnLink").addEventListener("click", async () => {
 });
 
 $("btnRefresh").addEventListener("click", () => refresh(false));
-$("btnNewRound").addEventListener("click", () => refresh(true));
+
+$("btnNewRound").addEventListener("click", async () => {
+  const m = meeting();
+  if (!m) return;
+  advanceRound(m);
+  await save();
+  if (current && current.inMeet) {
+    await refresh(false);
+  } else {
+    render();
+  }
+});
 
 $("includeAbsent").addEventListener("change", async (e) => {
   const m = meeting();
   if (!m) return;
   m.includeAbsent = e.target.checked;
+  ensureRound(m, true);
   await save();
-  await refresh(true);
+  if (current && current.inMeet) {
+    await refresh(false);
+  } else {
+    render();
+  }
 });
 
 $("btnAdd").addEventListener("click", async () => {
