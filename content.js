@@ -1,7 +1,5 @@
-/* Meet Update Rotator - content script
- * Liest Meeting-Name und Teilnehmerliste aus dem DOM der laufenden Meet-Session.
- * Google vergibt obfuskierte Klassennamen, deshalb arbeiten wir nur mit
- * stabilen Attributen: role, aria-label, data-participant-id, document.title.
+/* POPCORN - Participant Order Picker for Candid On-call Reporting & Notes
+ * Content script for scraping Google Meet participant lists and title.
  */
 (() => {
   if (window.__murLoaded) return;

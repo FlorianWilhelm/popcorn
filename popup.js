@@ -1,6 +1,5 @@
-/* Meet Update Rotator - Popup logic
- * Tracking is based on the meeting name, not the specific calendar event or weekday.
- * A meeting is only tracked once explicitly enabled here.
+/* POPCORN - Participant Order Picker for Candid On-call Reporting & Notes
+ * Popup logic, state management, candidate rotation, and UI rendering.
  */
 
 const STORE_KEY = "mur_v1"; // Key remains unchanged, migration happens in code

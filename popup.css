@@ -610,6 +610,17 @@ section { padding-bottom: 4px; }
   font-size: 11px;
   color: var(--muted);
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.version-info .acronym-hint {
+  font-family: var(--font);
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.8;
+  line-height: 1.4;
 }
 
 /* --- Markdown Modal --- */

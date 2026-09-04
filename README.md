@@ -1,105 +1,71 @@
-# Meet Update Rotator
+# 🍿 POPCORN – Participant Order Picker for Candid On-call Reporting & Notes
 
-Chrome extension that suggests the five attendees present in a Google Meet whose last project update was the longest ago.
+**POPCORN** is a lightweight, privacy-friendly Chrome extension that brings fair and effortless "Popcorn-style" update rotation to Google Meet. It automatically tracks when participants last gave a project update and suggests the candidates whose updates are most overdue.
 
-Tracking is linked to the **name of the meeting**, not to the specific calendar event, weekday, or meeting code. A meeting occurring on Mondays some weeks and Thursdays other weeks is still recognized as the same meeting.
+---
 
-## Installation
+## 💡 Why POPCORN?
 
-1. Unzip the archive.
-2. In Chrome, open `chrome://extensions`.
-3. Enable **Developer mode** in the top right corner.
-4. Click **Load unpacked** and select the `meet-update-rotator` folder.
-5. Pin the extension to your toolbar.
+- **P**articipant
+- **O**rder
+- **P**icker for
+- **C**andid
+- **O**n-call
+- **R**eporting &
+- **N**otes
 
-## Core Principle
+In agile team culture, passing the microphone organically is known as *"Popcorn style"*. POPCORN takes away the cognitive burden of asking *"Who hasn't given an update in a while?"* while keeping standups and weekly syncs fun, snappy, and fair.
 
-By default, the extension is **off** in every meeting. It only reads the meeting name without touching the participant list.
+---
 
-### Enabling Tracking
+## 🚀 Key Features
 
-Click the extension icon during the desired meeting. The extension displays the recognized name, for example `Team Weekly DS & NLP`. You can adjust the name before enabling, then click **Enable Tracking**.
+- 🎯 **Smart Rotation**: Suggests the top attendees present in the call who haven't spoken the longest.
+- 🔄 **Replenishment & Cycling**: "More People" removes checked participants and brings in fresh candidates from the pool.
+- 👁️ **Ignore Toggle**: Mute or exclude specific participants (e.g. guests or passive listeners) with a single click.
+- 🗑️ **Delete Mode**: Clean up outdated or temporary participants easily.
+- 📅 **Meeting Aliasing**: Recognizes recurring meetings even if calendar titles or meeting codes change.
+- 📝 **Markdown & JSON Export**: Import/export full meeting rosters as readable Markdown tables or complete JSON backups.
+- 🔒 **Zero Telemetry / Local-Only**: Everything is saved locally in `chrome.storage.local`. No external servers.
 
-For ad-hoc meetings without a calendar event, the page title only contains the meeting code. In this case, the name field remains empty and you enter the name manually. Tracking will match on this name from then on.
+---
 
-### Flow in a Tracked Meeting
+## 🛠️ Installation
 
-1. On first launch, all detected attendees are added with timestamp 0 (January 1, 1970).
-2. Present attendees are displayed, sorted in ascending order by their last update.
-3. The top 5 are shown with toggles. Enabling the toggle sets today's date; disabling it restores the previous timestamp.
-4. On subsequent meetings with the same name, it continues from step 2.
+1. In Chrome, navigate to `chrome://extensions`.
+2. Enable **Developer mode** in the top-right corner.
+3. Click **Load unpacked** and select this directory.
+4. Pin **POPCORN (🍿)** to your extension toolbar.
 
-- **More People**: forces a new selection of the next candidates. This happens automatically after six hours.
-- **Refresh (🔄 icon)**: re-reads attendance manually while keeping the current selection intact so items don't shift while checking off.
-- **Include absent**: also includes participants who are not currently in the call.
+---
 
-## Tabs & Navigation
+## 📖 How It Works
 
-- **Update**: current candidates for the next update in the active meeting.
-- **People**: full participant list of the meeting:
-  - **Ignore (👁️ / 🚫)**: toggle to permanently exclude a participant from update rounds even if present in the meeting. Ignored people are dimmed and placed at the bottom.
-  - **Delete Mode (🗑 icon in toolbar)**: toggles delete mode, revealing individual delete buttons on each row to remove participants.
-  - **Toggles**: check off or restore update timestamps manually.
-  - **Add (`+`)**: manually add a person by name.
-- **Meetings**: all tracked meetings.
-  - **Meeting Box**: inline editable name, attendee count badge (`👤 36`), and integrated open icon (`↗`) to switch to its participant list.
-  - **Pencil (✏️)**: opens the Markdown editor modal to view, edit, or copy the Markdown table to your clipboard.
-  - **Download (⬇)**: exports the meeting directly as a readable `.md` file.
-  - **Trash (🗑)**: stops tracking and deletes the saved history of the meeting.
-  - **+ Button (toolbar)**: opens the modal to create a new meeting from pasted Markdown or load a file from disk.
-- **Settings (⚙️ gear)**:
-  - Configure the number of update candidates (default: 5).
-  - Configure automatic live refresh during meetings (default: every 2 seconds).
-  - **Export full backup (JSON)**: complete export of all meetings and settings.
+### 1. Activating a Meeting
+By default, POPCORN is completely passive in untracked meetings. When you open the popup in Google Meet:
+- If tracking is disabled, verify or adjust the meeting name and click **Enable Tracking**.
+- From that moment on, POPCORN remembers attendance and rotation history for all future occurrences.
 
-## When Calendar Titles Change
+### 2. Giving Updates
+- The **Update** tab displays the top candidates for today's meeting.
+- As someone finishes their update, click their checkbox. The person is marked `doneToday` with a strikethrough.
+- Click **More People** to cycle in new candidates.
+- Click the **Refresh (🔄)** icon to re-sync live attendance from Meet anytime.
 
-Two seamless approaches:
+### 3. Managing Attendees
+- In the **People** tab, view everyone ever tracked for the meeting, sorted by their last update date.
+- Click the eye icon (**👁️ / 🚫**) on any row to ignore/unignore participants.
+- Toggle the **Delete Mode (🗑)** icon in the toolbar to remove former teammates.
+- Manually add attendees via the **+ Add** input field.
 
-- The extension usually continues recognizing the meeting by its meeting code and automatically associates the new title as an alias, indicating this in the status area.
-- Otherwise, the activation screen appears. Select the existing list in the dropdown and click **Link**. The new title is added as an alias and the history is preserved.
+### 4. Settings & Backups
+- Adjust the number of candidates shown per round (default: 5).
+- Configure automatic live refresh intervals.
+- Export/import single meetings as Markdown or full database backups as JSON.
 
-Old names remain saved for recognition, so renaming back in your calendar won't break anything.
+---
 
-## Storage & Export
+## 📄 License
 
-Data is stored in `chrome.storage.local`.
+MIT License. Feel free to use and adapt for your team's standups!
 
-### Markdown Export (Single Meeting)
-
-```markdown
-# Team Weekly DS & NLP
-
-| Person | Last Update |
-| --- | --- |
-| Max Mustermann | 24.08.2026, 10:15:00 |
-| Erika Musterfrau | 17.08.2026, 09:30:00 (ignored) |
-| Collin Rogowski |  |
-```
-
-### JSON Backup (All Meetings)
-
-```json
-{
-  "version": 2,
-  "meetings": {
-    "m_abc123_x9f2k": {
-      "id": "m_abc123_x9f2k",
-      "name": "Team Weekly DS & NLP",
-      "aliases": ["team weekly ds & nlp", "team weekly ds and nlp"],
-      "codes": ["abc-defg-hij"],
-      "people": {
-        "erika mustermann": { "name": "Erika Mustermann", "last": 1755000000000, "prev": 0 }
-      }
-    }
-  }
-}
-```
-
-`last` is a Unix timestamp in milliseconds (`0` means never updated). When importing JSON, the extension asks whether to replace or merge lists. When importing Markdown, matching meeting names will prompt before overwriting.
-
-## Limitations
-
-- Google Meet does not provide a public browser API for attendee lists or meeting titles. The extension reads the DOM and `document.title`. If Google changes the markup, `content.js` may need adjustments. The code relies on stable attributes like `role="listitem"`, `data-participant-id`, and the page title rather than obfuscated class names.
-- Invited attendees who have not joined are only displayed by Meet in specific calendar configurations. Missing participants can be added manually in the People tab.
-- Names serve as keys. Two participants with identical display names are tracked as one person.

@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#242938"/>
+      <stop offset="100%" stop-color="#141722"/>
+    </linearGradient>
+    <linearGradient id="boxGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff4b60"/>
+      <stop offset="100%" stop-color="#d61b36"/>
+    </linearGradient>
+    <linearGradient id="cornLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="40%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#facc15"/>
+    </linearGradient>
+    <linearGradient id="cornGold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="60%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Background Squircle -->
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#bgGrad)"/>
+  <rect x="4.5" y="4.5" width="119" height="119" rx="27.5" fill="none" stroke="#3b4256" stroke-width="1.5"/>
+
+  <!-- Popcorn Kernels (Back Layer) -->
+  <g filter="url(#shadow)">
+    <!-- Back popcorn puffs -->
+    <circle cx="44" cy="40" r="14" fill="url(#cornGold)"/>
+    <circle cx="84" cy="40" r="14" fill="url(#cornGold)"/>
+    <circle cx="64" cy="32" r="16" fill="url(#cornGold)"/>
+    <circle cx="34" cy="48" r="11" fill="url(#cornGold)"/>
+    <circle cx="94" cy="48" r="11" fill="url(#cornGold)"/>
+
+    <!-- Popping loose pieces floating -->
+    <circle cx="28" cy="28" r="6.5" fill="url(#cornLight)"/>
+    <circle cx="100" cy="26" r="7.5" fill="url(#cornLight)"/>
+    <circle cx="64" cy="18" r="5.5" fill="url(#cornLight)"/>
+
+    <!-- Front Popcorn Puffs -->
+    <circle cx="42" cy="48" r="14" fill="url(#cornLight)"/>
+    <circle cx="86" cy="48" r="14" fill="url(#cornLight)"/>
+    <circle cx="64" cy="44" r="17" fill="url(#cornLight)"/>
+    <circle cx="53" cy="52" r="13" fill="url(#cornLight)"/>
+    <circle cx="75" cy="52" r="13" fill="url(#cornLight)"/>
+
+    <!-- Little kernel detail creases -->
+    <path d="M 61 40 Q 64 45 67 40" stroke="#ca8a04" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M 40 46 Q 43 50 45 45" stroke="#ca8a04" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M 83 46 Q 85 50 88 45" stroke="#ca8a04" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+
+    <!-- Popcorn Box / Bucket -->
+    <!-- Base Shape clipped with stripes -->
+    <g>
+      <clipPath id="bucketClip">
+        <path d="M 32 58 L 96 58 L 88 112 L 40 112 Z"/>
+      </clipPath>
+      
+      <!-- Red Background -->
+      <path d="M 32 58 L 96 58 L 88 112 L 40 112 Z" fill="url(#boxGrad)"/>
+
+      <!-- White Stripes -->
+      <g clip-path="url(#bucketClip)">
+        <polygon points="41,56 49,56 47,114 41,114" fill="#ffffff"/>
+        <polygon points="57,56 65,56 62,114 56,114" fill="#ffffff"/>
+        <polygon points="73,56 81,56 77,114 71,114" fill="#ffffff"/>
+        <polygon points="89,56 97,56 92,114 86,114" fill="#ffffff"/>
+      </g>
+
+      <!-- Top Rim / Scallop -->
+      <path d="M 30 58 Q 37 54 44 58 Q 54 54 64 58 Q 74 54 84 58 Q 91 54 98 58 L 96 61 L 32 61 Z" fill="#b91c1c"/>
+
+      <!-- Center Emblem Badge -->
+      <circle cx="64" cy="85" r="15" fill="#ffffff" stroke="#e11d48" stroke-width="2.5"/>
+      <!-- Letter P in popcorn style -->
+      <path d="M 60 77 L 60 93 M 60 77 L 66 77 C 69.5 77 71 79 71 82 C 71 85 69.5 87 66 87 L 60 87" 
+            stroke="#e11d48" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+  </g>
+</svg>
