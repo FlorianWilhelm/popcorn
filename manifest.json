@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "POPCORN – Meet Update Rotator",
+  "name": "POPCORN – Google Meet Standup & Speaker Picker",
   "version": "0.24",
-  "description": "POPCORN: Participant Order Picker for Candid On-call Reporting & Notes. Rotates Google Meet attendees for fair updates.",
+  "description": "Fair speaker order & standup picker for Google Meet. Rotates attendees popcorn-style for smooth daily updates and notes.",
   "permissions": ["storage", "scripting", "activeTab", "tabs"],
   "host_permissions": ["https://meet.google.com/*"],
   "action": {
