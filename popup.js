@@ -1222,7 +1222,15 @@ $("btnLink").addEventListener("click", async () => {
   setStatus(`This meeting is now linked to "${m.name}".`);
 });
 
-$("btnRefresh").addEventListener("click", () => refresh(false));
+$("btnRefresh").addEventListener("click", async () => {
+  const btn = $("btnRefresh");
+  btn.classList.add("spinning");
+  try {
+    await refresh(false);
+  } finally {
+    setTimeout(() => btn.classList.remove("spinning"), 400);
+  }
+});
 
 $("btnNewRound").addEventListener("click", async () => {
   const m = meeting();

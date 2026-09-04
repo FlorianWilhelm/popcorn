@@ -220,6 +220,32 @@
     return null;
   }
 
+  function isItemPresent(item, hasId) {
+    if (hasId) return true;
+
+    // Check ancestors up to 8 levels for "not in call" / "invited" sections
+    let cur = item;
+    let depth = 0;
+    while (cur && cur !== document.body && depth < 8) {
+      const aria = (cur.getAttribute("aria-label") || "").toLowerCase();
+      if (/not in (?:the )?call|nicht im anruf|also invited|ebenfalls eingeladen|ausstehend|awaiting response|no response/.test(aria)) {
+        return false;
+      }
+      cur = cur.parentElement;
+      depth++;
+    }
+
+    // Check item itself for not-in-call status text / badges
+    const itemText = (item.textContent || "").toLowerCase();
+    const itemAria = (item.getAttribute("aria-label") || "").toLowerCase();
+    const combined = itemText + " " + itemAria;
+    if (/\b(?:not in (?:the )?call|nicht im anruf|also invited|ebenfalls eingeladen|awaiting response|no response|antwort ausstehend|noch keine antwort)\b/.test(combined)) {
+      return false;
+    }
+
+    return true;
+  }
+
   function collect() {
     const seen = new Map();
     const items = Array.from(document.querySelectorAll('[role="listitem"]'));
@@ -235,19 +261,21 @@
       const name = extractName(item);
       if (!name || isPresentation(name) || !looksLikeName(name)) continue;
 
+      const present = isItemPresent(item, hasId);
       const key = name.toLowerCase();
       const prev = seen.get(key);
-      seen.set(key, { name, present: (prev && prev.present) || hasId });
+      seen.set(key, { name, present: (prev && prev.present) || present });
     }
 
-    if (seen.size === 0) {
-      for (const tile of document.querySelectorAll("[data-participant-id]")) {
-        if (tile.getAttribute("data-is-screen-share") === "true" || tile.getAttribute("data-is-presenting") === "true") continue;
-        if (isPresentation(tile.textContent) || isPresentation(tile.getAttribute("aria-label"))) continue;
-        const name = extractName(tile);
-        if (!name || isPresentation(name) || !looksLikeName(name)) continue;
-        seen.set(name.toLowerCase(), { name, present: true });
-      }
+    // Also scan video tiles with data-participant-id directly
+    for (const tile of document.querySelectorAll("[data-participant-id]")) {
+      if (tile.getAttribute("data-is-screen-share") === "true" || tile.getAttribute("data-is-presenting") === "true") continue;
+      if (isPresentation(tile.textContent) || isPresentation(tile.getAttribute("aria-label"))) continue;
+      const name = extractName(tile);
+      if (!name || isPresentation(name) || !looksLikeName(name)) continue;
+      const key = name.toLowerCase();
+      const prev = seen.get(key);
+      seen.set(key, { name, present: true });
     }
 
     return Array.from(seen.values());
@@ -330,12 +358,16 @@
           btn.click();
           openedPanel = true;
 
-          // Poll every 100ms up to 800ms for fast rendering
-          for (let i = 0; i < 8; i++) {
+          // Poll up to 600ms until people count stabilizes
+          let lastCount = 0;
+          for (let i = 0; i < 6; i++) {
             await wait(100);
             expandCollapsedSections();
             people = collect();
-            if (people.length >= 2) break;
+            if (people.length > 0 && people.length === lastCount) {
+              break;
+            }
+            lastCount = people.length;
           }
 
           const innerViewEveryone = findViewEveryoneButton();

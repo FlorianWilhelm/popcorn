@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Meet Update Rotator",
-  "version": "0.20",
+  "version": "0.21",
   "description": "Shows the 5 present attendees in Google Meet whose last project update was the longest ago.",
   "permissions": ["storage", "scripting", "activeTab", "tabs"],
   "host_permissions": ["https://meet.google.com/*"],
