@@ -44,8 +44,8 @@ POPCORN automatically tracks when attendees last gave a project update and sugge
 
 🎯 Smart Popcorn Rotation:
 • Automatically suggests the next speakers based on who hasn't spoken in the longest time.
-• One-click "Done" button advances to the next participant seamlessly.
-• "Next Candidates" button lets you cycle through candidate pools on demand.
+• One-click checkboxes mark participants done for today with an instant strikethrough.
+• "More People" button cycles in fresh candidates from the pool on demand.
 
 👥 Automatic Roster & Presence Tracking:
 • Automatically detects attendees currently present in your Google Meet call.
@@ -73,7 +73,7 @@ POPCORN automatically tracks when attendees last gave a project update and sugge
 2. Click the POPCORN mascot icon in your Chrome toolbar.
 3. Click "Enable Tracking" for the current meeting.
 4. Open the Meet People panel once so POPCORN can detect all attendees.
-5. Watch POPCORN suggest candidates and click "Done" as teammates complete their updates!
+5. Watch POPCORN suggest candidates, check them off as teammates complete their updates, and click "More People" to rotate in the next speakers!
 
 Keep your daily standups snappy, engaging, and fair with POPCORN! 🍿🎙️
 ```
@@ -89,14 +89,17 @@ Keep your daily standups snappy, engaging, and fair with POPCORN! 🍿🎙️
 
 ## 🎨 2. Graphic Assets (in `store_assets/`)
 
-| Asset | File Path | Size Required |
-| :--- | :--- | :--- |
-| **Store Icon** | `store_assets/icon-128.png` | 128 x 128 px |
-| **Small Promo Tile** | `store_assets/promo_small_440x280.svg` | 440 x 280 px |
-| **Marquee Banner** | `store_assets/promo_marquee_1400x560.svg` | 1400 x 560 px |
-| **Screenshot 1 (Standup)** | `store_assets/screenshot1_standup_1280x800.svg` | 1280 x 800 px |
-| **Screenshot 2 (Meetings)** | `store_assets/screenshot2_meetings_1280x800.svg` | 1280 x 800 px |
-| **Screenshot 3 (Markdown)** | `store_assets/screenshot3_markdown_1280x800.svg` | 1280 x 800 px |
+| Asset | File Path | Size Required | Description |
+| :--- | :--- | :--- | :--- |
+| **Store Icon** | `store_assets/icon-128.png` | 128 x 128 px | Official POPCORN mascot store icon |
+| **Small Promo Tile** | `store_assets/promo_small_440x280.svg` | 440 x 280 px | Search catalog promo card |
+| **Marquee Banner** | `store_assets/promo_marquee_1400x560.svg` | 1400 x 560 px | Featured store showcase banner |
+| **Screenshot 1 (Standup)** | `store_assets/screenshot1_standup_1280x800.svg` | 1280 x 800 px | Live Google Meet call with candidate rotation |
+| **Screenshot 2 (People)** | `store_assets/screenshot2_people_1280x800.svg` | 1280 x 800 px | Roster attendance, overdue badges & ignore controls |
+| **Screenshot 3 (Meetings)** | `store_assets/screenshot3_meetings_1280x800.svg` | 1280 x 800 px | Multi-meeting tracking & history list outside Meet |
+| **Screenshot 4 (Markdown)** | `store_assets/screenshot4_markdown_1280x800.svg` | 1280 x 800 px | In-app Markdown editor, minutes & export/import |
+
+> 💡 **Tip:** Open `store_assets/preview.html` in your browser to preview all screenshots and assets in high resolution.
 
 ---
 

@@ -24,6 +24,7 @@ yarn-error.log*
 
 # Extension build/pack artifacts
 dist/
+.chrome_temp/
 *.zip
 *.crx
 *.pem

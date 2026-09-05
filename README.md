@@ -21,7 +21,8 @@ In agile team culture, passing the microphone organically is known as *"Popcorn 
 ## 🚀 Key Features
 
 - 🎯 **Smart Rotation**: Suggests the top attendees present in the call who haven't spoken the longest.
-- 🔄 **Replenishment & Cycling**: "More People" removes checked participants and brings in fresh candidates from the pool.
+- ✅ **One-Click Check-Off**: Click a participant's checkbox to mark their update complete with an instant strikethrough.
+- 🔄 **Replenishment & Cycling**: "More People" removes checked participants and brings in fresh candidates from the pool seamlessly.
 - 👁️ **Ignore Toggle**: Mute or exclude specific participants (e.g. guests or passive listeners) with a single click.
 - 🗑️ **Delete Mode**: Clean up outdated or temporary participants easily.
 - 📅 **Meeting Aliasing**: Recognizes recurring meetings even if calendar titles or meeting codes change.
