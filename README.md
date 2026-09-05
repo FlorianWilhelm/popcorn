@@ -68,5 +68,5 @@ By default, POPCORN is completely passive in untracked meetings. When you open t
 
 ## 📄 License
 
-MIT License. Feel free to use and adapt for your team's standups!
+Distributed under the [MIT License](LICENSE). Feel free to use and adapt for your team's standups!
 
