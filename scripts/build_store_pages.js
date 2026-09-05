@@ -659,19 +659,24 @@ const s1Popup = `
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0 2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
       </svg>
-  <section style="display: block; padding: 0 16px 14px;">
-    <div class="round-presence" style="display: flex; align-items: center; justify-content: space-between; margin: 10px 0 4px;">
+    </button>
+  </nav>
+
+  <section style="display: block; padding-bottom: 14px;">
+    <div class="round-presence">
       <span>7 present of 8 · 1 newly added</span>
     </div>
-    <ol class="list" style="padding: 0; margin: 10px 0;">
+    <ol class="list">
       <!-- Item 1: Alice Martin (Done) -->
-      <li class="item">
+      <li class="item done">
         <span class="pos">01</span>
         <label class="check-item">
-          <input type="checkbox" checked style="accent-color: #38bdf8; background: #38bdf8;" />
+          <input type="checkbox" checked />
         </label>
-        <span class="name" style="text-decoration: line-through; color: var(--muted); flex: 1;">Alice Martin</span>
-        <span class="due-tag due-today" style="margin-left: auto;">today · 10:15</span>
+        <div class="name-wrap">
+          <span class="name">Alice Martin</span>
+        </div>
+        <span class="date">today · 10:15</span>
       </li>
 
       <!-- Item 2: Florian Wilhelm -->
@@ -680,8 +685,10 @@ const s1Popup = `
         <label class="check-item">
           <input type="checkbox" />
         </label>
-        <span class="name" style="flex: 1; font-weight: 500;">Florian Wilhelm</span>
-        <span class="due-tag due-overdue-medium">3d ago · 3 Sep</span>
+        <div class="name-wrap">
+          <span class="name">Florian Wilhelm</span>
+        </div>
+        <span class="date">3d ago · 3 Sep</span>
       </li>
 
       <!-- Item 3: Sarah Connor -->
@@ -690,8 +697,10 @@ const s1Popup = `
         <label class="check-item">
           <input type="checkbox" />
         </label>
-        <span class="name" style="flex: 1; font-weight: 500;">Sarah Connor</span>
-        <span class="due-tag due-overdue-low">1d ago · 5 Sep</span>
+        <div class="name-wrap">
+          <span class="name">Sarah Connor</span>
+        </div>
+        <span class="date">1d ago · 5 Sep</span>
       </li>
 
       <!-- Item 4: David Chen -->
@@ -700,34 +709,40 @@ const s1Popup = `
         <label class="check-item">
           <input type="checkbox" />
         </label>
-        <span class="name" style="flex: 1; font-weight: 500;">David Chen</span>
-        <span class="due-tag due-overdue-low">yesterday</span>
+        <div class="name-wrap">
+          <span class="name">David Chen</span>
+        </div>
+        <span class="date">yesterday</span>
       </li>
 
-      <!-- Item 5: Elena Rostova (Random Name) -->
+      <!-- Item 5: Elena Rostova -->
       <li class="item">
         <span class="pos">05</span>
         <label class="check-item">
           <input type="checkbox" />
         </label>
-        <span class="name" style="flex: 1; font-weight: 500;">Elena Rostova</span>
-        <span class="due-tag due-overdue-high">4d ago · 2 Sep</span>
+        <div class="name-wrap">
+          <span class="name">Elena Rostova</span>
+        </div>
+        <span class="date">4d ago · 2 Sep</span>
       </li>
 
-      <!-- Item 6: Liam Vance (Random Name) -->
+      <!-- Item 6: Liam Vance -->
       <li class="item">
         <span class="pos">06</span>
         <label class="check-item">
           <input type="checkbox" />
         </label>
-        <span class="name" style="flex: 1; font-weight: 500;">Liam Vance</span>
-        <span class="due-tag due-overdue-high">5d ago · 1 Sep</span>
+        <div class="name-wrap">
+          <span class="name">Liam Vance</span>
+        </div>
+        <span class="date">5d ago · 1 Sep</span>
       </li>
     </ol>
 
-    <div class="row" style="display: flex; gap: 8px; margin-top: 14px;">
-      <button class="primary btn-with-icon" style="flex: 1; height: 38px;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="row" style="margin-top: 10px;">
+      <button class="primary btn-with-icon" style="height: 38px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 3h5v5"></path>
           <path d="M4 20L21 3"></path>
           <path d="M21 16v5h-5"></path>
@@ -736,8 +751,8 @@ const s1Popup = `
         </svg>
         <span style="font-weight: 600;">More People</span>
       </button>
-      <button class="ghost icon-btn" style="width: 38px; height: 38px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+      <button class="ghost icon-btn" style="width: 38px; height: 38px;" title="Refresh attendance" aria-label="Refresh attendance">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
           <path d="M21 3v5h-5"/>
           <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
@@ -746,7 +761,7 @@ const s1Popup = `
       </button>
     </div>
 
-    <label class="check" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted);">
+    <label class="check">
       <input type="checkbox" />
       <span>Include absent</span>
     </label>
