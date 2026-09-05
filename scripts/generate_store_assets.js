@@ -16,41 +16,198 @@ const icon48Base64 = icon48Buf.toString("base64");
 
 fs.copyFileSync(path.join(rootDir, "icon128.png"), path.join(assetsDir, "icon-128.png"));
 
-// Reusable SVG definitions for Chrome Window & Google Meet Frame
+// Genuine Google Meet & Google Material Vector Icons (No emojis)
+const MEET_ICONS = {
+  meetFavicon: `
+    <g transform="translate(0, 0)">
+      <rect x="0" y="2" width="10" height="10" rx="1.5" fill="#00ac47" />
+      <polygon points="10,5 15,2 15,12 10,9" fill="#00832d" />
+      <polygon points="10,2 10,5 15,2" fill="#2684fc" />
+      <polygon points="10,9 10,12 15,12" fill="#ea4335" />
+      <rect x="8.5" y="2" width="1.5" height="3" fill="#ffba00" />
+    </g>
+  `,
+  mic: `
+    <g transform="translate(-10, -10)" fill="#ffffff">
+      <rect x="7" y="3" width="6" height="9" rx="3" />
+      <path d="M4 8.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+      <line x1="9.5" y1="14" x2="9.5" y2="17.5" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+      <line x1="6.5" y1="17.5" x2="12.5" y2="17.5" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+    </g>
+  `,
+  video: `
+    <g transform="translate(-10, -10)" fill="#ffffff">
+      <rect x="2" y="4" width="11" height="11" rx="2" />
+      <polygon points="13,7.5 18,4 18,15 13,11.5" />
+    </g>
+  `,
+  cc: `
+    <g transform="translate(-11, -9)">
+      <rect x="1" y="2" width="20" height="14" rx="2.5" fill="none" stroke="#ffffff" stroke-width="1.8" />
+      <text x="11" y="12" font-family="'Google Sans', Roboto, sans-serif" font-size="8.5" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">CC</text>
+    </g>
+  `,
+  reactions: `
+    <g transform="translate(-10, -10)" fill="none" stroke="#ffffff" stroke-width="1.7">
+      <circle cx="10" cy="10" r="8" />
+      <circle cx="7" cy="8" r="0.9" fill="#ffffff" stroke="none" />
+      <circle cx="13" cy="8" r="0.9" fill="#ffffff" stroke="none" />
+      <path d="M6 11.5 C7.2 14.2 12.8 14.2 14 11.5" stroke-linecap="round" />
+    </g>
+  `,
+  present: `
+    <g transform="translate(-10, -10)">
+      <rect x="2" y="2.5" width="16" height="11.5" rx="1.5" fill="none" stroke="#ffffff" stroke-width="1.7" />
+      <path d="M10 5.5 L6.5 9 H8.5 V12 H11.5 V9 H13.5 Z" fill="#ffffff" />
+      <line x1="6" y1="16.5" x2="14" y2="16.5" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" />
+    </g>
+  `,
+  hand: `
+    <g transform="translate(-10, -10)" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round">
+      <path d="M10 1.5a1.2 1.2 0 0 1 1.2 1.2v5.5h.4a1.2 1.2 0 0 1 1.2-1.2 1.2 1.2 0 0 1 1.2 1.2V9.5h.4a1.2 1.2 0 0 1 1.2 1.2v2.8c0 3-2.4 5.5-5.4 5.5h-.4C6.9 19 4.5 16.6 4.5 13.7l-.2-4.7a1.2 1.2 0 0 1 1.2-1.2c.7 0 1.2.5 1.2 1.2V9.5h.4V2.7a1.2 1.2 0 0 1 1.2-1.2c.7 0 1.2.5 1.2 1.2V8.5h.4V2.7c0-.7.5-1.2 1.2-1.2z"/>
+    </g>
+  `,
+  more: `
+    <g transform="translate(-10, -10)" fill="#ffffff">
+      <circle cx="10" cy="5" r="1.6" />
+      <circle cx="10" cy="10" r="1.6" />
+      <circle cx="10" cy="15" r="1.6" />
+    </g>
+  `,
+  callEnd: `
+    <g transform="translate(17, 10)" fill="#ffffff">
+      <path d="M11 2.5c-3.8 0-7.2 1.5-9.7 4-.35.35-.35.95 0 1.3l2.2 2.2c.35.35.95.35 1.3 0 1.3-1.3 3.1-2.1 5.1-2.1 2 0 3.8.8 5.1 2.1.35.35.95.35 1.3 0l2.2-2.2c.35-.35.35-.95 0-1.3C18.2 4 14.8 2.5 11 2.5z" />
+    </g>
+  `,
+  info: `
+    <g transform="translate(-10, -10)" fill="none" stroke="#e8eaed" stroke-width="1.7">
+      <circle cx="10" cy="10" r="8" />
+      <circle cx="10" cy="6.5" r="0.9" fill="#e8eaed" stroke="none" />
+      <line x1="10" y1="9.5" x2="10" y2="14" stroke-linecap="round" />
+    </g>
+  `,
+  people: `
+    <g transform="translate(-10, -10)" fill="#e8eaed">
+      <path d="M13.5 9c1.4 0 2.5-1.1 2.5-2.5S14.9 4 13.5 4 11 5.1 11 6.5s1.1 2.5 2.5 2.5zm-7 0C7.9 9 9 7.9 9 6.5S7.9 4 6.5 4 4 5.1 4 6.5 5.1 9 6.5 9zm0 1.7C4.5 10.7.5 11.7.5 13.7v2.1h12v-2.1c0-2-4-3-6-3zm7 0c-.2 0-.5 0-.8.1 1 .7 1.7 1.7 1.7 2.9v2.1h5.1v-2.1c0-2-4-3-6-3z" transform="scale(0.95) translate(0.5, 0.5)"/>
+    </g>
+  `,
+  chat: `
+    <g transform="translate(-10, -10)" fill="#e8eaed">
+      <path d="M17 2H3c-1.1 0-2 .9-2 2v15l3.5-3.5H17c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 11.5H4l-1.5 1.5V4h14.5v9.5z"/>
+      <line x1="5.5" y1="6" x2="14.5" y2="6" stroke="#e8eaed" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="5.5" y1="8.5" x2="12" y2="8.5" stroke="#e8eaed" stroke-width="1.3" stroke-linecap="round"/>
+    </g>
+  `,
+  activities: `
+    <g transform="translate(-10, -10)" fill="#e8eaed">
+      <path d="M5.5 3 L9.5 10 H1.5 Z" />
+      <circle cx="14.5" cy="6.5" r="3.2" />
+      <rect x="5.5" y="12" width="6.5" height="6.5" rx="1" />
+    </g>
+  `,
+  host: `
+    <g transform="translate(-10, -10)" fill="none" stroke="#e8eaed" stroke-width="1.6">
+      <path d="M10 2 L3.5 5 V9.5 c0 4.5 2.8 8.7 6.5 9.7 3.7-1 6.5-5.2 6.5-9.7 V5 L10 2 z" />
+      <rect x="8.5" y="9.5" width="3" height="3" rx="0.5" fill="#e8eaed" stroke="none" />
+      <path d="M9 9.5 V8.3 a1 1 0 0 1 2 0 V9.5" stroke-width="1" />
+    </g>
+  `,
+  micTile: `
+    <g transform="translate(-8, -8)" fill="#ffffff">
+      <rect x="5.5" y="2" width="5" height="7.5" rx="2.5" />
+      <path d="M3 6.5c0 2.5 2 4.5 4.5 4.5s4.5-2 4.5-4.5" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+      <line x1="7.5" y1="11" x2="7.5" y2="14" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+      <line x1="5" y1="14" x2="10" y2="14" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+    </g>
+  `,
+  micOffTile: `
+    <g transform="translate(-8, -8)">
+      <rect x="5.5" y="2" width="5" height="7.5" rx="2.5" fill="#ffffff" />
+      <path d="M3 6.5c0 2.5 2 4.5 4.5 4.5s4.5-2 4.5-4.5" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+      <line x1="7.5" y1="11" x2="7.5" y2="14" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+      <line x1="5" y1="14" x2="10" y2="14" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+      <line x1="2" y1="2" x2="14" y2="14" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+    </g>
+  `,
+  audioEqualizer: `
+    <g transform="translate(0, 0)">
+      <rect x="0" y="3" width="2.5" height="10" rx="1" fill="#81c995" />
+      <rect x="4.5" y="0" width="2.5" height="16" rx="1" fill="#81c995" />
+      <rect x="9" y="4" width="2.5" height="8" rx="1" fill="#81c995" />
+    </g>
+  `
+};
+
+// Vector icons for POPCORN extension popup (identical to popup.js / popup.html)
+const POPCORN_ICONS = {
+  shuffle: `
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 3h5v5"></path><path d="M4 20L21 3"></path><path d="M21 16v5h-5"></path><path d="M15 15l6 6"></path><path d="M4 4l5 5"></path>
+    </svg>
+  `,
+  refresh: `
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7d8b99" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+      <path d="M21 3v5h-5"/>
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+      <path d="M3 21v-5h5"/>
+    </svg>
+  `,
+  eye: `
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8b99" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </svg>
+  `,
+  eyeIgnored: `
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+      <line x1="1" y1="1" x2="23" y2="23"></line>
+    </svg>
+  `,
+  trash: `
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8b99" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    </svg>
+  `,
+  edit: `
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8b99" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+    </svg>
+  `,
+  download: `
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8b99" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
+    </svg>
+  `,
+  openExternal: `
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+    </svg>
+  `,
+  userIcon: `
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>
+    </svg>
+  `,
+  clipboard: `
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f0f3f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+      <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+    </svg>
+  `
+};
+
+// Reusable SVG definitions for Chrome Window & Genuine Google Meet Frame
 function getChromeMeetFrame(options = {}) {
   const isMeet = options.isMeet !== false;
   const url = isMeet ? "https://meet.google.com/wqe-ptro-xyz" : "https://github.com/fwilhelm/meet-update-rotator";
-  const title = isMeet ? "Daily Standup – Google Meet" : "GitHub · fwilhelm/meet-update-rotator";
+  const title = isMeet ? "Daily Standup - Google Meet" : "GitHub · fwilhelm/meet-update-rotator";
 
   return `
   <defs>
-    <!-- Dark Window Gradients -->
-    <linearGradient id="winBg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#181a1f" />
-      <stop offset="100%" stop-color="#111317" />
-    </linearGradient>
-    <linearGradient id="meetBg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#202124" />
-      <stop offset="100%" stop-color="#17181b" />
-    </linearGradient>
-    <linearGradient id="tileGrad1" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#3b4252" />
-      <stop offset="100%" stop-color="#2e3440" />
-    </linearGradient>
-    <linearGradient id="tileGrad2" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#434c5e" />
-      <stop offset="100%" stop-color="#2e3440" />
-    </linearGradient>
-    <linearGradient id="tileGrad3" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#4c566a" />
-      <stop offset="100%" stop-color="#3b4252" />
-    </linearGradient>
-    <linearGradient id="tileGrad4" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#2d3748" />
-      <stop offset="100%" stop-color="#1a202c" />
-    </linearGradient>
-    <filter id="popupShadow" x="-30%" y="-20%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="18" stdDeviation="28" flood-color="#000000" flood-opacity="0.75" />
+    <filter id="popupShadow" x="-15%" y="-10%" width="130%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#000000" flood-opacity="0.8" />
     </filter>
   </defs>
 
@@ -60,7 +217,7 @@ function getChromeMeetFrame(options = {}) {
   <!-- macOS Chrome Window Outer Frame -->
   <g transform="translate(16, 16)">
     <!-- Window Border & Outer Background -->
-    <rect width="1248" height="768" rx="12" fill="url(#winBg)" stroke="#32363e" stroke-width="1" />
+    <rect width="1248" height="768" rx="12" fill="#202124" stroke="#32363e" stroke-width="1" />
 
     <!-- Chrome Title Bar & Tabs Header -->
     <rect width="1248" height="42" rx="12" fill="#1f2228" />
@@ -73,22 +230,22 @@ function getChromeMeetFrame(options = {}) {
 
     <!-- Chrome Active Tab -->
     <g transform="translate(88, 8)">
-      <path d="M 0,34 L 14,4 Q 18,0 26,0 L 210,0 Q 218,0 222,4 L 236,34 Z" fill="#2b2f38" />
-      <!-- Meet / Web Icon -->
-      ${
-        isMeet
-          ? `<rect x="24" y="9" width="16" height="16" rx="4" fill="#00897b" />
-             <polygon points="34,13 38,15 38,20 34,22" fill="#ffffff" />
-             <rect x="27" y="13" width="7" height="8" rx="1" fill="#ffffff" />`
-          : `<circle cx="32" cy="17" r="7" fill="#ffffff" />
-             <path d="M 32,10 A 7,7 0 0,0 25,17 C 25,20.8 28,23.5 32,23.5 C 36,23.5 39,20.8 39,17 Z" fill="#24292e" />`
-      }
-      <text x="46" y="21" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="500" fill="#f0f3f6">${title}</text>
-      <text x="216" y="20" font-family="sans-serif" font-size="11" fill="#9ca3af">×</text>
+      <path d="M 0,34 L 14,4 Q 18,0 26,0 L 236,0 Q 244,0 248,4 L 262,34 Z" fill="#202124" />
+      
+      <!-- Meet 4-Color Icon or Web Icon -->
+      <g transform="translate(24, 11)">
+        ${
+          isMeet
+            ? MEET_ICONS.meetFavicon
+            : `<circle cx="7" cy="7" r="7" fill="#ffffff" /><path d="M 7,2 A 5,5 0 0,0 2,7 C 2,10 5,12 7,12 C 9,12 12,10 12,7 Z" fill="#24292e" />`
+        }
+      </g>
+      <text x="46" y="21" font-family="'Google Sans', Roboto, sans-serif" font-size="12" font-weight="500" fill="#e8eaed">${title}</text>
+      <text x="242" y="20" font-family="sans-serif" font-size="11" fill="#9ca3af">×</text>
     </g>
 
     <!-- Chrome + New Tab Button -->
-    <text x="335" y="25" font-family="sans-serif" font-size="18" fill="#6b7280">+</text>
+    <text x="365" y="25" font-family="sans-serif" font-size="18" fill="#6b7280">+</text>
 
     <!-- Chrome Navigation & Omnibox Bar -->
     <g transform="translate(0, 42)">
@@ -108,7 +265,7 @@ function getChromeMeetFrame(options = {}) {
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
           <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
         </svg>
-        <text x="30" y="19" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" fill="#e2e8f0">${url}</text>
+        <text x="32" y="19" font-family="'Google Sans', Roboto, sans-serif" font-size="12" fill="#e2e8f0">${url}</text>
       </g>
 
       <!-- Extension Toolbar Icons -->
@@ -126,103 +283,225 @@ function getChromeMeetFrame(options = {}) {
         </g>
 
         <!-- Profile Avatar -->
-        <circle cx="85" cy="14" r="12" fill="#3b82f6" />
-        <text x="85" y="18" font-family="sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">F</text>
+        <circle cx="85" cy="14" r="12" fill="#1a73e8" />
+        <text x="85" y="18" font-family="'Google Sans', Roboto, sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">F</text>
       </g>
     </g>
 
-    <!-- Main Viewport Area (Google Meet or Web Content) -->
+    <!-- Main Viewport Area (Genuine Google Meet or Web Content) -->
     <g transform="translate(0, 80)">
-      <rect width="1248" height="688" fill="url(#meetBg)" />
+      <rect width="1248" height="688" fill="#141414" />
 
       ${
         isMeet
           ? `
-      <!-- Google Meet Video Grid (4 Participant Tiles) -->
-      <g transform="translate(24, 20)">
-        <!-- Video Tile 1: Alice Martin -->
-        <g transform="translate(0, 0)">
-          <rect width="400" height="260" rx="10" fill="url(#tileGrad1)" stroke="#374151" stroke-width="1" />
-          <!-- Avatar Portrait Simulation -->
-          <circle cx="200" cy="115" r="46" fill="#475569" />
-          <path d="M 160,195 C 160,155 240,155 240,195 Z" fill="#334155" />
-          <!-- Name Tag Bottom Left -->
-          <rect x="14" y="222" width="120" height="24" rx="4" fill="rgba(0, 0, 0, 0.6)" />
-          <text x="24" y="238" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="500" fill="#ffffff">Alice Martin</text>
-          <!-- Mic icon -->
-          <circle cx="376" cy="234" r="10" fill="rgba(0, 0, 0, 0.6)" />
-          <text x="376" y="238" font-size="10" fill="#4ade80" text-anchor="middle">🎙️</text>
-        </g>
+      <!-- Google Meet Top Header: Meeting Time, Title, and Info Icon (Direct from Real Meet Screenshot) -->
+      <g transform="translate(24, 18)">
+        <text x="0" y="14" font-family="'Google Sans', Roboto, Arial, sans-serif" font-size="13.5" font-weight="500" fill="#ffffff">10:15 AM</text>
+        <text x="64" y="14" font-family="'Google Sans', Roboto, Arial, sans-serif" font-size="13.5" fill="#5f6368">|</text>
+        <text x="76" y="14" font-family="'Google Sans', Roboto, Arial, sans-serif" font-size="13.5" font-weight="500" fill="#ffffff">Daily Standup · Product Team</text>
+        <!-- Info circle icon ⓘ -->
+        <circle cx="280" cy="10" r="7.5" fill="none" stroke="#9ca3af" stroke-width="1.4" />
+        <text x="280" y="13.5" font-family="'Google Sans', Roboto, sans-serif" font-size="10" font-weight="700" fill="#9ca3af" text-anchor="middle">i</text>
+      </g>
 
-        <!-- Video Tile 2: David Chen -->
-        <g transform="translate(420, 0)">
-          <rect width="400" height="260" rx="10" fill="url(#tileGrad2)" stroke="#374151" stroke-width="1" />
-          <circle cx="200" cy="115" r="46" fill="#64748b" />
-          <path d="M 160,195 C 160,155 240,155 240,195 Z" fill="#475569" />
-          <rect x="14" y="222" width="115" height="24" rx="4" fill="rgba(0, 0, 0, 0.6)" />
-          <text x="24" y="238" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="500" fill="#ffffff">David Chen</text>
-          <circle cx="376" cy="234" r="10" fill="rgba(0, 0, 0, 0.6)" />
-          <text x="376" y="238" font-size="10" fill="#9ca3af" text-anchor="middle">🔇</text>
-        </g>
-
-        <!-- Video Tile 3: Sarah Connor (Active Speaker Highlight) -->
-        <g transform="translate(0, 280)">
-          <rect width="400" height="260" rx="10" fill="url(#tileGrad3)" stroke="#38bdf8" stroke-width="2.5" />
-          <circle cx="200" cy="115" r="46" fill="#0284c7" />
-          <path d="M 160,195 C 160,155 240,155 240,195 Z" fill="#0369a1" />
-          <rect x="14" y="222" width="130" height="24" rx="4" fill="rgba(0, 0, 0, 0.6)" />
-          <text x="24" y="238" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="500" fill="#ffffff">Sarah Connor</text>
-          <circle cx="376" cy="234" r="10" fill="rgba(56, 189, 248, 0.3)" />
-          <text x="376" y="238" font-size="10" fill="#38bdf8" text-anchor="middle">🎙️</text>
-        </g>
-
-        <!-- Video Tile 4: You (Florian) -->
-        <g transform="translate(420, 280)">
-          <rect width="400" height="260" rx="10" fill="url(#tileGrad4)" stroke="#374151" stroke-width="1" />
-          <circle cx="200" cy="115" r="46" fill="#4f46e5" />
-          <path d="M 160,195 C 160,155 240,155 240,195 Z" fill="#3730a3" />
-          <rect x="14" y="222" width="165" height="24" rx="4" fill="rgba(0, 0, 0, 0.6)" />
-          <text x="24" y="238" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="500" fill="#ffffff">You (Florian Wilhelm)</text>
-          <circle cx="376" cy="234" r="10" fill="rgba(0, 0, 0, 0.6)" />
-          <text x="376" y="238" font-size="10" fill="#4ade80" text-anchor="middle">🎙️</text>
+      <!-- Google Meet Video Grid (2x2 Balanced Layout, rx=14 matching real Meet) -->
+      <!-- Tile 1: Alice Martin (Top Left) -->
+      <g transform="translate(20, 42)">
+        <rect width="594" height="268" rx="14" fill="#3c4043" />
+        <circle cx="297" cy="122" r="48" fill="#c2185b" />
+        <text x="297" y="136" font-family="'Google Sans', Roboto, Arial, sans-serif" font-size="40" font-weight="500" fill="#ffffff" text-anchor="middle">A</text>
+        <text x="16" y="248" font-family="'Google Sans', Roboto, Arial, sans-serif" font-size="13.5" font-weight="500" fill="#ffffff" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.8))">Alice Martin</text>
+        <!-- Mic Top Right -->
+        <g transform="translate(560, 14)">
+          <path d="M 4 2 A 2.5 2.5 0 0 1 9 2 V 7 A 2.5 2.5 0 0 1 4 7 Z" fill="#ffffff" />
+          <path d="M 2 5.5 A 4.5 4.5 0 0 0 11 5.5" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" />
+          <line x1="6.5" y1="10" x2="6.5" y2="13" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" />
+          <line x1="4" y1="13" x2="9" y2="13" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" />
         </g>
       </g>
 
-      <!-- Google Meet Bottom Control Dock -->
-      <g transform="translate(0, 620)">
-        <rect width="1248" height="68" fill="#181a1f" />
+      <!-- Tile 2: David Chen (Top Right, Muted) -->
+      <g transform="translate(634, 42)">
+        <rect width="594" height="268" rx="14" fill="#3c4043" />
+        <!-- Avatar placed left so it remains visible next to popup -->
+        <circle cx="115" cy="122" r="48" fill="#137333" />
+        <text x="115" y="136" font-family="'Google Sans', Roboto, Arial, sans-serif" font-size="40" font-weight="500" fill="#ffffff" text-anchor="middle">D</text>
+        <text x="16" y="248" font-family="'Google Sans', Roboto, Arial, sans-serif" font-size="13.5" font-weight="500" fill="#ffffff" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.8))">David Chen</text>
+        <!-- Muted Mic Top Left (visible next to popup) -->
+        <g transform="translate(200, 14)">
+          <path d="M 4 2 A 2.5 2.5 0 0 1 9 2 V 7 A 2.5 2.5 0 0 1 4 7 Z" fill="#ffffff" />
+          <path d="M 2 5.5 A 4.5 4.5 0 0 0 11 5.5" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" />
+          <line x1="6.5" y1="10" x2="6.5" y2="13" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" />
+          <line x1="4" y1="13" x2="9" y2="13" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" />
+          <line x1="1" y1="1" x2="12" y2="14" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" />
+        </g>
+      </g>
+
+      <!-- Tile 3: Sarah Connor (Bottom Left, Active Speaker) -->
+      <g transform="translate(20, 322)">
+        <!-- Google Active Speaker Blue 300 Border -->
+        <rect width="594" height="268" rx="14" fill="#3c4043" stroke="#8ab4f8" stroke-width="3" />
+        <circle cx="297" cy="122" r="48" fill="#7b1fa2" />
+        <text x="297" y="136" font-family="'Google Sans', Roboto, Arial, sans-serif" font-size="40" font-weight="500" fill="#ffffff" text-anchor="middle">S</text>
         
-        <!-- Left: Meeting Code -->
-        <text x="28" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="600" fill="#ffffff">wqe-ptro-xyz</text>
-        <text x="135" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" fill="#9ca3af">| Daily Standup</text>
-
-        <!-- Center: Round Call Control Buttons -->
-        <g transform="translate(480, 14)">
-          <circle cx="20" cy="20" r="20" fill="#374151" />
-          <text x="20" y="25" font-size="15" fill="#ffffff" text-anchor="middle">🎙️</text>
-
-          <circle cx="70" cy="20" r="20" fill="#374151" />
-          <text x="70" y="25" font-size="15" fill="#ffffff" text-anchor="middle">📷</text>
-
-          <circle cx="120" cy="20" r="20" fill="#374151" />
-          <text x="120" y="25" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">CC</text>
-
-          <circle cx="170" cy="20" r="20" fill="#374151" />
-          <text x="170" y="25" font-size="15" fill="#ffffff" text-anchor="middle">✋</text>
-
-          <circle cx="220" cy="20" r="20" fill="#374151" />
-          <text x="220" y="25" font-size="15" fill="#ffffff" text-anchor="middle">⬆️</text>
-
-          <circle cx="270" cy="20" r="20" fill="#dc2626" />
-          <text x="270" y="25" font-size="16" fill="#ffffff" text-anchor="middle">📞</text>
+        <text x="16" y="248" font-family="'Google Sans', Roboto, Arial, sans-serif" font-size="13.5" font-weight="500" fill="#ffffff" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.8))">Sarah Connor</text>
+        <g transform="translate(112, 237)">
+          <rect x="0" y="3" width="2.5" height="9" rx="1" fill="#81c995" />
+          <rect x="4.5" y="0" width="2.5" height="14" rx="1" fill="#81c995" />
+          <rect x="9" y="4" width="2.5" height="7" rx="1" fill="#81c995" />
         </g>
 
-        <!-- Right: Meet Sidebar Toggles -->
-        <g transform="translate(1120, 18)">
-          <text x="0" y="22" font-size="18" fill="#9ca3af">ℹ️</text>
-          <text x="40" y="22" font-size="18" fill="#38bdf8">👥</text>
-          <text x="58" y="15" font-family="sans-serif" font-size="10" font-weight="700" fill="#38bdf8">8</text>
-          <text x="80" y="22" font-size="18" fill="#9ca3af">💬</text>
+        <!-- Active Speaker Blue 3-Dots Menu Top Right -->
+        <circle cx="570" cy="22" r="12" fill="#1a73e8" />
+        <circle cx="565" cy="22" r="1.3" fill="#ffffff" />
+        <circle cx="570" cy="22" r="1.3" fill="#ffffff" />
+        <circle cx="575" cy="22" r="1.3" fill="#ffffff" />
+      </g>
+
+      <!-- Tile 4: You / Florian Wilhelm (Bottom Right) -->
+      <g transform="translate(634, 322)">
+        <rect width="594" height="268" rx="14" fill="#3c4043" />
+        <!-- Avatar placed left so it remains visible next to popup -->
+        <circle cx="115" cy="122" r="48" fill="#1a73e8" />
+        <text x="115" y="136" font-family="'Google Sans', Roboto, Arial, sans-serif" font-size="40" font-weight="500" fill="#ffffff" text-anchor="middle">F</text>
+        <text x="16" y="248" font-family="'Google Sans', Roboto, Arial, sans-serif" font-size="13.5" font-weight="500" fill="#ffffff" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.8))">You</text>
+        <g transform="translate(200, 14)">
+          <path d="M 4 2 A 2.5 2.5 0 0 1 9 2 V 7 A 2.5 2.5 0 0 1 4 7 Z" fill="#ffffff" />
+          <path d="M 2 5.5 A 4.5 4.5 0 0 0 11 5.5" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" />
+          <line x1="6.5" y1="10" x2="6.5" y2="13" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" />
+          <line x1="4" y1="13" x2="9" y2="13" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" />
+        </g>
+      </g>
+
+      <!-- Google Meet Authentic Floating Bottom Dock & Actions (100% Match to Real Meet Capture) -->
+      <g transform="translate(0, 604)">
+        <!-- Center Floating Rounded Pill Dock -->
+        <g transform="translate(374, 12)">
+          <!-- Outer Dock Pill (Matches User Uploaded Screenshot #1e2020) -->
+          <rect width="500" height="52" rx="26" fill="#1e2020" />
+
+          <!-- 1: Microphone Segmented Pill (x=6, w=82, h=40, rx=20) -->
+          <g transform="translate(6, 6)">
+            <!-- Left sub-pill (3 horizontal dots) -->
+            <path d="M 20 0 H 36 V 40 H 20 A 20 20 0 0 1 0 20 A 20 20 0 0 1 20 0 Z" fill="#282a2c" />
+            <circle cx="12" cy="20" r="1.5" fill="#8ab4f8" />
+            <circle cx="18" cy="20" r="1.5" fill="#8ab4f8" />
+            <circle cx="24" cy="20" r="1.5" fill="#8ab4f8" />
+
+            <!-- Right sub-circle/pill (Mic Icon) -->
+            <rect x="36" width="46" height="40" rx="20" fill="#333637" />
+            <g transform="translate(59, 20)">
+              <rect x="-3" y="-8" width="6" height="10" rx="3" fill="#ffffff" />
+              <path d="M -5.5 -1 C -5.5 3, 5.5 3, 5.5 -1" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" />
+              <line x1="0" y1="3" x2="0" y2="7" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" />
+              <line x1="-3" y1="7" x2="3" y2="7" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" />
+            </g>
+          </g>
+
+          <!-- 2: Camera Segmented Pill (x=94, w=82, h=40, rx=20) -->
+          <g transform="translate(94, 6)">
+            <!-- Left sub-pill (Caret ^) -->
+            <path d="M 20 0 H 36 V 40 H 20 A 20 20 0 0 1 0 20 A 20 20 0 0 1 20 0 Z" fill="#282a2c" />
+            <path d="M 14 22 L 18 18 L 22 22" fill="none" stroke="#8ab4f8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+
+            <!-- Right sub-circle/pill (Outline Camera Icon) -->
+            <rect x="36" width="46" height="40" rx="20" fill="#333637" />
+            <g transform="translate(59, 20)">
+              <rect x="-8.5" y="-6" width="11.5" height="12" rx="2" fill="none" stroke="#ffffff" stroke-width="1.6" />
+              <path d="M 3 -3 L 8 -6 V 6 L 3 3 Z" fill="#ffffff" stroke="none" />
+            </g>
+          </g>
+
+          <!-- 3: Present Screen (Laptop with Solid Up Arrow) (x=182, w=46, h=40, rx=20) -->
+          <g transform="translate(182, 6)">
+            <rect width="46" height="40" rx="20" fill="#333637" />
+            <g transform="translate(23, 20)">
+              <!-- Laptop Screen Outline -->
+              <rect x="-8.5" y="-7.5" width="17" height="11" rx="1.8" fill="none" stroke="#ffffff" stroke-width="1.6" />
+              <!-- Solid Up Arrow inside Screen -->
+              <path d="M 0 -5 L -3 -1.5 H -1 V 1.5 H 1 V -1.5 H 3 Z" fill="#ffffff" />
+              <!-- Laptop Keyboard Base Line -->
+              <rect x="-10.5" y="5" width="21" height="1.8" rx="0.9" fill="#ffffff" />
+            </g>
+          </g>
+
+          <!-- 4: Reactions / Smiley (x=234, w=46, h=40, rx=20) -->
+          <g transform="translate(234, 6)">
+            <rect width="46" height="40" rx="20" fill="#333637" />
+            <g transform="translate(23, 20)">
+              <circle cx="0" cy="0" r="8.5" fill="none" stroke="#ffffff" stroke-width="1.6" />
+              <circle cx="-3" cy="-2" r="1.1" fill="#ffffff" />
+              <circle cx="3" cy="-2" r="1.1" fill="#ffffff" />
+              <path d="M -4 1 C -4 4.5, 4 4.5, 4 1 Z" fill="#ffffff" />
+            </g>
+          </g>
+
+          <!-- 5: Closed Captions CC (x=286, w=46, h=40, rx=20) -->
+          <g transform="translate(286, 6)">
+            <rect width="46" height="40" rx="20" fill="#333637" />
+            <g transform="translate(23, 20)">
+              <rect x="-9" y="-6.5" width="18" height="13" rx="2" fill="none" stroke="#ffffff" stroke-width="1.6" />
+              <path d="M -1.5 -3.5 H -4.5 C -5.8 -3.5, -5.8 3.5, -4.5 3.5 H -1.5" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" />
+              <path d="M 5.5 -3.5 H 2.5 C 1.2 -3.5, 1.2 3.5, 2.5 3.5 H 5.5" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" />
+            </g>
+          </g>
+
+          <!-- 6: Raise Hand (Outline Hand) (x=338, w=46, h=40, rx=20) -->
+          <g transform="translate(338, 6)">
+            <rect width="46" height="40" rx="20" fill="#333637" />
+            <g transform="translate(23, 20)">
+              <path d="M -5.5 0 L -5.5 2.5 C -5.5 6, -2 8, 1.5 8 C 5 8 6.5 5.5 6.5 2 V -3.5 C 6.5 -4.2, 5.9 -4.8, 5.2 -4.8 C 4.5 -4.8, 3.9 -4.2, 3.9 -3.5 V -1.5 H 3.5 V -6 C 3.5 -6.7, 2.9 -7.3, 2.2 -7.3 C 1.5 -7.3, 0.9 -6.7, 0.9 -6 V -1.5 H 0.5 V -7 C 0.5 -7.7, -0.1 -8.3, -0.8 -8.3 C -1.5 -8.3, -2.1 -7.7, -2.1 -7 V -1.5 H -2.5 V -4.5 C -2.5 -5.2, -3.1 -5.8, -3.8 -5.8 C -4.5 -5.8, -5.1 -5.2, -5.1 -4.5 V 0 Z" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </g>
+          </g>
+
+          <!-- 7: More Options (3 Vertical Dots) (x=390, w=32, h=40, rx=16) -->
+          <g transform="translate(390, 6)">
+            <rect width="32" height="40" rx="16" fill="#333637" />
+            <circle cx="16" cy="13" r="1.8" fill="#ffffff" />
+            <circle cx="16" cy="20" r="1.8" fill="#ffffff" />
+            <circle cx="16" cy="27" r="1.8" fill="#ffffff" />
+          </g>
+
+          <!-- 8: End Call Red Pill (x=428, w=66, h=40, rx=20) -->
+          <g transform="translate(428, 6)">
+            <rect width="66" height="40" rx="20" fill="#db372c" />
+            <!-- White Handset curved downwards -->
+            <g transform="translate(33, 20)">
+              <path d="M -11 3.5 C -12 2, -11.5 0, -9.5 -1.2 C -5 -4.8, 5 -4.8, 9.5 -1.2 C 11.5 0, 12 2, 11 3.5 L 9 5.5 C 8.2 6.3, 7 6.3, 6.2 5.5 L 4 3.5 C 3.2 2.7, 2 3, 1 3.5 C -1 3.5, -2.2 2.7, -3 3.5 L -5.2 5.5 C -6 6.3, -7.2 6.3, -8 5.5 Z" fill="#ffffff" />
+            </g>
+          </g>
+        </g>
+
+        <!-- Right Side Controls (Matching user screenshot: People, Chat, Activities, Host Controls) -->
+        <g transform="translate(1040, 18)">
+          <!-- People + Badge -->
+          <g transform="translate(0, 8)">
+            <path d="M 12.5 12.5 A 3 3 0 1 0 12.5 6.5 A 3 3 0 0 0 12.5 12.5 Z M 6.5 12.5 A 2.5 2.5 0 1 0 6.5 7.5 A 2.5 2.5 0 0 0 6.5 12.5 Z M 6.5 14.5 C 4.5 14.5 1 15.5 1 17.5 V 19 H 12 V 17.5 C 12 15.5 8.5 14.5 6.5 14.5 Z M 12.5 14.5 C 12.1 14.5 11.7 14.5 11.2 14.7 C 12.2 15.4 13 16.3 13 17.5 V 19 H 17 V 17.5 C 17 15.5 14.5 14.5 12.5 14.5 Z" fill="#e8eaed" />
+            <circle cx="18.5" cy="4.5" r="6.5" fill="#5f6368" />
+            <text x="18.5" y="7.5" font-family="'Google Sans', Roboto, sans-serif" font-size="9" font-weight="700" fill="#ffffff" text-anchor="middle">8</text>
+          </g>
+
+          <!-- Chat -->
+          <g transform="translate(42, 8)">
+            <path d="M 2 2 H 20 C 21.1 2 22 2.9 22 4 V 16 C 22 17.1 21.1 18 20 18 H 6 L 2 22 Z" fill="none" stroke="#e8eaed" stroke-width="1.8" stroke-linejoin="round" />
+            <line x1="6" y1="7" x2="16" y2="7" stroke="#e8eaed" stroke-width="1.8" stroke-linecap="round" />
+            <line x1="6" y1="11" x2="13" y2="11" stroke="#e8eaed" stroke-width="1.8" stroke-linecap="round" />
+          </g>
+
+          <!-- Activities (Geometric Shapes: Triangle, Square, Circle) -->
+          <g transform="translate(84, 8)">
+            <path d="M 12 3 L 16.5 10.5 H 7.5 Z" fill="#e8eaed" />
+            <rect x="6.5" y="13" width="5.5" height="5.5" rx="1" fill="#e8eaed" />
+            <circle cx="17.5" cy="16" r="3" fill="#e8eaed" />
+          </g>
+
+          <!-- Host Controls -->
+          <g transform="translate(126, 8)">
+            <path d="M 12 2 L 4 5.5 V 11 C 4 16 7.4 20.6 12 22 C 16.6 20.6 20 16 20 11 V 5.5 Z" fill="none" stroke="#e8eaed" stroke-width="1.8" stroke-linejoin="round" />
+            <rect x="9.5" y="11" width="5" height="4.5" rx="0.8" fill="#e8eaed" />
+            <path d="M 10.5 11 V 9.5 A 1.5 1.5 0 0 1 13.5 9.5 V 11" fill="none" stroke="#e8eaed" stroke-width="1.2" />
+          </g>
         </g>
       </g>`
           : `
@@ -230,10 +509,10 @@ function getChromeMeetFrame(options = {}) {
       <g transform="translate(40, 30)">
         <rect width="1168" height="628" rx="8" fill="#0d1117" stroke="#30363d" stroke-width="1" />
         <g transform="translate(30, 30)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
-          <text x="0" y="24" font-size="20" font-weight="700" fill="#f0f6fc">fwilhelm / meet-update-rotator</text>
+          <text x="0" y="24" font-size="20" font-weight="700" fill="#f0f3f6">fwilhelm / meet-update-rotator</text>
           <rect x="0" y="50" width="1108" height="500" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1" />
           <text x="30" y="90" font-size="15" font-weight="600" fill="#58a6ff">README.md</text>
-          <text x="30" y="130" font-size="13" fill="#8b949e">POPCORN – Participant Order Picker for Candid On-call Reporting &amp; Notes</text>
+          <text x="30" y="130" font-size="13" fill="#8b949e">POPCORN - Participant Order Picker for Candid On-call Reporting &amp; Notes</text>
           <line x1="30" y1="150" x2="1078" y2="150" stroke="#30363d" stroke-width="1" />
           <text x="30" y="190" font-size="13" fill="#c9d1d9">Fair speaker order and standup picker extension for Google Meet.</text>
         </g>
@@ -252,7 +531,7 @@ const screenshot1Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
 
   <!-- POPCORN Real Extension Popup (Anchored top right) -->
   <g transform="translate(864, 94)" filter="url(#popupShadow)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
-    <!-- Outer Container (Matches popup.css var(--ink) / var(--line)) -->
+    <!-- Outer Container (Matches popup.css var ink / line) -->
     <rect width="360" height="570" rx="10" fill="#0b0f14" stroke="#243042" stroke-width="1.2" />
 
     <!-- Header Section (.bar) -->
@@ -345,12 +624,21 @@ const screenshot1Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
     <!-- Bottom Action Controls (.row) -->
     <g transform="translate(16, 380)">
       <!-- More People Button -->
-      <rect width="280" height="36" rx="6" fill="#38bdf8" />
-      <text x="140" y="23" font-size="13" font-weight="700" fill="#0b0f14" text-anchor="middle">More People</text>
+      <g>
+        <rect width="280" height="36" rx="6" fill="#38bdf8" />
+        <g transform="translate(85, 11)" stroke="#0b0f14">
+          ${POPCORN_ICONS.shuffle}
+        </g>
+        <text x="148" y="23" font-size="13" font-weight="700" fill="#0b0f14" text-anchor="middle">More People</text>
+      </g>
 
-      <!-- Refresh Button -->
-      <rect x="290" width="38" height="36" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
-      <text x="309" y="23" font-size="15" fill="#7d8b99" text-anchor="middle">🔄</text>
+      <!-- Refresh Button (Vector SVG, no emoji) -->
+      <g transform="translate(290, 0)">
+        <rect width="38" height="36" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
+        <g transform="translate(11, 10)">
+          ${POPCORN_ICONS.refresh}
+        </g>
+      </g>
     </g>
 
     <!-- Include Absent Checkbox -->
@@ -424,16 +712,12 @@ const screenshot2Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
       <rect width="328" height="42" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
       <circle cx="16" cy="21" r="4" fill="#4fb98a" />
       <text x="30" y="25" font-size="12" font-weight="700" fill="#f0f3f6">Alice Martin</text>
-      
-      <rect x="140" y="12" width="62" height="18" rx="4" fill="rgba(239, 68, 68, 0.12)" />
-      <text x="171" y="25" font-size="10" font-weight="600" fill="#ef4444" text-anchor="middle">5d overdue</text>
-
-      <!-- Action icons: Eye (ignore), Check (mark done), Trash -->
-      <g transform="translate(240, 13)">
-        <text x="10" y="15" font-size="12" fill="#7d8b99">👁️</text>
-        <text x="36" y="15" font-size="12" fill="#7d8b99">📅</text>
-        <text x="62" y="15" font-size="12" fill="#7d8b99">🗑️</text>
+      <g transform="translate(116, 14)">
+        ${POPCORN_ICONS.eye}
       </g>
+      
+      <rect x="250" y="12" width="68" height="18" rx="4" fill="rgba(239, 68, 68, 0.12)" />
+      <text x="284" y="25" font-size="10" font-weight="600" fill="#ef4444" text-anchor="middle">5d overdue</text>
     </g>
 
     <!-- Person 2: Florian Wilhelm -->
@@ -441,15 +725,12 @@ const screenshot2Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
       <rect width="328" height="42" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
       <circle cx="16" cy="21" r="4" fill="#4fb98a" />
       <text x="30" y="25" font-size="12" font-weight="700" fill="#f0f3f6">Florian Wilhelm</text>
-      
-      <rect x="140" y="12" width="62" height="18" rx="4" fill="rgba(245, 158, 11, 0.12)" />
-      <text x="171" y="25" font-size="10" font-weight="600" fill="#f59e0b" text-anchor="middle">3d overdue</text>
-
-      <g transform="translate(240, 13)">
-        <text x="10" y="15" font-size="12" fill="#7d8b99">👁️</text>
-        <text x="36" y="15" font-size="12" fill="#7d8b99">📅</text>
-        <text x="62" y="15" font-size="12" fill="#7d8b99">🗑️</text>
+      <g transform="translate(132, 14)">
+        ${POPCORN_ICONS.eye}
       </g>
+      
+      <rect x="250" y="12" width="68" height="18" rx="4" fill="rgba(245, 158, 11, 0.12)" />
+      <text x="284" y="25" font-size="10" font-weight="600" fill="#f59e0b" text-anchor="middle">3d overdue</text>
     </g>
 
     <!-- Person 3: Sarah Connor -->
@@ -457,15 +738,12 @@ const screenshot2Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
       <rect width="328" height="42" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
       <circle cx="16" cy="21" r="4" fill="#4fb98a" />
       <text x="30" y="25" font-size="12" font-weight="700" fill="#f0f3f6">Sarah Connor</text>
-      
-      <rect x="140" y="12" width="62" height="18" rx="4" fill="rgba(56, 189, 248, 0.12)" />
-      <text x="171" y="25" font-size="10" font-weight="600" fill="#38bdf8" text-anchor="middle">1d overdue</text>
-
-      <g transform="translate(240, 13)">
-        <text x="10" y="15" font-size="12" fill="#7d8b99">👁️</text>
-        <text x="36" y="15" font-size="12" fill="#7d8b99">📅</text>
-        <text x="62" y="15" font-size="12" fill="#7d8b99">🗑️</text>
+      <g transform="translate(122, 14)">
+        ${POPCORN_ICONS.eye}
       </g>
+      
+      <rect x="250" y="12" width="68" height="18" rx="4" fill="rgba(56, 189, 248, 0.12)" />
+      <text x="284" y="25" font-size="10" font-weight="600" fill="#38bdf8" text-anchor="middle">1d overdue</text>
     </g>
 
     <!-- Person 4: David Chen -->
@@ -473,15 +751,12 @@ const screenshot2Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
       <rect width="328" height="42" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
       <circle cx="16" cy="21" r="4" fill="#4fb98a" />
       <text x="30" y="25" font-size="12" font-weight="700" fill="#f0f3f6">David Chen</text>
-      
-      <rect x="140" y="12" width="62" height="18" rx="4" fill="rgba(79, 185, 138, 0.12)" />
-      <text x="171" y="25" font-size="10" font-weight="600" fill="#4fb98a" text-anchor="middle">Today</text>
-
-      <g transform="translate(240, 13)">
-        <text x="10" y="15" font-size="12" fill="#7d8b99">👁️</text>
-        <text x="36" y="15" font-size="12" fill="#7d8b99">📅</text>
-        <text x="62" y="15" font-size="12" fill="#7d8b99">🗑️</text>
+      <g transform="translate(112, 14)">
+        ${POPCORN_ICONS.eye}
       </g>
+      
+      <rect x="258" y="12" width="60" height="18" rx="4" fill="rgba(79, 185, 138, 0.12)" />
+      <text x="288" y="25" font-size="10" font-weight="600" fill="#4fb98a" text-anchor="middle">Today</text>
     </g>
 
     <!-- Person 5: Elena Rostova (Absent) -->
@@ -489,31 +764,25 @@ const screenshot2Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
       <rect width="328" height="42" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" opacity="0.65" />
       <circle cx="16" cy="21" r="4" fill="#64748b" />
       <text x="30" y="25" font-size="12" font-weight="700" fill="#cbd5e1">Elena Rostova</text>
-      
-      <rect x="140" y="12" width="62" height="18" rx="4" fill="rgba(245, 158, 11, 0.12)" />
-      <text x="171" y="25" font-size="10" font-weight="600" fill="#f59e0b" text-anchor="middle">3d overdue</text>
-
-      <g transform="translate(240, 13)">
-        <text x="10" y="15" font-size="12" fill="#7d8b99">👁️</text>
-        <text x="36" y="15" font-size="12" fill="#7d8b99">📅</text>
-        <text x="62" y="15" font-size="12" fill="#7d8b99">🗑️</text>
+      <g transform="translate(125, 14)">
+        ${POPCORN_ICONS.eye}
       </g>
+      
+      <rect x="250" y="12" width="68" height="18" rx="4" fill="rgba(245, 158, 11, 0.12)" />
+      <text x="284" y="25" font-size="10" font-weight="600" fill="#f59e0b" text-anchor="middle">3d overdue</text>
     </g>
 
-    <!-- Person 6: Marcus Brody (Absent & Never) -->
+    <!-- Person 6: Marcus Brody (Ignored) -->
     <g transform="translate(16, 390)">
       <rect width="328" height="42" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" opacity="0.65" />
       <circle cx="16" cy="21" r="4" fill="#64748b" />
-      <text x="30" y="25" font-size="12" font-weight="700" fill="#cbd5e1">Marcus Brody</text>
-      
-      <rect x="140" y="12" width="62" height="18" rx="4" fill="rgba(100, 116, 139, 0.15)" />
-      <text x="171" y="25" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="middle">Never</text>
-
-      <g transform="translate(240, 13)">
-        <text x="10" y="15" font-size="12" fill="#7d8b99">👁️</text>
-        <text x="36" y="15" font-size="12" fill="#7d8b99">📅</text>
-        <text x="62" y="15" font-size="12" fill="#7d8b99">🗑️</text>
+      <text x="30" y="25" font-size="12" font-weight="700" fill="#7d8b99">Marcus Brody</text>
+      <g transform="translate(124, 14)">
+        ${POPCORN_ICONS.eyeIgnored}
       </g>
+      
+      <rect x="262" y="12" width="56" height="18" rx="4" fill="rgba(100, 116, 139, 0.15)" />
+      <text x="290" y="25" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="middle">ignored</text>
     </g>
 
     <!-- Bottom Roster Bar -->
@@ -583,14 +852,17 @@ const screenshot3Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
       <rect width="328" height="46" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
       <text x="14" y="28" font-size="12" font-weight="700" fill="#f0f3f6">Daily Standup · Product</text>
       
-      <rect x="180" y="13" width="38" height="20" rx="4" fill="#243042" />
-      <text x="199" y="27" font-size="10" fill="#9ca3af" text-anchor="middle">👥 8</text>
+      <g transform="translate(180, 13)">
+        <rect width="34" height="20" rx="4" fill="#243042" />
+        <g transform="translate(5, 4.5)">${POPCORN_ICONS.userIcon}</g>
+        <text x="23" y="14" font-size="10" font-weight="600" fill="#9ca3af" text-anchor="middle">8</text>
+      </g>
 
-      <g transform="translate(230, 15)">
-        <text x="8" y="14" font-size="12" fill="#38bdf8" title="Open">↗</text>
-        <text x="34" y="14" font-size="12" fill="#7d8b99" title="Markdown">✏️</text>
-        <text x="58" y="14" font-size="12" fill="#7d8b99" title="Download">📥</text>
-        <text x="82" y="14" font-size="12" fill="#7d8b99" title="Delete">🗑️</text>
+      <g transform="translate(226, 14)">
+        <g transform="translate(4, 2)">${POPCORN_ICONS.openExternal}</g>
+        <g transform="translate(26, 2)">${POPCORN_ICONS.edit}</g>
+        <g transform="translate(48, 2)">${POPCORN_ICONS.download}</g>
+        <g transform="translate(70, 2)">${POPCORN_ICONS.trash}</g>
       </g>
     </g>
 
@@ -599,14 +871,17 @@ const screenshot3Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
       <rect width="328" height="46" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
       <text x="14" y="28" font-size="12" font-weight="700" fill="#f0f3f6">Team Weekly DS &amp; NLP</text>
       
-      <rect x="180" y="13" width="38" height="20" rx="4" fill="#243042" />
-      <text x="199" y="27" font-size="10" fill="#9ca3af" text-anchor="middle">👥 37</text>
+      <g transform="translate(180, 13)">
+        <rect width="34" height="20" rx="4" fill="#243042" />
+        <g transform="translate(5, 4.5)">${POPCORN_ICONS.userIcon}</g>
+        <text x="23" y="14" font-size="10" font-weight="600" fill="#9ca3af" text-anchor="middle">37</text>
+      </g>
 
-      <g transform="translate(230, 15)">
-        <text x="8" y="14" font-size="12" fill="#38bdf8">↗</text>
-        <text x="34" y="14" font-size="12" fill="#7d8b99">✏️</text>
-        <text x="58" y="14" font-size="12" fill="#7d8b99">📥</text>
-        <text x="82" y="14" font-size="12" fill="#7d8b99">🗑️</text>
+      <g transform="translate(226, 14)">
+        <g transform="translate(4, 2)">${POPCORN_ICONS.openExternal}</g>
+        <g transform="translate(26, 2)">${POPCORN_ICONS.edit}</g>
+        <g transform="translate(48, 2)">${POPCORN_ICONS.download}</g>
+        <g transform="translate(70, 2)">${POPCORN_ICONS.trash}</g>
       </g>
     </g>
 
@@ -615,14 +890,17 @@ const screenshot3Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
       <rect width="328" height="46" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
       <text x="14" y="28" font-size="12" font-weight="700" fill="#f0f3f6">Sprint Retrospective &amp; Sync</text>
       
-      <rect x="180" y="13" width="38" height="20" rx="4" fill="#243042" />
-      <text x="199" y="27" font-size="10" fill="#9ca3af" text-anchor="middle">👥 12</text>
+      <g transform="translate(180, 13)">
+        <rect width="34" height="20" rx="4" fill="#243042" />
+        <g transform="translate(5, 4.5)">${POPCORN_ICONS.userIcon}</g>
+        <text x="23" y="14" font-size="10" font-weight="600" fill="#9ca3af" text-anchor="middle">12</text>
+      </g>
 
-      <g transform="translate(230, 15)">
-        <text x="8" y="14" font-size="12" fill="#38bdf8">↗</text>
-        <text x="34" y="14" font-size="12" fill="#7d8b99">✏️</text>
-        <text x="58" y="14" font-size="12" fill="#7d8b99">📥</text>
-        <text x="82" y="14" font-size="12" fill="#7d8b99">🗑️</text>
+      <g transform="translate(226, 14)">
+        <g transform="translate(4, 2)">${POPCORN_ICONS.openExternal}</g>
+        <g transform="translate(26, 2)">${POPCORN_ICONS.edit}</g>
+        <g transform="translate(48, 2)">${POPCORN_ICONS.download}</g>
+        <g transform="translate(70, 2)">${POPCORN_ICONS.trash}</g>
       </g>
     </g>
 
@@ -631,14 +909,17 @@ const screenshot3Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
       <rect width="328" height="46" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
       <text x="14" y="28" font-size="12" font-weight="700" fill="#f0f3f6">Architecture Roundtable</text>
       
-      <rect x="180" y="13" width="38" height="20" rx="4" fill="#243042" />
-      <text x="199" y="27" font-size="10" fill="#9ca3af" text-anchor="middle">👥 6</text>
+      <g transform="translate(180, 13)">
+        <rect width="34" height="20" rx="4" fill="#243042" />
+        <g transform="translate(5, 4.5)">${POPCORN_ICONS.userIcon}</g>
+        <text x="23" y="14" font-size="10" font-weight="600" fill="#9ca3af" text-anchor="middle">6</text>
+      </g>
 
-      <g transform="translate(230, 15)">
-        <text x="8" y="14" font-size="12" fill="#38bdf8">↗</text>
-        <text x="34" y="14" font-size="12" fill="#7d8b99">✏️</text>
-        <text x="58" y="14" font-size="12" fill="#7d8b99">📥</text>
-        <text x="82" y="14" font-size="12" fill="#7d8b99">🗑️</text>
+      <g transform="translate(226, 14)">
+        <g transform="translate(4, 2)">${POPCORN_ICONS.openExternal}</g>
+        <g transform="translate(26, 2)">${POPCORN_ICONS.edit}</g>
+        <g transform="translate(48, 2)">${POPCORN_ICONS.download}</g>
+        <g transform="translate(70, 2)">${POPCORN_ICONS.trash}</g>
       </g>
     </g>
 
@@ -661,7 +942,7 @@ const screenshot4Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
   <rect x="16" y="96" width="1248" height="688" fill="rgba(0, 0, 0, 0.72)" />
 
   <!-- Centered Modal Container -->
-  <g transform="translate(360, 120)" filter="url(#popupShadow)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <g transform="translate(360, 120)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
     <rect width="560" height="580" rx="12" fill="#0f141c" stroke="#243042" stroke-width="1.5" />
 
     <!-- Modal Header -->
@@ -702,13 +983,15 @@ const screenshot4Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128
     <g transform="translate(24, 490)">
       <line x1="0" y1="0" x2="512" y2="0" stroke="#243042" stroke-width="1" />
 
-      <!-- Left Action: Copy Markdown -->
+      <!-- Left Action: Copy Markdown & Download -->
       <g transform="translate(0, 18)">
         <rect width="130" height="34" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
-        <text x="65" y="22" font-size="12" font-weight="600" fill="#f0f3f6" text-anchor="middle">📋 Copy Table</text>
+        <g transform="translate(14, 9)">${POPCORN_ICONS.clipboard}</g>
+        <text x="76" y="22" font-size="12" font-weight="600" fill="#f0f3f6" text-anchor="middle">Copy Table</text>
 
-        <rect x="140" width="110" height="34" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
-        <text x="195" y="22" font-size="12" font-weight="500" fill="#7d8b99" text-anchor="middle">📥 Download</text>
+        <rect x="140" width="116" height="34" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
+        <g transform="translate(154, 9)">${POPCORN_ICONS.download}</g>
+        <text x="198" y="22" font-size="12" font-weight="500" fill="#7d8b99" text-anchor="middle">Download</text>
       </g>
 
       <!-- Right Actions: Cancel / Save -->
@@ -784,37 +1067,37 @@ const previewHtml = `<!DOCTYPE html>
     <div class="card">
       <h2>Screenshot 1: Candidate Suggestions &amp; Standup Rotation (1280x800)</h2>
       <p>Shows POPCORN running live inside a Google Meet call with attendee presence and candidate rotation order.</p>
-      <img class="asset-img" src="screenshot1_standup_1280x800.svg" alt="Standup view" />
+      <img class="asset-img" src="screenshot1_standup_1280x800.jpeg" alt="Standup view" />
     </div>
 
     <div class="card">
       <h2>Screenshot 2: Roster &amp; People Management (1280x800)</h2>
       <p>Shows attendee attendance, overdue status badges, ignore toggles, and manual participant management.</p>
-      <img class="asset-img" src="screenshot2_people_1280x800.svg" alt="People view" />
+      <img class="asset-img" src="screenshot2_people_1280x800.jpeg" alt="People view" />
     </div>
 
     <div class="card">
       <h2>Screenshot 3: Tracked Meetings List (1280x800)</h2>
       <p>Shows multi-meeting tracking and list management outside of active Google Meet calls.</p>
-      <img class="asset-img" src="screenshot3_meetings_1280x800.svg" alt="Meetings view" />
+      <img class="asset-img" src="screenshot3_meetings_1280x800.jpeg" alt="Meetings view" />
     </div>
 
     <div class="card">
       <h2>Screenshot 4: Markdown Minutes Editor &amp; Export Modal (1280x800)</h2>
       <p>Shows in-app Markdown minutes editing, clipboard copy, and export features for Notion/Docs.</p>
-      <img class="asset-img" src="screenshot4_markdown_1280x800.svg" alt="Markdown view" />
+      <img class="asset-img" src="screenshot4_markdown_1280x800.jpeg" alt="Markdown view" />
     </div>
 
     <div class="card">
       <h2>Promotional Marquee Tile (1400x560)</h2>
       <p>Store feature banner for promotion slots.</p>
-      <img class="asset-img" src="promo_marquee_1400x560.svg" alt="Marquee banner" />
+      <img class="asset-img" src="promo_marquee_1400x560.jpeg" alt="Marquee banner" />
     </div>
 
     <div class="card">
       <h2>Small Promo Tile (440x280)</h2>
       <p>Search results and catalog preview card.</p>
-      <img style="max-width: 440px;" class="asset-img" src="promo_small_440x280.svg" alt="Small promo tile" />
+      <img style="max-width: 440px;" class="asset-img" src="promo_small_440x280.jpeg" alt="Small promo tile" />
     </div>
   </div>
 </body>

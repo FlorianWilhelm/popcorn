@@ -25,6 +25,14 @@ yarn-error.log*
 # Extension build/pack artifacts
 dist/
 .chrome_temp/
+.chrome-user-data/
 *.zip
 *.crx
 *.pem
+
+# Store screenshot and promo image artifacts (generated, not in git)
+store_assets/*.jpeg
+store_assets/*.jpg
+store_assets/*.png
+store_assets/pages/
+!store_assets/icon-128.png

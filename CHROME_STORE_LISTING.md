@@ -11,7 +11,7 @@ Everything is prepared and packaged to submit **POPCORN** to the Chrome Web Stor
    *(If you don't have a developer account yet, there is a one-time \$5 registration fee from Google).*
 
 2. **Click "New Item"** (top right) and upload the ready-made ZIP file:
-   📂 `dist/popcorn-v0.25.zip`
+   📂 `dist/popcorn-v0.26.zip`
    *(You can rebuild it anytime by running `npm run package`)*
 
 3. **Fill out the fields below (Copy & Paste ready)**:
@@ -92,14 +92,14 @@ Keep your daily standups snappy, engaging, and fair with POPCORN! 🍿🎙️
 | Asset | File Path | Size Required | Description |
 | :--- | :--- | :--- | :--- |
 | **Store Icon** | `store_assets/icon-128.png` | 128 x 128 px | Official POPCORN mascot store icon |
-| **Small Promo Tile** | `store_assets/promo_small_440x280.svg` | 440 x 280 px | Search catalog promo card |
-| **Marquee Banner** | `store_assets/promo_marquee_1400x560.svg` | 1400 x 560 px | Featured store showcase banner |
-| **Screenshot 1 (Standup)** | `store_assets/screenshot1_standup_1280x800.svg` | 1280 x 800 px | Live Google Meet call with candidate rotation |
-| **Screenshot 2 (People)** | `store_assets/screenshot2_people_1280x800.svg` | 1280 x 800 px | Roster attendance, overdue badges & ignore controls |
-| **Screenshot 3 (Meetings)** | `store_assets/screenshot3_meetings_1280x800.svg` | 1280 x 800 px | Multi-meeting tracking & history list outside Meet |
-| **Screenshot 4 (Markdown)** | `store_assets/screenshot4_markdown_1280x800.svg` | 1280 x 800 px | In-app Markdown editor, minutes & export/import |
+| **Small Promo Tile** | `store_assets/promo_small_440x280.jpeg` | 440 x 280 px | Search catalog promo card (JPEG, no filters) |
+| **Marquee Banner** | `store_assets/promo_marquee_1400x560.jpeg` | 1400 x 560 px | Featured store showcase banner (JPEG, no filters) |
+| **Screenshot 1 (Standup)** | `store_assets/screenshot1_standup_1280x800.jpeg` | 1280 x 800 px | Live Google Meet call with candidate rotation (JPEG) |
+| **Screenshot 2 (People)** | `store_assets/screenshot2_people_1280x800.jpeg` | 1280 x 800 px | Roster attendance, overdue badges & ignore controls (JPEG) |
+| **Screenshot 3 (Meetings)** | `store_assets/screenshot3_meetings_1280x800.jpeg` | 1280 x 800 px | Multi-meeting tracking & history list outside Meet (JPEG) |
+| **Screenshot 4 (Markdown)** | `store_assets/screenshot4_markdown_1280x800.jpeg` | 1280 x 800 px | In-app Markdown editor, minutes & export/import (JPEG) |
 
-> 💡 **Tip:** Open `store_assets/preview.html` in your browser to preview all screenshots and assets in high resolution.
+> 💡 **Tip:** Both `.jpeg` and `.jpg` variants are generated in `store_assets/` (without graphical filters, fully compliant with Chrome Web Store guidelines). Open `store_assets/preview.html` in your browser to preview all screenshots and assets.
 
 ---
 
