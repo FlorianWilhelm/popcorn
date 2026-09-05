@@ -23,6 +23,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Extension build/pack artifacts
+dist/
 *.zip
 *.crx
 *.pem
