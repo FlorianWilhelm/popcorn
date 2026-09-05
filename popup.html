@@ -28,8 +28,6 @@
       </button>
     </nav>
 
-    <div id="status" class="status hidden"></div>
-
     <!-- Untracked meeting -->
     <section id="viewOff" class="hidden">
       <p class="hint">
@@ -52,6 +50,7 @@
 
     <!-- Candidate suggestions -->
     <section id="viewRound" class="hidden">
+      <div id="roundPresence" class="round-presence hidden"></div>
       <ol id="list" class="list"></ol>
       <p id="emptyHint" class="hint hidden">
         No present participants found. Open the people list in Meet and click
@@ -156,7 +155,7 @@
       </div>
 
       <div class="version-info" style="margin-top: 14px; text-align: center; font-size: 11px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
-        <span>🍿 POPCORN v<span id="appVersion">0.25</span></span>
+        <span>🍿 POPCORN v<span id="appVersion">0.26</span></span>
         <span class="acronym-hint">Participant Order Picker for Candid On-call Reporting &amp; Notes</span>
       </div>
     </section>
@@ -166,15 +165,17 @@
       <div class="modal-box">
         <div class="modal-header">
           <span id="modalTitle" class="modal-title">Edit Meeting</span>
-          <button id="btnModalClose" class="ghost icon-btn mini" title="Close" aria-label="Close">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
         </div>
         <p id="modalHint" class="modal-hint">View, edit, or copy the Markdown table of this meeting:</p>
-        <textarea id="markdownTextarea" rows="8" placeholder="# Meeting Name&#10;&#10;| Person | Last Update |&#10;| --- | --- |&#10;| Name | 24.08.2026, 10:00:00 |"></textarea>
+        <div id="modalError" class="modal-error hidden">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span id="modalErrorText"></span>
+        </div>
+        <textarea id="markdownTextarea" rows="8" wrap="off" placeholder="# Meeting Name&#10;&#10;| Person | Last Update |&#10;| --- | --- |&#10;| Name | 24.08.2026, 10:00:00 |"></textarea>
         <div class="modal-footer">
           <div class="modal-footer-left">
             <button id="btnModalCopy" class="ghost mini btn-with-icon" title="Copy Markdown to clipboard">

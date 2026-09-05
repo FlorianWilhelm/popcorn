@@ -528,7 +528,6 @@ function buildPersonItem(m, person, index, opts = {}) {
     }
     await save();
     render();
-    setStatus(p.ignored ? `"${person.name}" is now ignored.` : `"${person.name}" will be included in updates.`);
   });
 
   nameWrap.appendChild(ignoreBtn);
@@ -568,7 +567,6 @@ function buildMeetingItem(m) {
     addAlias(m, v);
     await save();
     render();
-    setStatus(`Renamed to "${v}". The old name is kept for recognition.`);
   });
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") input.blur();
@@ -637,10 +635,9 @@ function buildMeetingItem(m) {
 
 /* ---------- Rendern ---------- */
 
-function setStatus(text) {
-  const el = $("status");
-  el.textContent = text || "";
-  el.classList.toggle("hidden", !text);
+function setStatus(_text) {
+  // Global status banner has been completely removed.
+  // Direct UI feedback (button states, list changes) is used instead.
 }
 
 function show(id) {
@@ -658,12 +655,17 @@ function render() {
     $("headEyebrow").textContent = "Current Meeting";
     $("headName").textContent = current.title || current.code || "Untitled Meeting";
     $("badge").textContent = currentId ? "active" : "off";
-    $("badge").className = `badge ${currentId ? "on" : "off"}`;
-    $("badge").classList.remove("hidden");
+    $("badge").className = "badge " + (currentId ? "active" : "off");
+  } else if (m) {
+    $("headEyebrow").textContent = "Selected List";
+    $("headName").textContent = m.name;
+    $("badge").textContent = "offline";
+    $("badge").className = "badge";
   } else {
-    $("headEyebrow").textContent = m ? "Selected List" : "No Meet Tab";
-    $("headName").textContent = m ? m.name : "No Meeting";
-    $("badge").classList.add("hidden");
+    $("headEyebrow").textContent = "Google Meet";
+    $("headName").textContent = "No meeting open";
+    $("badge").textContent = "idle";
+    $("badge").className = "badge";
   }
 
   // Adjust view if outside Meet with no meeting active
@@ -672,11 +674,10 @@ function render() {
   }
 
   // Tabs
-  for (const t of document.querySelectorAll(".tab")) {
-    t.classList.toggle("active", t.dataset.view === view);
-    if (t.dataset.view === "people") {
-      t.disabled = !m;
-    } else if (t.dataset.view === "round") {
+  for (const t of document.querySelectorAll(".tab[data-view]")) {
+    const v = t.dataset.view;
+    t.classList.toggle("active", v === view);
+    if (v === "round" || v === "people") {
       t.disabled = !m && !inMeet;
     }
   }
@@ -723,13 +724,27 @@ function render() {
   // Round / Update
   const list = $("list");
   list.innerHTML = "";
+  const presEl = $("roundPresence");
   if (m) {
+    if (inMeet && current && current.people && current.people.length > 0) {
+      const total = Object.keys(m.people).length;
+      const presentCount = presentKeys ? presentKeys.size : current.people.filter((p) => p.present).length;
+      if (presEl) {
+        presEl.textContent = `${presentCount} present of ${total}`;
+        presEl.classList.remove("hidden");
+      }
+    } else if (presEl) {
+      presEl.classList.add("hidden");
+    }
+
     const shown = (m.round ? m.round.keys : [])
       .map((k) => (m.people[k] ? { key: k, ...m.people[k] } : null))
       .filter(Boolean);
     shown.forEach((p, i) => list.appendChild(buildPersonItem(m, p, i)));
     $("emptyHint").classList.toggle("hidden", shown.length > 0);
     $("includeAbsent").checked = !!m.includeAbsent;
+  } else if (presEl) {
+    presEl.classList.add("hidden");
   }
 
   // People
@@ -788,20 +803,12 @@ async function refresh(newRound = false, options = {}) {
   presentKeys = new Set();
 
   if (!current.inMeet) {
-    if (!options.background) {
-      setStatus(
-        probe && probe.reason === "noinject"
-          ? "Meet tab found, but not yet readable. Please reload the Meet page."
-          : ""
-      );
-    }
     render();
     return;
   }
 
   const hit = matchMeeting(current.title, current.code);
   if (!hit) {
-    if (!options.background) setStatus("");
     render();
     return;
   }
@@ -812,7 +819,6 @@ async function refresh(newRound = false, options = {}) {
 
   if (hit.via === "code" && current.title && norm(current.title) !== norm(m.name)) {
     addAlias(m, current.title);
-    setStatus(`Calendar title is now "${current.title}". The list has been linked.`);
   }
   if (current.code && !(m.codes || []).includes(current.code)) {
     m.codes = m.codes || [];
@@ -836,7 +842,11 @@ async function refresh(newRound = false, options = {}) {
     const parts = [`${presentKeys.size} present of ${total}`];
     if (added) parts.push(`${added} newly added`);
     if (current.people.length === 0) parts.push("Open the people list in Meet");
-    setStatus(parts.join(" · "));
+    const presEl = $("roundPresence");
+    if (presEl) {
+      presEl.textContent = parts.join(" · ");
+      presEl.classList.remove("hidden");
+    }
   } else {
     ensureRound(m, newRound);
     await save();
@@ -930,6 +940,109 @@ function parseDateTimeString(str) {
   return 0;
 }
 
+function validateAndParseMarkdownMeeting(mdText) {
+  if (!mdText || !mdText.trim()) {
+    return { ok: false, error: "The editor is empty. Please enter a Markdown table." };
+  }
+
+  const lines = mdText.split(/\r?\n/);
+  let meetingName = "";
+  const people = {};
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+    const lineNum = i + 1;
+
+    // Ignore empty lines
+    if (!line) continue;
+
+    // Meeting title (# Meeting Name)
+    if (line.startsWith("#")) {
+      if (!meetingName) {
+        meetingName = line.replace(/^#+\s*/, "").trim();
+      }
+      continue;
+    }
+
+    // Every other non-empty line MUST be a table row starting with '|'
+    if (!line.startsWith("|")) {
+      return {
+        ok: false,
+        lineIndex: i,
+        lineNum,
+        error: `Line ${lineNum}: Expected a table row starting with "|"`
+      };
+    }
+
+    const cols = line.split("|").map((c) => c.trim());
+    if (cols.length < 3) {
+      return {
+        ok: false,
+        lineIndex: i,
+        lineNum,
+        error: `Line ${lineNum}: Table row must contain at least 2 columns (| Name | Last Update |)`
+      };
+    }
+
+    const col1 = cols[1];
+    const col2 = cols[2];
+
+    // Check table header
+    if (/^person$/i.test(col1) || /^last update$/i.test(col2) || /^letztes update$/i.test(col2)) {
+      continue;
+    }
+
+    // Check separator row like | --- | --- | or |:---|:---|
+    if (/^[-:\s]+$/.test(col1) && (!col2 || /^[-:\s]+$/.test(col2))) {
+      continue;
+    }
+
+    // Regular data row: validate Person name
+    const cleanName = cleanPersonName(col1);
+    if (!cleanName || isPresentationName(cleanName) || isNoiseOrIcon(cleanName)) {
+      return {
+        ok: false,
+        lineIndex: i,
+        lineNum,
+        error: `Line ${lineNum}: Person name cannot be empty or invalid`
+      };
+    }
+
+    // Validate Column 2 (Last Update)
+    const isIgnored = /\b(ignored|ignoriert)\b/i.test(col2);
+    const datePart = col2.replace(/\s*[\(\[]?\b(ignored|ignoriert)\b[\)\]]?/gi, "").trim();
+    let last = 0;
+    if (datePart) {
+      last = parseDateTimeString(datePart);
+      if (last === 0) {
+        const s = datePart.toLowerCase();
+        const isPermittedZero = !s || s === "noch nie" || s === "never" || s === "-" || s === "–" || s === "0";
+        if (!isPermittedZero) {
+          return {
+            ok: false,
+            lineIndex: i,
+            lineNum,
+            error: `Line ${lineNum}: Invalid date format in "Last Update" (${datePart})`
+          };
+        }
+      }
+    }
+
+    people[keyOf(cleanName)] = { name: cleanName, last, prev: null, ignored: isIgnored };
+  }
+
+  const peopleCount = Object.keys(people).length;
+  if (peopleCount === 0) {
+    return {
+      ok: false,
+      error: "No participants found in the Markdown table."
+    };
+  }
+
+  return { ok: true, meetingName, people };
+}
+
 function parseMarkdownMeeting(mdText) {
   const lines = mdText.split(/\r?\n/);
   let meetingName = "";
@@ -995,13 +1108,11 @@ function mergeInto(target, incoming) {
 
 async function importMarkdownText(text, sourceLabel = "clipboard") {
   if (!text || typeof text !== "string") {
-    setStatus("The clipboard is empty or does not contain text.");
     return false;
   }
   const md = parseMarkdownMeeting(text);
   const peopleCount = Object.keys(md.people).length;
   if (peopleCount === 0) {
-    setStatus("No valid Markdown meeting table found.");
     return false;
   }
 
@@ -1035,13 +1146,61 @@ async function importMarkdownText(text, sourceLabel = "clipboard") {
 
   await save();
   await refresh();
-  setStatus(`Meeting "${meetingName}" (${peopleCount} ${peopleCount === 1 ? "person" : "people"}) imported.`);
   return true;
 }
 
 let editingMeetingId = null;
 
+function clearModalError() {
+  const errEl = $("modalError");
+  if (errEl) errEl.classList.add("hidden");
+  const ta = $("markdownTextarea");
+  if (ta) ta.classList.remove("has-error");
+}
+
+function showModalError(message, lineIndex) {
+  const errEl = $("modalError");
+  const errText = $("modalErrorText");
+  const ta = $("markdownTextarea");
+  if (!ta) return;
+
+  if (errText) errText.textContent = message;
+  if (errEl) errEl.classList.remove("hidden");
+  ta.classList.add("has-error");
+
+  if (typeof lineIndex === "number" && lineIndex >= 0) {
+    const text = ta.value;
+    let currentLine = 0;
+    let start = 0;
+    for (let i = 0; i < text.length; i++) {
+      if (currentLine === lineIndex) {
+        break;
+      }
+      if (text[i] === "\n") {
+        currentLine++;
+        start = i + 1;
+      }
+    }
+    let end = text.indexOf("\n", start);
+    if (end === -1) end = text.length;
+    if (end > start && text[end - 1] === "\r") {
+      end--;
+    }
+
+    ta.focus();
+    ta.setSelectionRange(start, end);
+
+    const linesBefore = text.slice(0, start).split("\n").length - 1;
+    const approxLineHeight = 18;
+    ta.scrollTop = Math.max(0, (linesBefore - 2) * approxLineHeight);
+  } else {
+    ta.focus();
+  }
+}
+
 function openMarkdownModal(meetingId = null) {
+  document.body.classList.add("modal-open");
+  clearModalError();
   editingMeetingId = meetingId;
   const modal = $("markdownModal");
   const textarea = $("markdownTextarea");
@@ -1069,8 +1228,10 @@ function openMarkdownModal(meetingId = null) {
 }
 
 function closeMarkdownModal() {
+  clearModalError();
   const modal = $("markdownModal");
   if (modal) modal.classList.add("hidden");
+  document.body.classList.remove("modal-open");
   editingMeetingId = null;
 }
 
@@ -1093,7 +1254,6 @@ async function copyModalText() {
       copyBtn.innerHTML = origHtml;
     }, 1500);
   }
-  setStatus("Markdown copied to clipboard.");
 }
 
 async function saveMarkdownModal() {
@@ -1101,35 +1261,36 @@ async function saveMarkdownModal() {
   if (!textarea) return;
   const text = textarea.value.trim();
   if (!text) {
-    setStatus("Please enter or paste a Markdown table.");
+    showModalError("Please enter or paste a Markdown table.");
     return;
   }
 
-  const md = parseMarkdownMeeting(text);
-  const peopleCount = Object.keys(md.people).length;
-  if (peopleCount === 0) {
-    setStatus("No valid Markdown table with people found.");
+  const validation = validateAndParseMarkdownMeeting(textarea.value);
+  if (!validation.ok) {
+    showModalError(validation.error, validation.lineIndex);
     return;
   }
+
+  clearModalError();
+  const { meetingName, people } = validation;
 
   if (editingMeetingId && data.meetings[editingMeetingId]) {
     const m = data.meetings[editingMeetingId];
-    if (md.meetingName && md.meetingName !== m.name) {
-      m.name = md.meetingName;
-      addAlias(m, md.meetingName);
+    if (meetingName && meetingName !== m.name) {
+      m.name = meetingName;
+      addAlias(m, meetingName);
     }
-    m.people = md.people;
+    m.people = people;
     m.round = null;
     sanitizeMeetingData(m);
     await save();
     await refresh();
-    setStatus(`Meeting "${m.name}" (${peopleCount} ${peopleCount === 1 ? "person" : "people"}) updated.`);
     closeMarkdownModal();
     return;
   }
 
   // New meeting / import
-  const success = await importMarkdownText(text, "editor");
+  const success = await importMarkdownText(textarea.value, "editor");
   if (success) {
     closeMarkdownModal();
   }
@@ -1144,7 +1305,6 @@ async function importFile(file) {
     const textarea = $("markdownTextarea");
     if (textarea) {
       textarea.value = text;
-      setStatus(`Loaded "${file.name}" into editor.`);
       return;
     }
   }
@@ -1160,11 +1320,9 @@ async function importFile(file) {
   try {
     parsed = JSON.parse(text);
   } catch {
-    setStatus("The file could not be parsed as Markdown or JSON.");
     return;
   }
   if (!parsed || typeof parsed !== "object" || !(parsed.meetings || parsed.groups)) {
-    setStatus("The JSON file is missing the 'meetings' property.");
     return;
   }
   const replace = confirm(
@@ -1180,7 +1338,6 @@ async function importFile(file) {
   }
   await save();
   await refresh();
-  setStatus(replace ? "Lists replaced." : "Lists merged.");
 }
 
 /* ---------- Events ---------- */
@@ -1197,7 +1354,6 @@ for (const t of document.querySelectorAll(".tab")) {
 $("btnActivate").addEventListener("click", async () => {
   const name = $("activateName").value.trim();
   if (!name) {
-    setStatus("Please enter a meeting name.");
     return;
   }
   const id = uid();
@@ -1215,7 +1371,6 @@ $("btnActivate").addEventListener("click", async () => {
   await save();
   view = "round";
   await refresh(true);
-  setStatus(`Tracking enabled for "${name}".`);
 });
 
 $("btnLink").addEventListener("click", async () => {
@@ -1227,7 +1382,6 @@ $("btnLink").addEventListener("click", async () => {
   await save();
   view = "round";
   await refresh(false);
-  setStatus(`This meeting is now linked to "${m.name}".`);
 });
 
 $("btnRefresh").addEventListener("click", async () => {
@@ -1269,7 +1423,6 @@ $("btnAdd").addEventListener("click", async () => {
   const m = meeting();
   const raw = $("newName").value.trim();
   if (isPresentationName(raw) || isNoiseOrIcon(raw)) {
-    setStatus("Invalid person name.");
     return;
   }
   const name = cleanPersonName(raw);
@@ -1335,9 +1488,23 @@ if ($("btnModalCancel")) $("btnModalCancel").addEventListener("click", closeMark
 if ($("btnModalSave")) $("btnModalSave").addEventListener("click", saveMarkdownModal);
 if ($("btnModalCopy")) $("btnModalCopy").addEventListener("click", copyModalText);
 if ($("btnModalLoadFile")) $("btnModalLoadFile").addEventListener("click", () => $("fileInput").click());
+const modalTextarea = $("markdownTextarea");
+if (modalTextarea) {
+  modalTextarea.addEventListener("input", clearModalError);
+  modalTextarea.addEventListener("click", clearModalError);
+  modalTextarea.addEventListener("keyup", clearModalError);
+}
 if ($("markdownModal")) {
   $("markdownModal").addEventListener("click", (e) => {
     if (e.target === $("markdownModal")) closeMarkdownModal();
+  });
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const modal = $("markdownModal");
+      if (modal && !modal.classList.contains("hidden")) {
+        closeMarkdownModal();
+      }
+    }
   });
 }
 
