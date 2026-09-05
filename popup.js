@@ -666,18 +666,27 @@ function render() {
     $("badge").classList.add("hidden");
   }
 
+  // Adjust view if outside Meet with no meeting active
+  if (!m && !inMeet && view !== "settings" && view !== "meetings") {
+    view = "meetings";
+  }
+
   // Tabs
   for (const t of document.querySelectorAll(".tab")) {
     t.classList.toggle("active", t.dataset.view === view);
-    if (t.dataset.view !== "meetings" && t.dataset.view !== "settings") t.disabled = !m;
+    if (t.dataset.view === "people") {
+      t.disabled = !m;
+    } else if (t.dataset.view === "round") {
+      t.disabled = !m && !inMeet;
+    }
   }
 
   // Choose view
   if (view === "settings") {
     show("viewSettings");
-  } else if (view === "meetings" || (!m && !inMeet)) {
+  } else if (view === "meetings") {
     show("viewMeetings");
-  } else if (!m) {
+  } else if (!m && inMeet) {
     show("viewOff");
   } else if (view === "people") {
     show("viewPeople");

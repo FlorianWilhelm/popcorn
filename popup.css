@@ -425,6 +425,7 @@ input[type="number"] {
 .tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
 .tab[disabled] { opacity: 0.35; cursor: default; }
 .tab[disabled]:hover { color: var(--muted); border-color: transparent; }
+.tab[disabled].active { border-bottom-color: transparent; }
 
 .badge {
   flex: none;
