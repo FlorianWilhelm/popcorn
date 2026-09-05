@@ -254,79 +254,58 @@
     </g>
 
     <!-- Candidate List Items (.item) -->
-    <!-- Candidate 1: Alice Martin -->
+    <!-- Candidate 1: Alice Martin (Checked / Done) -->
     <g transform="translate(16, 142)">
-      <rect width="328" height="54" rx="8" fill="#17202e" stroke="#243042" stroke-width="1" />
-      <circle cx="24" cy="27" r="12" fill="rgba(56, 189, 248, 0.14)" />
-      <text x="24" y="31" font-size="11" font-weight="700" fill="#38bdf8" text-anchor="middle">1</text>
-      
-      <text x="46" y="24" font-size="13" font-weight="700" fill="#f0f3f6">Alice Martin</text>
-      <text x="46" y="41" font-size="11" fill="#7d8b99">5 days overdue · Mon, 1 Sep</text>
-
-      <rect x="256" y="12" width="60" height="30" rx="4" fill="#38bdf8" />
-      <text x="286" y="31" font-size="12" font-weight="700" fill="#0b0f14" text-anchor="middle">Done</text>
+      <rect width="328" height="50" rx="8" fill="#17202e" stroke="#243042" stroke-width="1" />
+      <text x="22" y="30" font-family="monospace" font-size="11" font-weight="600" fill="#7d8b99" text-anchor="middle">01</text>
+      <rect x="36" y="17" width="16" height="16" rx="4" fill="#4fb98a" stroke="#4fb98a" />
+      <polyline points="40,25 44,29 48,21" fill="none" stroke="#0b0f14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <text x="62" y="30" font-size="13" font-weight="600" fill="#7d8b99" text-decoration="line-through">Alice Martin</text>
+      <text x="314" y="30" font-size="11" fill="#4fb98a" text-anchor="end">today · 10:15</text>
     </g>
 
-    <!-- Candidate 2: Florian Wilhelm -->
-    <g transform="translate(16, 204)">
-      <rect width="328" height="54" rx="8" fill="#17202e" stroke="#243042" stroke-width="1" />
-      <circle cx="24" cy="27" r="12" fill="rgba(56, 189, 248, 0.14)" />
-      <text x="24" y="31" font-size="11" font-weight="700" fill="#38bdf8" text-anchor="middle">2</text>
-      
-      <text x="46" y="24" font-size="13" font-weight="700" fill="#f0f3f6">Florian Wilhelm</text>
-      <text x="46" y="41" font-size="11" fill="#7d8b99">3 days overdue · Wed, 3 Sep</text>
-
-      <rect x="256" y="12" width="60" height="30" rx="4" fill="#38bdf8" />
-      <text x="286" y="31" font-size="12" font-weight="700" fill="#0b0f14" text-anchor="middle">Done</text>
+    <!-- Candidate 2: Florian Wilhelm (Unchecked) -->
+    <g transform="translate(16, 200)">
+      <rect width="328" height="50" rx="8" fill="#17202e" stroke="#243042" stroke-width="1" />
+      <text x="22" y="30" font-family="monospace" font-size="11" font-weight="600" fill="#7d8b99" text-anchor="middle">02</text>
+      <rect x="36" y="17" width="16" height="16" rx="4" fill="#17202e" stroke="#243042" stroke-width="1.5" />
+      <text x="62" y="30" font-size="13" font-weight="700" fill="#f0f3f6">Florian Wilhelm</text>
+      <text x="314" y="30" font-size="11" fill="#7d8b99" text-anchor="end">3d ago · 3 Sep</text>
     </g>
 
-    <!-- Candidate 3: Sarah Connor -->
-    <g transform="translate(16, 266)">
-      <rect width="328" height="54" rx="8" fill="#17202e" stroke="#243042" stroke-width="1" />
-      <circle cx="24" cy="27" r="12" fill="rgba(56, 189, 248, 0.14)" />
-      <text x="24" y="31" font-size="11" font-weight="700" fill="#38bdf8" text-anchor="middle">3</text>
-      
-      <text x="46" y="24" font-size="13" font-weight="700" fill="#f0f3f6">Sarah Connor</text>
-      <text x="46" y="41" font-size="11" fill="#7d8b99">1 day overdue · Fri, 5 Sep</text>
-
-      <rect x="256" y="12" width="60" height="30" rx="4" fill="#38bdf8" />
-      <text x="286" y="31" font-size="12" font-weight="700" fill="#0b0f14" text-anchor="middle">Done</text>
+    <!-- Candidate 3: Sarah Connor (Unchecked) -->
+    <g transform="translate(16, 258)">
+      <rect width="328" height="50" rx="8" fill="#17202e" stroke="#243042" stroke-width="1" />
+      <text x="22" y="30" font-family="monospace" font-size="11" font-weight="600" fill="#7d8b99" text-anchor="middle">03</text>
+      <rect x="36" y="17" width="16" height="16" rx="4" fill="#17202e" stroke="#243042" stroke-width="1.5" />
+      <text x="62" y="30" font-size="13" font-weight="700" fill="#f0f3f6">Sarah Connor</text>
+      <text x="314" y="30" font-size="11" fill="#7d8b99" text-anchor="end">1d ago · 5 Sep</text>
     </g>
 
-    <!-- Candidate 4: David Chen -->
-    <g transform="translate(16, 328)">
-      <rect width="328" height="54" rx="8" fill="#17202e" stroke="#243042" stroke-width="1" />
-      <circle cx="24" cy="27" r="12" fill="rgba(56, 189, 248, 0.14)" />
-      <text x="24" y="31" font-size="11" font-weight="700" fill="#38bdf8" text-anchor="middle">4</text>
-      
-      <text x="46" y="24" font-size="13" font-weight="700" fill="#f0f3f6">David Chen</text>
-      <text x="46" y="41" font-size="11" fill="#7d8b99">Yesterday · Fri, 5 Sep</text>
-
-      <rect x="256" y="12" width="60" height="30" rx="4" fill="#38bdf8" />
-      <text x="286" y="31" font-size="12" font-weight="700" fill="#0b0f14" text-anchor="middle">Done</text>
+    <!-- Candidate 4: David Chen (Unchecked) -->
+    <g transform="translate(16, 316)">
+      <rect width="328" height="50" rx="8" fill="#17202e" stroke="#243042" stroke-width="1" />
+      <text x="22" y="30" font-family="monospace" font-size="11" font-weight="600" fill="#7d8b99" text-anchor="middle">04</text>
+      <rect x="36" y="17" width="16" height="16" rx="4" fill="#17202e" stroke="#243042" stroke-width="1.5" />
+      <text x="62" y="30" font-size="13" font-weight="700" fill="#f0f3f6">David Chen</text>
+      <text x="314" y="30" font-size="11" fill="#7d8b99" text-anchor="end">yesterday</text>
     </g>
 
     <!-- Bottom Action Controls (.row) -->
-    <g transform="translate(16, 396)">
-      <!-- Next Candidates Button -->
-      <rect width="280" height="36" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
-      <text x="140" y="23" font-size="12" font-weight="600" fill="#f0f3f6" text-anchor="middle">Next Candidates</text>
+    <g transform="translate(16, 380)">
+      <!-- More People Button -->
+      <rect width="280" height="36" rx="6" fill="#38bdf8" />
+      <text x="140" y="23" font-size="13" font-weight="700" fill="#0b0f14" text-anchor="middle">More People</text>
 
       <!-- Refresh Button -->
       <rect x="290" width="38" height="36" rx="6" fill="#17202e" stroke="#243042" stroke-width="1" />
       <text x="309" y="23" font-size="15" fill="#7d8b99" text-anchor="middle">🔄</text>
     </g>
 
-    <!-- Start New Round Button -->
-    <g transform="translate(16, 442)">
-      <rect width="328" height="34" rx="6" fill="transparent" stroke="#243042" stroke-width="1" />
-      <text x="164" y="22" font-size="12" font-weight="500" fill="#7d8b99" text-anchor="middle">Start New Round</text>
-    </g>
-
     <!-- Include Absent Checkbox -->
-    <g transform="translate(16, 492)">
+    <g transform="translate(16, 432)">
       <rect x="0" y="0" width="14" height="14" rx="3" fill="#17202e" stroke="#243042" stroke-width="1" />
-      <text x="24" y="12" font-size="11" fill="#7d8b99">Include absent participants</text>
+      <text x="24" y="12" font-size="11" fill="#7d8b99">Include absent</text>
     </g>
   </g>
 </svg>
