@@ -165,11 +165,7 @@ async function run() {
       const bytes = await renderScreenshot(asset);
       const kb = Math.round(bytes / 1024);
 
-      // Also create .jpg copy for convenience
-      const jpgPath = asset.output.replace(/\.jpeg$/, ".jpg");
-      fs.copyFileSync(asset.output, jpgPath);
-
-      console.log(`✅ Done (${kb} KB) -> ${path.basename(asset.output)} & ${path.basename(jpgPath)}`);
+      console.log(`✅ Done (${kb} KB) -> ${path.basename(asset.output)}`);
     } catch (err) {
       console.log(`❌ Error: ${err.message}`);
     }

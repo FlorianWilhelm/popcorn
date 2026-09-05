@@ -3,6 +3,7 @@ const path = require("path");
 const cp = require("child_process");
 
 const rootDir = path.resolve(__dirname, "..");
+const srcDir = path.join(rootDir, "src");
 const distDir = path.join(rootDir, "dist");
 
 if (!fs.existsSync(distDir)) {
@@ -10,7 +11,7 @@ if (!fs.existsSync(distDir)) {
 }
 
 // 1. Read manifest
-const manifestPath = path.join(rootDir, "manifest.json");
+const manifestPath = path.join(srcDir, "manifest.json");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const version = manifest.version;
 const zipFileName = `popcorn-v${version}.zip`;
@@ -28,15 +29,15 @@ const bundleFiles = [
   "popup.css",
   "popup.js",
   "content.js",
-  "icon16.png",
-  "icon48.png",
-  "icon128.png",
-  "icon.svg"
+  "icons/icon16.png",
+  "icons/icon48.png",
+  "icons/icon128.png",
+  "icons/icon.svg"
 ];
 
 // Validate all files exist
 for (const file of bundleFiles) {
-  const fullPath = path.join(rootDir, file);
+  const fullPath = path.join(srcDir, file);
   if (!fs.existsSync(fullPath)) {
     console.error(`ERROR: Missing required bundle file: ${file}`);
     process.exit(1);
@@ -44,9 +45,9 @@ for (const file of bundleFiles) {
 }
 
 // Create ZIP using native zip command
-console.log(`Packaging POPCORN v${version} into ${zipFileName}...`);
+console.log(`Packaging POPCORN v${version} from src/ into ${zipFileName}...`);
 const zipCmd = `zip -q -9 "${zipFilePath}" ${bundleFiles.map(f => `"${f}"`).join(" ")}`;
-cp.execSync(zipCmd, { cwd: rootDir });
+cp.execSync(zipCmd, { cwd: srcDir });
 
 const stats = fs.statSync(zipFilePath);
 console.log(`\n✅ Successfully generated package:`);

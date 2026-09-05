@@ -8,10 +8,12 @@ if (!fs.existsSync(pagesDir)) {
   fs.mkdirSync(pagesDir, { recursive: true });
 }
 
+const srcDir = path.join(rootDir, 'src');
+
 // Read popup.css to embed directly or link
-const popupCss = fs.readFileSync(path.join(rootDir, 'popup.css'), 'utf-8');
-const icon48Base64 = fs.readFileSync(path.join(rootDir, 'icon48.png')).toString('base64');
-const icon128Base64 = fs.readFileSync(path.join(rootDir, 'icon128.png')).toString('base64');
+const popupCss = fs.readFileSync(path.join(srcDir, 'popup.css'), 'utf-8');
+const icon48Base64 = fs.readFileSync(path.join(srcDir, 'icons', 'icon48.png')).toString('base64');
+const icon128Base64 = fs.readFileSync(path.join(srcDir, 'icons', 'icon128.png')).toString('base64');
 
 // Common Chrome Browser Frame CSS & HTML
 function getChromeWindowWrap(title, url, isMeetActive, contentHtml) {

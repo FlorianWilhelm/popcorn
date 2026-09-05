@@ -30,9 +30,6 @@ dist/
 *.crx
 *.pem
 
-# Store screenshot and promo image artifacts (generated, not in git)
-store_assets/*.jpeg
-store_assets/*.jpg
-store_assets/*.png
+# Store temporary rendering artifacts
 store_assets/pages/
-!store_assets/icon-128.png
+store_assets/*.temp.png

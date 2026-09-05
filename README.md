@@ -35,7 +35,7 @@ In agile team culture, passing the microphone organically is known as *"Popcorn 
 
 1. In Chrome, navigate to `chrome://extensions`.
 2. Enable **Developer mode** in the top-right corner.
-3. Click **Load unpacked** and select this directory.
+3. Click **Load unpacked** and select the `src/` directory in this repository.
 4. Pin **POPCORN (🍿)** to your extension toolbar.
 
 ---

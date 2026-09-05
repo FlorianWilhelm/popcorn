@@ -91,7 +91,7 @@ Keep your daily standups snappy, engaging, and fair with POPCORN! 🍿🎙️
 
 | Asset | File Path | Size Required | Description |
 | :--- | :--- | :--- | :--- |
-| **Store Icon** | `store_assets/icon-128.png` | 128 x 128 px | Official POPCORN mascot store icon |
+| **Store Icon** | `src/icons/icon128.png` | 128 x 128 px | Official POPCORN mascot store icon |
 | **Small Promo Tile** | `store_assets/promo_small_440x280.jpeg` | 440 x 280 px | Search catalog promo card (JPEG, no filters) |
 | **Marquee Banner** | `store_assets/promo_marquee_1400x560.jpeg` | 1400 x 560 px | Featured store showcase banner (JPEG, no filters) |
 | **Screenshot 1 (Standup)** | `store_assets/screenshot1_standup_1280x800.jpeg` | 1280 x 800 px | Live Google Meet call with candidate rotation (JPEG) |
