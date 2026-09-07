@@ -1,0 +1,51 @@
+name: Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '[0-9]+.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Release Extension
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Package extension bundle
+        run: npm run package
+        env:
+          RELEASE_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: popcorn-extension-bundle
+          path: dist/*.zip
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
+          body: |
+            ### 🍿 POPCORN Chrome Extension – Installation
+            1. Download and extract the attached `.zip` bundle.
+            2. In Google Chrome (or any Chromium browser like Brave / Edge), navigate to `chrome://extensions/`.
+            3. Enable **Developer mode** in the top-right corner.
+            4. Click **Load unpacked** and select the extracted directory.
+            5. Pin **POPCORN (🍿)** to your browser toolbar and enjoy!

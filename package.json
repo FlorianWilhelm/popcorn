@@ -4,6 +4,7 @@
   "description": "POPCORN – Google Meet Standup & Speaker Picker Chrome Extension",
   "scripts": {
     "package": "node scripts/package.js",
+    "bump": "node scripts/bump_version.js",
     "screenshots": "node scripts/render_screenshots_chrome.js"
   },
   "keywords": [

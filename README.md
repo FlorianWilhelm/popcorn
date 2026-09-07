@@ -1,5 +1,7 @@
 # 🍿 POPCORN – Participant Order Picker for Candid On-call Reporting & Notes
 
+[![EffVer Versioning](https://img.shields.io/badge/version_scheme-EffVer-0097a7)](https://jacobtomlinson.dev/effver)
+
 **POPCORN** is a lightweight, privacy-friendly Chrome extension that brings fair and effortless "Popcorn-style" update rotation to Google Meet. It automatically tracks when participants last gave a project update and suggests the candidates whose updates are most overdue.
 
 ---
@@ -33,10 +35,20 @@ In agile team culture, passing the microphone organically is known as *"Popcorn 
 
 ## 🛠️ Installation
 
-1. In Chrome, navigate to `chrome://extensions`.
-2. Enable **Developer mode** in the top-right corner.
-3. Click **Load unpacked** and select the `src/` directory in this repository.
-4. Pin **POPCORN (🍿)** to your extension toolbar.
+### Option 1: Release Bundle (Easiest)
+1. Download the `popcorn-v*.zip` bundle from the latest [GitHub Release](https://github.com/FlorianWilhelm/popcorn/releases).
+2. Unzip the downloaded file.
+3. In Chrome (or any Chromium browser), navigate to `chrome://extensions`.
+4. Enable **Developer mode** in the top-right corner.
+5. Click **Load unpacked** and select the unzipped folder.
+6. Pin **POPCORN (🍿)** to your extension toolbar.
+
+### Option 2: From Source
+1. Clone this repository: `git clone https://github.com/FlorianWilhelm/popcorn.git`
+2. In Chrome, navigate to `chrome://extensions`.
+3. Enable **Developer mode** in the top-right corner.
+4. Click **Load unpacked** and select the `src/` directory in this repository.
+5. Pin **POPCORN (🍿)** to your extension toolbar.
 
 ---
 
@@ -63,6 +75,23 @@ By default, POPCORN is completely passive in untracked meetings. When you open t
 - Adjust the number of candidates shown per round (default: 5).
 - Configure automatic live refresh intervals.
 - Export/import single meetings as Markdown or full database backups as JSON.
+
+---
+
+## 🏷️ Versioning
+
+This project follows **[EffVer (Intended Effort Versioning)](https://jacobtomlinson.dev/effver/)** (`Macro.Meso.Micro`):
+
+- **Macro**: Significant effort required to adopt (major rework, extensive breaking changes).
+- **Meso**: Some small effort required to adopt (minor breaking adjustments, changes affecting workarounds).
+- **Micro**: No effort required (bug fixes, enhancements, seamless updates).
+
+To bump the version across all files, run:
+```bash
+npm run bump -- micro    # No effort to adopt (e.g. 0.28.0 -> 0.28.1)
+npm run bump -- meso     # Some effort to adopt (e.g. 0.28.0 -> 0.29.0)
+npm run bump -- macro    # Large effort to adopt (e.g. 0.28.0 -> 1.0.0)
+```
 
 ---
 

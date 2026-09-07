@@ -134,15 +134,22 @@ h1 {
   padding: 2px 16px 6px;
 }
 
-.people-scroll-area {
+.people-scroll-area,
+.meetings-scroll-area {
   max-height: 380px;
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: 4px;
 }
 
-.people-scroll-area .list {
+.people-scroll-area .list,
+.meetings-scroll-area .list {
   margin: 4px 0 0;
+}
+
+/* When untracked card is visible above, constrain max-height so total popup height stays within Chrome limit (600px) */
+.untracked-card:not(.hidden) ~ .meetings-scroll-area {
+  max-height: 220px;
 }
 
 .secondary-list {
