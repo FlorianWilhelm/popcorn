@@ -1532,6 +1532,7 @@ if ($("markdownModal")) {
 try {
   const v = chrome.runtime.getManifest().version;
   if ($("appVersion")) $("appVersion").textContent = v;
+  if ($("headerLogo")) $("headerLogo").title = `POPCORN v${v}`;
 } catch {}
 
 refresh(false).then(() => {
