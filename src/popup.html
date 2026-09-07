@@ -11,15 +11,14 @@
         <h1 id="headName">No Meeting</h1>
       </div>
       <div class="bar-side">
-        <span class="badge off" id="badge">off</span>
+        <span class="badge off" id="badge" title="No active Google Meet call">off</span>
         <img class="header-logo" src="icons/icon48.png" alt="POPCORN" width="32" height="32" />
       </div>
     </header>
 
     <nav class="tabs">
-      <button data-view="round" class="tab">Update</button>
-      <button data-view="people" class="tab">People</button>
       <button data-view="meetings" class="tab">Meetings</button>
+      <button data-view="people" class="tab">People</button>
       <button data-view="settings" class="tab icon-tab" title="Settings" aria-label="Settings">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"></circle>
@@ -28,84 +27,23 @@
       </button>
     </nav>
 
-    <!-- Untracked meeting -->
-    <section id="viewOff" class="hidden">
-      <p class="hint">
-        Tracking is not enabled for this meeting. Enable it here so the extension
-        remembers the name and suggests candidates.
-      </p>
-      <label class="field">
-        <span>Meeting Name</span>
-        <input id="activateName" type="text" placeholder="e.g. Team Weekly DS &amp; NLP" />
-      </label>
-      <div class="row">
-        <button id="btnActivate" class="primary">Enable Tracking</button>
-      </div>
-      <p class="hint sep">Or link an existing list to this meeting if the calendar title has changed.</p>
-      <div class="row">
-        <select id="linkTarget"></select>
-        <button id="btnLink" class="ghost">Link</button>
-      </div>
-    </section>
-
-    <!-- Candidate suggestions -->
-    <section id="viewRound" class="hidden">
-      <div id="roundPresence" class="round-presence hidden"></div>
-      <ol id="list" class="list"></ol>
-      <p id="emptyHint" class="hint hidden">
-        No present participants found. Open the people list in Meet and click
-        the refresh button.
-      </p>
-      <div class="row">
-        <button id="btnNewRound" class="primary btn-with-icon">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 3h5v5"></path>
-            <path d="M4 20L21 3"></path>
-            <path d="M21 16v5h-5"></path>
-            <path d="M15 15l6 6"></path>
-            <path d="M4 4l5 5"></path>
-          </svg>
-          <span>More People</span>
-        </button>
-        <button id="btnRefresh" class="ghost icon-btn" title="Refresh attendance" aria-label="Refresh attendance">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-            <path d="M21 3v5h-5"/>
-            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-            <path d="M3 21v-5h5"/>
-          </svg>
-        </button>
-      </div>
-      <label class="check">
-        <input type="checkbox" id="includeAbsent" />
-        Include absent
-      </label>
-    </section>
-
-    <!-- People in selected meeting -->
-    <section id="viewPeople" class="hidden">
-      <div class="row add">
-        <input id="newName" type="text" placeholder="Add name" />
-        <button id="btnAdd" class="primary btn-with-icon" style="flex: 0 0 auto;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span>Add</span>
-        </button>
-        <button id="btnToggleDeleteMode" class="ghost icon-btn" title="Toggle delete mode" aria-label="Toggle delete mode">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18"></path>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-        </button>
-      </div>
-      <ul id="allList" class="list plain"></ul>
-      <p id="peopleEmpty" class="hint hidden">No people added yet.</p>
-    </section>
-
-    <!-- All tracked meetings -->
+    <!-- Meetings tab (all tracked meetings + untracked meeting activation card) -->
     <section id="viewMeetings" class="hidden">
+      <!-- Untracked meeting banner / card (shown when in untracked Google Meet) -->
+      <div id="untrackedCard" class="untracked-card hidden">
+        <div class="untracked-header">
+          <span class="untracked-badge">Untracked Meet</span>
+          <p class="hint">Tracking is not enabled for this meeting. Enable it here so POPCORN remembers participants and tracks updates.</p>
+        </div>
+        <label class="field">
+          <span>Meeting Name</span>
+          <input id="activateName" type="text" placeholder="e.g. Team Weekly DS &amp; NLP" />
+        </label>
+        <div class="row">
+          <button id="btnActivate" class="primary">Enable Tracking</button>
+        </div>
+      </div>
+
       <div class="row section-toolbar">
         <span class="toolbar-title">Tracked Meetings</span>
         <button id="btnNewMeeting" class="ghost icon-btn mini" title="New meeting or import Markdown" aria-label="New meeting">
@@ -123,14 +61,78 @@
       <input type="file" id="fileInput" accept=".md,.txt,.json,application/json,text/markdown" hidden />
     </section>
 
+    <!-- People tab (merged standup updates & roster management) -->
+    <section id="viewPeople" class="hidden">
+      <!-- First line: Presence status + actions (+ for add, trash for delete mode) -->
+      <div class="people-toolbar">
+        <div class="people-status-wrap">
+          <button id="btnRefresh" class="ghost icon-btn mini" title="Refresh attendance and participants" aria-label="Refresh attendance">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+              <path d="M21 3v5h-5"/>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+              <path d="M3 21v-5h5"/>
+            </svg>
+          </button>
+          <span id="peoplePresence" class="people-presence">No meeting active</span>
+        </div>
+        <div class="toolbar-actions">
+          <button id="btnToggleAbsent" class="ghost icon-btn mini dimmed" title="Show absent and ignored" aria-label="Show absent and ignored">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 10h.01"/>
+              <path d="M15 10h.01"/>
+              <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/>
+            </svg>
+          </button>
+          <button id="btnToggleSort" class="ghost icon-btn mini" title="Sort alphabetically by name (preserves priority numbers)" aria-label="Sort alphabetically">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 16 4 4 4-4"/>
+              <path d="M7 20V4"/>
+              <path d="M20 8h-5"/>
+              <path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/>
+              <path d="M15 14h5l-5 6h5"/>
+            </svg>
+          </button>
+          <button id="btnToggleAdd" class="ghost icon-btn mini" title="Add participant" aria-label="Add participant">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+          <button id="btnToggleDeleteMode" class="ghost icon-btn mini" title="Toggle delete mode" aria-label="Toggle delete mode">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"></path>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Expandable Add Person Row -->
+      <div id="addPersonRow" class="row add-person-row hidden">
+        <input id="newName" type="text" placeholder="Add participant name" />
+        <button id="btnAdd" class="primary btn-with-icon" style="flex: 0 0 auto;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Add</span>
+        </button>
+      </div>
+
+      <!-- Scrollable people list container -->
+      <div id="peopleScrollArea" class="people-scroll-area">
+        <!-- Active rotation list (numbered 01, 02...) -->
+        <ol id="activeList" class="list"></ol>
+        <p id="peopleEmpty" class="hint hidden">No participants present. Open the people list in Meet, or add names using +.</p>
+
+        <!-- Secondary list for absent and ignored people (unranked) -->
+        <ul id="secondaryList" class="list secondary-list hidden"></ul>
+      </div>
+    </section>
+
     <!-- Settings -->
     <section id="viewSettings" class="hidden">
-      <label class="field">
-        <span>Number of update candidates</span>
-        <input id="settingTopN" type="number" min="1" max="20" value="5" />
-      </label>
-      <p class="hint">How many people are suggested per round for the project update (default: 5).</p>
-
       <label class="check">
         <input type="checkbox" id="settingAutoRefresh" checked />
         Automatic refresh
@@ -155,7 +157,7 @@
       </div>
 
       <div class="version-info" style="margin-top: 14px; text-align: center; font-size: 11px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
-        <span>🍿 POPCORN v<span id="appVersion">0.26</span></span>
+        <span>🍿 POPCORN v<span id="appVersion">0.27</span></span>
         <span class="acronym-hint">Participant Order Picker for Candid On-call Reporting &amp; Notes</span>
       </div>
     </section>

@@ -24,6 +24,21 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }
 
 body.modal-open {
@@ -89,15 +104,59 @@ h1 {
   white-space: nowrap;
 }
 
-.round-presence {
-  margin: 10px 16px 0;
-  padding: 6px 10px;
-  border-left: 2px solid var(--accent);
-  background: var(--ink-2);
-  color: var(--muted);
+.people-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px 4px;
+}
+
+.people-status-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.people-presence {
+  font-family: var(--mono);
   font-size: 11.5px;
+  color: var(--muted);
   line-height: 1.4;
-  border-radius: 0 4px 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.add-person-row {
+  padding: 2px 16px 6px;
+}
+
+.people-scroll-area {
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 4px;
+}
+
+.people-scroll-area .list {
+  margin: 4px 0 0;
+}
+
+.secondary-list {
+  border-top: 1px dashed var(--line);
+  margin-top: 6px;
+  padding-top: 4px;
+}
+
+.secondary-list .item {
+  opacity: 0.6;
+}
+
+.secondary-list .item:hover {
+  opacity: 0.9;
 }
 
 .list {
@@ -324,10 +383,26 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   border-color: var(--accent-soft);
 }
 
+.icon-btn.dimmed {
+  opacity: 0.4;
+}
+
+.icon-btn.dimmed:hover {
+  opacity: 0.85;
+}
+
 .icon-btn.active {
+  background: rgba(124, 131, 245, 0.18);
+  border-color: var(--accent);
+  color: var(--accent);
+  opacity: 1;
+}
+
+.icon-btn.danger.active {
   background: rgba(239, 68, 68, 0.18);
   border-color: rgba(239, 68, 68, 0.5);
   color: #ef4444;
+  opacity: 1;
 }
 
 .icon-btn.danger {
@@ -454,7 +529,7 @@ input[type="number"] {
 }
 
 .badge.on { background: rgba(79, 185, 138, 0.16); color: var(--done); }
-.badge.off { background: var(--line); color: var(--muted); }
+.badge.off { background: rgba(239, 68, 68, 0.16); color: #ef4444; }
 
 .field {
   display: block;
@@ -489,6 +564,43 @@ input[type="number"] {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
+}
+
+.untracked-card {
+  margin: 10px 16px 14px;
+  padding: 12px;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+}
+
+.untracked-header {
+  margin-bottom: 6px;
+}
+
+.untracked-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 3px;
+  font-weight: 600;
+}
+
+.untracked-card .hint {
+  padding: 0;
+  margin: 0;
+}
+
+.untracked-card .field {
+  padding: 8px 0 0;
+}
+
+.untracked-card .row {
+  padding: 8px 0 0;
 }
 
 .section-toolbar {

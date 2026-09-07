@@ -4,7 +4,6 @@
 
 const STORE_KEY = "mur_v1"; // Key remains unchanged, migration happens in code
 const ROUND_TTL = 6 * 60 * 60 * 1000;
-const DEFAULT_TOP_N = 5;
 const DEFAULT_REFRESH_INTERVAL = 2;
 
 const $ = (id) => document.getElementById(id);
@@ -13,7 +12,6 @@ let data = {
   version: 2,
   meetings: {},
   settings: {
-    topN: DEFAULT_TOP_N,
     autoRefresh: true,
     refreshInterval: DEFAULT_REFRESH_INTERVAL
   }
@@ -22,15 +20,17 @@ let current = null; // { inMeet, code, title, people }
 let currentId = null; // getracktes Meeting, das gerade laeuft
 let selectedId = null; // manuell aus der Meetingliste geoeffnet
 let presentKeys = new Set();
-let view = "round";
+let view = "meetings";
+let initialViewResolved = false;
 let refreshTimer = null;
 let deleteMode = false;
+let showAddRow = false;
+let sortAlphabetical = false;
 
 const norm = (s) => (s || "").normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
 const keyOf = (name) => norm(name);
 const uid = () => `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 
-const getTopN = () => (data.settings && Number(data.settings.topN)) || DEFAULT_TOP_N;
 const getAutoRefresh = () => (data.settings ? data.settings.autoRefresh !== false : true);
 const getRefreshInterval = () => (data.settings && Number(data.settings.refreshInterval)) || DEFAULT_REFRESH_INTERVAL;
 
@@ -207,7 +207,6 @@ async function load() {
     version: 2,
     meetings: {},
     settings: {
-      topN: DEFAULT_TOP_N,
       autoRefresh: true,
       refreshInterval: DEFAULT_REFRESH_INTERVAL
     }
@@ -233,11 +232,10 @@ async function load() {
   }
 
   if (!loadedData.settings) {
-    loadedData.settings = { topN: DEFAULT_TOP_N, autoRefresh: true, refreshInterval: DEFAULT_REFRESH_INTERVAL };
+    loadedData.settings = { autoRefresh: true, refreshInterval: DEFAULT_REFRESH_INTERVAL };
   } else {
-    loadedData.settings.topN = Math.max(1, Math.min(20, Number(loadedData.settings.topN) || DEFAULT_TOP_N));
     loadedData.settings.autoRefresh = loadedData.settings.autoRefresh !== false;
-    loadedData.settings.refreshInterval = Math.max(2, Math.min(60, Number(loadedData.settings.refreshInterval) || DEFAULT_REFRESH_INTERVAL));
+    loadedData.settings.refreshInterval = Math.max(1, Math.min(60, Number(loadedData.settings.refreshInterval) || DEFAULT_REFRESH_INTERVAL));
   }
 
   let needsSave = false;
@@ -320,115 +318,43 @@ function syncRoster(m, people) {
   return added;
 }
 
-function candidates(m) {
+function syncMeetingOrder(m, forceReorder = false) {
+  if (!m) return [];
+  const fresh = m.round && Array.isArray(m.round.keys) && Date.now() - m.round.createdAt < ROUND_TTL;
+
+  // Active pool: present participants who are not ignored
+  // (If outside Meet, all non-ignored participants are active candidates)
+  const isEligible = (k) => {
+    const p = m.people[k];
+    if (!p || p.ignored) return false;
+    if (presentKeys.size > 0 && !presentKeys.has(k)) return false;
+    return true;
+  };
+
   const pool = Object.entries(m.people)
-    .map(([k, v]) => ({ key: k, ...v }))
-    .filter((p) => !p.ignored && (m.includeAbsent || presentKeys.size === 0 || presentKeys.has(p.key)));
-  pool.sort((a, b) => a.last - b.last || a.name.localeCompare(b.name, "en"));
-  return pool;
-}
+    .filter(([k]) => isEligible(k))
+    .map(([k, v]) => ({ key: k, ...v }));
 
-function ensureRound(m, force) {
-  const topCount = getTopN();
-  const fresh = m.round && Date.now() - m.round.createdAt < ROUND_TTL;
-  const pool = candidates(m).map((p) => p.key);
+  // Sort: longest since update first (ascending last), alphabetical tie-break
+  pool.sort((a, b) => (a.last || 0) - (b.last || 0) || a.name.localeCompare(b.name, "en"));
 
-  const isDoneToday = (k) => {
-    const p = m.people[k];
-    return p && p.last && (Date.now() - p.last < 86400000);
-  };
-  const isEligible = (k) => {
-    const p = m.people[k];
-    return p && !p.ignored && (m.includeAbsent || presentKeys.size === 0 || presentKeys.has(k));
-  };
-
-  if (!force && fresh && m.round && Array.isArray(m.round.keys)) {
-    let valid = m.round.keys.filter((k) => isEligible(k));
-    // Fill with candidates not done today first
-    for (const k of pool) {
-      if (valid.length >= topCount) break;
-      if (!valid.includes(k) && !isDoneToday(k)) {
-        valid.push(k);
+  if (!forceReorder && fresh && m.round && Array.isArray(m.round.keys)) {
+    // Keep existing order for candidates still eligible
+    const existing = m.round.keys.filter((k) => isEligible(k));
+    // Append any newly joined eligible candidates
+    for (const p of pool) {
+      if (!existing.includes(p.key)) {
+        existing.push(p.key);
       }
     }
-    // Fill remaining if needed
-    for (const k of pool) {
-      if (valid.length >= topCount) break;
-      if (!valid.includes(k)) {
-        valid.push(k);
-      }
-    }
-    if (valid.length > 0) {
-      m.round.keys = valid.slice(0, topCount);
-      return;
-    }
+    m.round.keys = existing;
+    return existing;
   }
 
-  // Generate initial round: candidates not done today first
-  const initial = [];
-  for (const k of pool) {
-    if (initial.length >= topCount) break;
-    if (!isDoneToday(k)) initial.push(k);
-  }
-  for (const k of pool) {
-    if (initial.length >= topCount) break;
-    if (!initial.includes(k)) initial.push(k);
-  }
-
-  m.round = { keys: initial.slice(0, topCount), createdAt: Date.now() };
-}
-
-function advanceRound(m) {
-  if (!m) return;
-  const topCount = getTopN();
-  const pool = candidates(m).map((p) => p.key);
-  const currentKeys = Array.isArray(m.round && m.round.keys) ? m.round.keys : [];
-
-  const isDoneToday = (k) => {
-    const p = m.people[k];
-    return p && p.last && (Date.now() - p.last < 86400000);
-  };
-  const isEligible = (k) => {
-    const p = m.people[k];
-    return p && !p.ignored && (m.includeAbsent || presentKeys.size === 0 || presentKeys.has(k));
-  };
-
-  const checkedKeys = currentKeys.filter((k) => isDoneToday(k));
-  const uncheckedKeys = currentKeys.filter((k) => isEligible(k) && !isDoneToday(k));
-
-  if (checkedKeys.length > 0) {
-    // Keep all unchecked candidates, drop checked ones, and replenish from oldest
-    const newKeys = [...uncheckedKeys];
-    for (const k of pool) {
-      if (newKeys.length >= topCount) break;
-      if (!newKeys.includes(k) && !isDoneToday(k)) {
-        newKeys.push(k);
-      }
-    }
-    // If all available people have given an update, fill remaining slots from the pool
-    for (const k of pool) {
-      if (newKeys.length >= topCount) break;
-      if (!newKeys.includes(k)) {
-        newKeys.push(k);
-      }
-    }
-    m.round = { keys: newKeys.slice(0, topCount), createdAt: Date.now() };
-  } else {
-    // 0 candidates checked: cycle to the next batch from the candidate pool
-    const lastKey = currentKeys[currentKeys.length - 1];
-    const lastIndex = lastKey ? pool.indexOf(lastKey) : -1;
-    let nextIndex = lastIndex >= 0 ? (lastIndex + 1) % pool.length : 0;
-
-    const newKeys = [];
-    for (let i = 0; i < pool.length && newKeys.length < topCount; i++) {
-      const idx = (nextIndex + i) % pool.length;
-      const k = pool[idx];
-      if (!newKeys.includes(k)) {
-        newKeys.push(k);
-      }
-    }
-    m.round = { keys: newKeys, createdAt: Date.now() };
-  }
+  // Fresh session order
+  const newKeys = pool.map((p) => p.key);
+  m.round = { keys: newKeys, createdAt: Date.now() };
+  return newKeys;
 }
 
 /* ---------- Bausteine ---------- */
@@ -449,7 +375,7 @@ function buildPersonItem(m, person, index, opts = {}) {
   if (presentKeys.size && !presentKeys.has(person.key)) li.classList.add("absent");
   if (person.ignored) li.classList.add("ignored");
 
-  // Position indicator for Round view
+  // Position indicator for Active rotation list
   if (index !== null && index !== undefined) {
     const pos = document.createElement("div");
     pos.className = "pos";
@@ -458,7 +384,7 @@ function buildPersonItem(m, person, index, opts = {}) {
   }
 
   // Checkbox or Delete button on the left
-  if (opts.inPeopleView && deleteMode) {
+  if (deleteMode) {
     const del = document.createElement("button");
     del.className = "mini ghost icon-btn danger";
     del.title = `Delete "${person.name}"`;
@@ -466,7 +392,9 @@ function buildPersonItem(m, person, index, opts = {}) {
     del.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
     del.addEventListener("click", async () => {
       delete m.people[person.key];
-      if (m.round) m.round.keys = m.round.keys.filter((k) => k !== person.key);
+      if (m.round && Array.isArray(m.round.keys)) {
+        m.round.keys = m.round.keys.filter((k) => k !== person.key);
+      }
       await save();
       render();
     });
@@ -514,7 +442,7 @@ function buildPersonItem(m, person, index, opts = {}) {
   if (person.ignored) {
     ignoreBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
   } else {
-    ignoreBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+    ignoreBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="7" r="3"></circle></svg>`;
   }
 
   ignoreBtn.addEventListener("click", async (e) => {
@@ -522,9 +450,8 @@ function buildPersonItem(m, person, index, opts = {}) {
     const p = m.people[person.key];
     if (!p) return;
     p.ignored = !p.ignored;
-    if (p.ignored && m.round) {
-      m.round.keys = (m.round.keys || []).filter((k) => k !== person.key);
-      ensureRound(m);
+    if (p.ignored && m.round && Array.isArray(m.round.keys)) {
+      m.round.keys = m.round.keys.filter((k) => k !== person.key);
     }
     await save();
     render();
@@ -588,6 +515,7 @@ function buildMeetingItem(m) {
     selectedId = m.id;
     view = "people";
     deleteMode = false;
+    showAddRow = false;
     render();
   });
 
@@ -641,8 +569,9 @@ function setStatus(_text) {
 }
 
 function show(id) {
-  for (const s of ["viewOff", "viewRound", "viewPeople", "viewMeetings", "viewSettings"]) {
-    $(s).classList.toggle("hidden", s !== id);
+  for (const s of ["viewMeetings", "viewPeople", "viewSettings"]) {
+    const el = $(s);
+    if (el) el.classList.toggle("hidden", s !== id);
   }
 }
 
@@ -654,18 +583,27 @@ function render() {
   if (inMeet) {
     $("headEyebrow").textContent = "Current Meeting";
     $("headName").textContent = current.title || current.code || "Untitled Meeting";
-    $("badge").textContent = currentId ? "active" : "off";
-    $("badge").className = "badge " + (currentId ? "active" : "off");
+    if (currentId) {
+      $("badge").textContent = "on";
+      $("badge").className = "badge on";
+      $("badge").title = "Tracking active in Google Meet";
+    } else {
+      $("badge").textContent = "off";
+      $("badge").className = "badge off";
+      $("badge").title = "Meeting not tracked yet";
+    }
   } else if (m) {
     $("headEyebrow").textContent = "Selected List";
     $("headName").textContent = m.name;
-    $("badge").textContent = "offline";
-    $("badge").className = "badge";
+    $("badge").textContent = "off";
+    $("badge").className = "badge off";
+    $("badge").title = "No active Google Meet call (viewing saved list)";
   } else {
     $("headEyebrow").textContent = "Google Meet";
     $("headName").textContent = "No meeting open";
-    $("badge").textContent = "idle";
-    $("badge").className = "badge";
+    $("badge").textContent = "off";
+    $("badge").className = "badge off";
+    $("badge").title = "No active Google Meet call";
   }
 
   // Adjust view if outside Meet with no meeting active
@@ -677,105 +615,142 @@ function render() {
   for (const t of document.querySelectorAll(".tab[data-view]")) {
     const v = t.dataset.view;
     t.classList.toggle("active", v === view);
-    if (v === "round" || v === "people") {
-      t.disabled = !m && !inMeet;
+    if (v === "people") {
+      t.disabled = !m;
     }
   }
 
   // Choose view
   if (view === "settings") {
     show("viewSettings");
-  } else if (view === "meetings") {
-    show("viewMeetings");
-  } else if (!m && inMeet) {
-    show("viewOff");
   } else if (view === "people") {
     show("viewPeople");
   } else {
-    show("viewRound");
+    show("viewMeetings");
   }
 
-  // Activation view
+  // Meetings view
+  const untrackedCard = $("untrackedCard");
   if (!m && inMeet) {
-    if (!$("activateName").value) {
-      $("activateName").value = current.title || (current.code ? `Meeting ${current.code}` : "");
-    }
-    const sel = $("linkTarget");
-    sel.innerHTML = "";
-    const all = Object.values(data.meetings);
-    if (all.length === 0) {
-      const opt = document.createElement("option");
-      opt.textContent = "No lists available";
-      sel.appendChild(opt);
-      sel.disabled = true;
-      $("btnLink").disabled = true;
-    } else {
-      sel.disabled = false;
-      $("btnLink").disabled = false;
-      for (const g of all) {
-        const opt = document.createElement("option");
-        opt.value = g.id;
-        opt.textContent = g.name;
-        sel.appendChild(opt);
+    if (untrackedCard) {
+      untrackedCard.classList.remove("hidden");
+      if (!$("activateName").value) {
+        $("activateName").value = current.title || (current.code ? `Meeting ${current.code}` : "");
       }
     }
+  } else if (untrackedCard) {
+    untrackedCard.classList.add("hidden");
   }
 
-  // Round / Update
-  const list = $("list");
-  list.innerHTML = "";
-  const presEl = $("roundPresence");
-  if (m) {
-    if (inMeet && current && current.people && current.people.length > 0) {
-      const total = Object.keys(m.people).length;
-      const presentCount = presentKeys ? presentKeys.size : current.people.filter((p) => p.present).length;
-      if (presEl) {
-        presEl.textContent = `${presentCount} present of ${total}`;
-        presEl.classList.remove("hidden");
-      }
-    } else if (presEl) {
-      presEl.classList.add("hidden");
-    }
-
-    const shown = (m.round ? m.round.keys : [])
-      .map((k) => (m.people[k] ? { key: k, ...m.people[k] } : null))
-      .filter(Boolean);
-    shown.forEach((p, i) => list.appendChild(buildPersonItem(m, p, i)));
-    $("emptyHint").classList.toggle("hidden", shown.length > 0);
-    $("includeAbsent").checked = !!m.includeAbsent;
-  } else if (presEl) {
-    presEl.classList.add("hidden");
-  }
-
-  // People
-  const all = $("allList");
-  all.innerHTML = "";
-  if (m) {
-    const everyone = Object.entries(m.people)
-      .map(([k, v]) => ({ key: k, ...v }))
-      .sort((a, b) => {
-        if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
-        return a.last - b.last || a.name.localeCompare(b.name, "en");
-      });
-    everyone.forEach((p) => all.appendChild(buildPersonItem(m, p, null, { inPeopleView: true })));
-    $("peopleEmpty").classList.toggle("hidden", everyone.length > 0);
-  }
-  if ($("btnToggleDeleteMode")) {
-    $("btnToggleDeleteMode").classList.toggle("active", deleteMode);
-    $("btnToggleDeleteMode").title = deleteMode ? "Exit delete mode" : "Toggle delete mode";
-  }
-
-  // Meetings
   const ml = $("meetingList");
   ml.innerHTML = "";
   const meetings = Object.values(data.meetings).sort((a, b) => a.name.localeCompare(b.name, "en"));
   meetings.forEach((g) => ml.appendChild(buildMeetingItem(g)));
   $("meetingsEmpty").classList.toggle("hidden", meetings.length > 0);
 
-  // Settings
-  if ($("settingTopN") && document.activeElement !== $("settingTopN")) {
-    $("settingTopN").value = getTopN();
+  // People view (merged standup updates & roster)
+  if (m) {
+    const total = Object.keys(m.people).length;
+    const presEl = $("peoplePresence");
+    if (presEl) {
+      if (inMeet) {
+        const presentCount = presentKeys ? presentKeys.size : 0;
+        presEl.textContent = `${presentCount} present of ${total}`;
+      } else {
+        presEl.textContent = `${total} ${total === 1 ? "participant" : "participants"}`;
+      }
+    }
+
+    // Add person row state
+    $("addPersonRow").classList.toggle("hidden", !showAddRow);
+    if ($("btnToggleAdd")) $("btnToggleAdd").classList.toggle("active", showAddRow);
+
+    // Active rotation list
+    const activeKeys = syncMeetingOrder(m, false);
+    const activeList = $("activeList");
+    activeList.innerHTML = "";
+
+    let displayItems = activeKeys
+      .map((k, i) => ({ key: k, person: m.people[k], priorityIndex: i }))
+      .filter((item) => !!item.person);
+
+    if (sortAlphabetical) {
+      displayItems.sort((a, b) =>
+        (a.person.name || "").localeCompare(b.person.name || "", "en", { sensitivity: "base" })
+      );
+    }
+
+    displayItems.forEach((item) => {
+      activeList.appendChild(buildPersonItem(m, { key: item.key, ...item.person }, item.priorityIndex));
+    });
+
+    const emptyHint = $("peopleEmpty");
+    if (emptyHint) {
+      emptyHint.textContent = inMeet
+        ? "No present participants found. Open the people list in Meet, or add names using +."
+        : "No participants added yet. Add names using +.";
+      emptyHint.classList.toggle("hidden", activeKeys.length > 0);
+    }
+
+    // Secondary list for absent or ignored people
+    const secondaryList = $("secondaryList");
+    secondaryList.innerHTML = "";
+
+    if (m.includeAbsent) {
+      const activeSet = new Set(activeKeys);
+      let secondaryPeople = Object.entries(m.people)
+        .filter(([k]) => !activeSet.has(k))
+        .map(([k, v]) => ({ key: k, ...v }));
+
+      if (sortAlphabetical) {
+        secondaryPeople.sort((a, b) =>
+          (a.name || "").localeCompare(b.name || "", "en", { sensitivity: "base" })
+        );
+      } else {
+        secondaryPeople.sort((a, b) => {
+          if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
+          return (a.last || 0) - (b.last || 0) || a.name.localeCompare(b.name, "en");
+        });
+      }
+
+      secondaryPeople.forEach((p) => {
+        secondaryList.appendChild(buildPersonItem(m, p, null));
+      });
+      secondaryList.classList.toggle("hidden", secondaryPeople.length === 0);
+    } else {
+      secondaryList.classList.add("hidden");
+    }
   }
+
+  if ($("btnToggleAbsent")) {
+    const isAbsentShown = m ? !!m.includeAbsent : false;
+    $("btnToggleAbsent").classList.toggle("active", isAbsentShown);
+    $("btnToggleAbsent").classList.toggle("dimmed", !isAbsentShown);
+    $("btnToggleAbsent").title = isAbsentShown
+      ? "Hide absent and ignored"
+      : "Show absent and ignored";
+    $("btnToggleAbsent").setAttribute("aria-label", $("btnToggleAbsent").title);
+    $("btnToggleAbsent").disabled = !m;
+  }
+
+  if ($("btnToggleSort")) {
+    $("btnToggleSort").classList.toggle("active", sortAlphabetical);
+    $("btnToggleSort").title = sortAlphabetical
+      ? "Alphabetical order active (click to sort by priority)"
+      : "Sort alphabetically by name (preserves priority numbers)";
+    $("btnToggleSort").disabled = !m;
+  }
+
+  if ($("btnToggleDeleteMode")) {
+    $("btnToggleDeleteMode").classList.toggle("active", deleteMode);
+    $("btnToggleDeleteMode").title = deleteMode ? "Exit delete mode" : "Toggle delete mode";
+  }
+
+  if ($("btnRefresh")) {
+    $("btnRefresh").disabled = !m;
+  }
+
+  // Settings
   if ($("settingAutoRefresh")) {
     $("settingAutoRefresh").checked = getAutoRefresh();
   }
@@ -803,12 +778,20 @@ async function refresh(newRound = false, options = {}) {
   presentKeys = new Set();
 
   if (!current.inMeet) {
+    if (!initialViewResolved && !options.background) {
+      initialViewResolved = true;
+      view = "meetings";
+    }
     render();
     return;
   }
 
   const hit = matchMeeting(current.title, current.code);
   if (!hit) {
+    if (!initialViewResolved && !options.background) {
+      initialViewResolved = true;
+      view = "meetings";
+    }
     render();
     return;
   }
@@ -816,6 +799,11 @@ async function refresh(newRound = false, options = {}) {
   const m = hit.m;
   currentId = m.id;
   selectedId = null;
+
+  if (!initialViewResolved && !options.background) {
+    initialViewResolved = true;
+    view = "people";
+  }
 
   if (hit.via === "code" && current.title && norm(current.title) !== norm(m.name)) {
     addAlias(m, current.title);
@@ -834,7 +822,7 @@ async function refresh(newRound = false, options = {}) {
       .filter((p) => !!p.name && !isPresentationName(p.name) && !isNoiseOrIcon(p.name));
     presentKeys = new Set(current.people.filter((p) => p.present).map((p) => keyOf(p.name)));
     const added = syncRoster(m, current.people);
-    ensureRound(m, newRound);
+    syncMeetingOrder(m, newRound);
     await save();
     render();
 
@@ -842,13 +830,12 @@ async function refresh(newRound = false, options = {}) {
     const parts = [`${presentKeys.size} present of ${total}`];
     if (added) parts.push(`${added} newly added`);
     if (current.people.length === 0) parts.push("Open the people list in Meet");
-    const presEl = $("roundPresence");
+    const presEl = $("peoplePresence");
     if (presEl) {
       presEl.textContent = parts.join(" · ");
-      presEl.classList.remove("hidden");
     }
   } else {
-    ensureRound(m, newRound);
+    syncMeetingOrder(m, newRound);
     await save();
     render();
   }
@@ -866,7 +853,7 @@ function setupAutoRefresh() {
       if (document.hidden) return;
       const activeEl = document.activeElement;
       const isEditingText = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") && (activeEl.type === "text" || activeEl.type === "number");
-      if (isEditingText && view !== "round") return;
+      if (isEditingText && view !== "people") return;
       await refresh(false, { background: true });
     }, sec * 1000);
   }
@@ -1345,8 +1332,8 @@ async function importFile(file) {
 for (const t of document.querySelectorAll(".tab")) {
   t.addEventListener("click", () => {
     view = t.dataset.view;
-    if (view === "meetings") selectedId = selectedId;
     deleteMode = false;
+    showAddRow = false;
     render();
   });
 }
@@ -1368,56 +1355,52 @@ $("btnActivate").addEventListener("click", async () => {
     createdAt: Date.now()
   };
   if (current && current.title) addAlias(data.meetings[id], current.title);
+  currentId = id;
+  selectedId = null;
   await save();
-  view = "round";
+  view = "people";
   await refresh(true);
 });
 
-$("btnLink").addEventListener("click", async () => {
-  const id = $("linkTarget").value;
-  const m = data.meetings[id];
-  if (!m) return;
-  if (current && current.title) addAlias(m, current.title);
-  if (current && current.code && !m.codes.includes(current.code)) m.codes.push(current.code);
-  await save();
-  view = "round";
-  await refresh(false);
-});
 
-$("btnRefresh").addEventListener("click", async () => {
-  const btn = $("btnRefresh");
-  btn.classList.add("spinning");
-  try {
-    await refresh(false);
-  } finally {
-    setTimeout(() => btn.classList.remove("spinning"), 400);
-  }
-});
+if ($("btnRefresh")) {
+  $("btnRefresh").addEventListener("click", async () => {
+    const btn = $("btnRefresh");
+    btn.classList.add("spinning");
+    try {
+      await refresh(false);
+    } finally {
+      setTimeout(() => btn.classList.remove("spinning"), 400);
+    }
+  });
+}
 
-$("btnNewRound").addEventListener("click", async () => {
-  const m = meeting();
-  if (!m) return;
-  advanceRound(m);
-  await save();
-  if (current && current.inMeet) {
-    await refresh(false);
-  } else {
+if ($("btnToggleSort")) {
+  $("btnToggleSort").addEventListener("click", () => {
+    sortAlphabetical = !sortAlphabetical;
     render();
-  }
-});
+  });
+}
 
-$("includeAbsent").addEventListener("change", async (e) => {
-  const m = meeting();
-  if (!m) return;
-  m.includeAbsent = e.target.checked;
-  ensureRound(m, true);
-  await save();
-  if (current && current.inMeet) {
-    await refresh(false);
-  } else {
+if ($("btnToggleAdd")) {
+  $("btnToggleAdd").addEventListener("click", () => {
+    showAddRow = !showAddRow;
     render();
-  }
-});
+    if (showAddRow && $("newName")) {
+      $("newName").focus();
+    }
+  });
+}
+
+if ($("btnToggleAbsent")) {
+  $("btnToggleAbsent").addEventListener("click", async () => {
+    const m = meeting();
+    if (!m) return;
+    m.includeAbsent = !m.includeAbsent;
+    await save();
+    render();
+  });
+}
 
 $("btnAdd").addEventListener("click", async () => {
   const m = meeting();
@@ -1428,7 +1411,12 @@ $("btnAdd").addEventListener("click", async () => {
   const name = cleanPersonName(raw);
   if (!name || !m || isPresentationName(name) || isNoiseOrIcon(name)) return;
   const k = keyOf(name);
-  if (!m.people[k]) m.people[k] = { name, last: 0, prev: null, ignored: false };
+  if (!m.people[k]) {
+    m.people[k] = { name, last: 0, prev: null, ignored: false };
+    if (m.round && Array.isArray(m.round.keys)) {
+      m.round.keys.push(k);
+    }
+  }
   $("newName").value = "";
   await save();
   render();
@@ -1436,17 +1424,10 @@ $("btnAdd").addEventListener("click", async () => {
 
 $("newName").addEventListener("keydown", (e) => {
   if (e.key === "Enter") $("btnAdd").click();
-});
-
-$("settingTopN").addEventListener("change", async (e) => {
-  const val = Math.max(1, Math.min(20, parseInt(e.target.value, 10) || DEFAULT_TOP_N));
-  data.settings = data.settings || {};
-  data.settings.topN = val;
-  $("settingTopN").value = val;
-  const m = meeting();
-  if (m) ensureRound(m, true);
-  await save();
-  render();
+  if (e.key === "Escape") {
+    showAddRow = false;
+    render();
+  }
 });
 
 $("settingAutoRefresh").addEventListener("change", async (e) => {

@@ -83,7 +83,7 @@
     s = s.replace(/^(.+?)'s\s+video$/i, "$1");
 
     // Remove parenthetical qualifiers: (Du), (You), (Host), (Presentation), (Visitor), (abwesend), etc.
-    s = s.replace(/\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal|contributor|beitragende|beitragender|abwesend|absent|visitor|besucher)\)/gi, "");
+    s = s.replace(/\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal|contributor|beitragende|beitragender|abwesend|absent|visitor|besucher|eingeladen|invited)\)/gi, "");
     s = s.replace(/[·•]/g, " ");
 
     return clean(s);
@@ -140,9 +140,10 @@
     for (const el of actionElements) {
       const aria = el.getAttribute("aria-label");
       if (!aria) continue;
-      const match = aria.match(/(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für|nachricht\s+an|send\s+a\s+message\s+to|chat\s+with|chatten\s+mit|you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von)\s+(.+)$/i);
-      if (match && match[1]) {
-        const cleaned = cleanPersonName(match[1]);
+      const match = aria.match(/(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für|nachricht\s+an|send\s+a\s+message\s+to|chat\s+with|chatten\s+mit|you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von|bitten,?\s+(?:sie\s+)?|ask\s+)\s*(.+?)(?:\s+(?:beizutreten|to\s+join))?$/i);
+      if (match && (match[1] || match[2])) {
+        const rawExtracted = match[1] || match[2];
+        const cleaned = cleanPersonName(rawExtracted);
         if (looksLikeName(cleaned)) return cleaned;
       }
     }
@@ -218,26 +219,129 @@
     return null;
   }
 
-  function isItemPresent(item, hasId) {
-    if (hasId) return true;
+  const ABSENT_SECTION_RE = /also invited|ebenfalls eingeladen|not in (?:the )?call|nicht im anruf|andere eingeladene|weitere eingeladene|ausstehend|awaiting response|no response|également invités|egalement invites|pas dans l'appel|también invitados|tambien invitados|no están en la llamada|no estan en la llamada/i;
+  const IN_CALL_SECTION_RE = /\b(?:in call|im anruf|in this call|in diesem anruf|in meeting|in the meeting|in der besprechung|contributors|beitragende|dans l'appel|en la llamada)\b/i;
+  const ASK_TO_JOIN_RE = /bitten,?\s+(?:sie\s+)?(?:beizutreten|teilzunehmen)|ask(?:\s+.*)?\s+to\s+join|teilnahme\s+anfragen|demander(?:\s+.*)?\s+à\s+participer|pedir(?:\s+.*)?\s+que\s+se\s+una/i;
 
-    // Check ancestors up to 8 levels for "not in call" / "invited" sections
+  function getAbsentContext() {
+    const absentHeaders = [];
+    const absentContainers = new Set();
+
+    // Scan for section headers / buttons / accordions / headings
+    const candidates = Array.from(document.querySelectorAll(
+      'button, [role="button"], [role="heading"], h1, h2, h3, h4, h5, h6, [aria-level], [aria-controls], div, span, p'
+    ));
+
+    for (const el of candidates) {
+      if (el.closest('[role="listitem"]') || el.hasAttribute("aria-haspopup")) continue;
+      const label = ((el.getAttribute("aria-label") || "") + " " + (el.title || "")).toLowerCase();
+      const txt = (el.textContent || "").trim();
+
+      const matchesText = txt.length > 0 && txt.length <= 100 && ABSENT_SECTION_RE.test(txt);
+      const matchesLabel = ABSENT_SECTION_RE.test(label);
+      if (matchesText || matchesLabel) {
+        absentHeaders.push(el);
+
+        // 1. If element controls another element via aria-controls
+        const controlsId = el.getAttribute("aria-controls");
+        if (controlsId) {
+          const target = document.getElementById(controlsId);
+          if (target) absentContainers.add(target);
+        }
+
+        // 2. Next sibling list or container
+        let next = el.nextElementSibling;
+        while (next) {
+          if (next.getAttribute("role") === "list" || next.querySelector('[role="listitem"]')) {
+            absentContainers.add(next);
+            break;
+          }
+          next = next.nextElementSibling;
+        }
+
+        // 3. Parent container that encloses this header + list, but does NOT contain "in call"
+        let p = el.parentElement;
+        for (let d = 0; d < 4 && p && p !== document.body; d++) {
+          const pTxt = (p.textContent || "").toLowerCase();
+          const hasInCall = IN_CALL_SECTION_RE.test(pTxt);
+          const hasList = p.querySelector('[role="list"], [role="listitem"]');
+          if (hasList && !hasInCall) {
+            absentContainers.add(p);
+            break;
+          }
+          p = p.parentElement;
+        }
+      }
+    }
+
+    return { absentHeaders, absentContainers };
+  }
+
+  function isItemPresent(item, hasId, ctx) {
+    // 1. Direct button or action on the item indicating "ask to join" / "invite"
+    const itemText = (item.textContent || "").toLowerCase();
+    const itemAria = (item.getAttribute("aria-label") || "").toLowerCase();
+    const combined = itemText + " " + itemAria;
+
+    if (ASK_TO_JOIN_RE.test(combined)) {
+      return false;
+    }
+    for (const b of item.querySelectorAll('button, [role="button"]')) {
+      const bTxt = ((b.textContent || "") + " " + (b.getAttribute("aria-label") || "")).toLowerCase();
+      if (ASK_TO_JOIN_RE.test(bTxt)) {
+        return false;
+      }
+    }
+
+    // 2. Check if item is inside any known absent container
+    if (ctx && ctx.absentContainers) {
+      for (const c of ctx.absentContainers) {
+        if (c.contains(item)) {
+          return false;
+        }
+      }
+    }
+
+    // 3. Check DOM position relative to absent section headers in the same side panel
+    if (ctx && ctx.absentHeaders && ctx.absentHeaders.length > 0) {
+      for (const h of ctx.absentHeaders) {
+        const panel = h.closest('aside, [role="tabpanel"], div[aria-label*="panel" i], div[aria-label*="Personen" i], div[aria-label*="People" i]') || h.parentElement;
+        if (panel && panel.contains(item)) {
+          const pos = h.compareDocumentPosition(item);
+          if ((pos & (Node.DOCUMENT_POSITION_FOLLOWING | Node.DOCUMENT_POSITION_CONTAINED_BY)) !== 0) {
+            return false;
+          }
+        }
+      }
+    }
+
+    // 4. Check preceding siblings of the item's enclosing list
+    const list = item.closest('[role="list"]');
+    if (list) {
+      let prev = list.previousElementSibling;
+      while (prev) {
+        const prevTxt = ((prev.textContent || "") + " " + (prev.getAttribute("aria-label") || "")).toLowerCase();
+        if (ABSENT_SECTION_RE.test(prevTxt)) {
+          return false;
+        }
+        prev = prev.previousElementSibling;
+      }
+    }
+
+    // 5. Check ancestors up to 10 levels for absent indicators
     let cur = item;
     let depth = 0;
-    while (cur && cur !== document.body && depth < 8) {
+    while (cur && cur !== document.body && depth < 10) {
       const aria = (cur.getAttribute("aria-label") || "").toLowerCase();
-      if (/not in (?:the )?call|nicht im anruf|also invited|ebenfalls eingeladen|ausstehend|awaiting response|no response/.test(aria)) {
+      if (ABSENT_SECTION_RE.test(aria)) {
         return false;
       }
       cur = cur.parentElement;
       depth++;
     }
 
-    // Check item itself for not-in-call status text / badges
-    const itemText = (item.textContent || "").toLowerCase();
-    const itemAria = (item.getAttribute("aria-label") || "").toLowerCase();
-    const combined = itemText + " " + itemAria;
-    if (/\b(?:not in (?:the )?call|nicht im anruf|also invited|ebenfalls eingeladen|awaiting response|no response|antwort ausstehend|noch keine antwort)\b/.test(combined)) {
+    // 6. Check item itself for not-in-call status text / badges
+    if (/\b(?:not in (?:the )?call|nicht im anruf|also invited|ebenfalls eingeladen|awaiting response|no response|antwort ausstehend|noch keine antwort|invited|eingeladen)\b/i.test(combined)) {
       return false;
     }
 
@@ -245,6 +349,7 @@
   }
 
   function collect() {
+    const ctx = getAbsentContext();
     const seen = new Map();
     const items = Array.from(document.querySelectorAll('[role="listitem"]'));
 
@@ -259,20 +364,20 @@
       const name = extractName(item);
       if (!name || isPresentation(name) || !looksLikeName(name)) continue;
 
-      const present = isItemPresent(item, hasId);
+      const present = isItemPresent(item, hasId, ctx);
       const key = name.toLowerCase();
       const prev = seen.get(key);
       seen.set(key, { name, present: (prev && prev.present) || present });
     }
 
-    // Also scan video tiles with data-participant-id directly
+    // Also scan video tiles with data-participant-id directly (must NOT be inside side panel)
     for (const tile of document.querySelectorAll("[data-participant-id]")) {
+      if (tile.closest('[role="listitem"], [role="list"], aside, [role="tabpanel"]')) continue;
       if (tile.getAttribute("data-is-screen-share") === "true" || tile.getAttribute("data-is-presenting") === "true") continue;
       if (isPresentation(tile.textContent) || isPresentation(tile.getAttribute("aria-label"))) continue;
       const name = extractName(tile);
       if (!name || isPresentation(name) || !looksLikeName(name)) continue;
       const key = name.toLowerCase();
-      const prev = seen.get(key);
       seen.set(key, { name, present: true });
     }
 
@@ -281,15 +386,26 @@
 
   const sessionRoster = new Map();
 
-  function isPanelOpen() {
-    return !!(
-      document.querySelector('aside[aria-label="Side panel"]') ||
-      document.querySelector('div[data-panel-id="1"]') ||
-      document.querySelector('div[role="list"][aria-label*="Participant"]') ||
-      document.querySelector('div[role="list"][aria-label*="Teilnehmer"]') ||
-      document.querySelector('span[role="region"][aria-label="In call"]') ||
-      document.querySelector('span[role="region"][aria-label="Im Anruf"]')
-    );
+  function findPanelButton() {
+    // 1. Specific data-panel-id for People panel
+    const byPanelId = document.querySelector('button[data-panel-id="1"], [role="button"][data-panel-id="1"]');
+    if (byPanelId) return byPanelId;
+
+    // 2. Search by aria-label / title / textContent across common languages
+    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
+    return buttons.find((b) => {
+      const label = ((b.getAttribute("aria-label") || "") + " " + (b.getAttribute("title") || "") + " " + (b.textContent || "")).toLowerCase();
+      return /personen|teilnehmer|people|everyone|participants|show everyone|alle anzeigen|afficher tout le monde|mostrar a todos/.test(label);
+    });
+  }
+
+  function isPeoplePanelOpen() {
+    const btn = findPanelButton();
+    if (btn) {
+      return btn.getAttribute("aria-pressed") === "true" || btn.getAttribute("aria-selected") === "true";
+    }
+    const list = document.querySelector('div[role="list"][aria-label*="Participant"], div[role="list"][aria-label*="Teilnehmer"], [aria-label="In call"], [aria-label="Im Anruf"]');
+    return !!(list && list.offsetParent !== null);
   }
 
   function findViewEveryoneButton() {
@@ -301,19 +417,13 @@
     });
   }
 
-  function findPanelButton() {
-    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
-    return buttons.find((b) => {
-      const label = (b.getAttribute("aria-label") || "").toLowerCase();
-      return /personen|teilnehmer|people|everyone|participants|show everyone/.test(label);
-    });
-  }
-
   function expandCollapsedSections() {
     const toggles = Array.from(document.querySelectorAll('div[role="button"][aria-expanded="false"], button[aria-expanded="false"]'));
     for (const t of toggles) {
+      // Avoid participant action menus (3 dots)
+      if (t.closest('[role="listitem"]') || t.hasAttribute("aria-haspopup")) continue;
       const text = ((t.textContent || "") + " " + (t.getAttribute("aria-label") || "")).toLowerCase();
-      if (/in call|im anruf|in this meeting|in the meeting|in der besprechung|contributors|beitragende|participants|teilnehmer|everyone|alle/.test(text)) {
+      if (/in call|im anruf|in this meeting|in the meeting|in der besprechung|contributors|beitragende|participants|teilnehmer|everyone|alle|also invited|ebenfalls eingeladen|not in (?:the )?call|nicht im anruf|invited|eingeladen/.test(text)) {
         t.click();
       }
     }
@@ -341,6 +451,16 @@
     let openedPanel = false;
 
     if (withPeople) {
+      // Always ensure the People panel is opened if closed
+      if (!isPeoplePanelOpen()) {
+        const btn = findPanelButton();
+        if (btn) {
+          btn.click();
+          openedPanel = true;
+          await wait(350);
+        }
+      }
+
       expandCollapsedSections();
       const viewEveryone = findViewEveryoneButton();
       if (viewEveryone) {
@@ -348,33 +468,23 @@
         await wait(200);
       }
 
-      people = collect();
-
-      if (people.length < 2 && !isPanelOpen()) {
-        const btn = findPanelButton();
-        if (btn && btn.getAttribute("aria-pressed") !== "true" && btn.getAttribute("aria-selected") !== "true") {
-          btn.click();
-          openedPanel = true;
-
-          // Poll up to 600ms until people count stabilizes
-          let lastCount = 0;
-          for (let i = 0; i < 6; i++) {
-            await wait(100);
-            expandCollapsedSections();
-            people = collect();
-            if (people.length > 0 && people.length === lastCount) {
-              break;
-            }
-            lastCount = people.length;
-          }
-
-          const innerViewEveryone = findViewEveryoneButton();
-          if (innerViewEveryone) {
-            innerViewEveryone.click();
-            await wait(200);
-            people = collect();
-          }
+      // Poll up to 1000ms until participants are loaded and count stabilizes
+      let lastCount = 0;
+      for (let i = 0; i < 8; i++) {
+        expandCollapsedSections();
+        people = collect();
+        if (people.length > 0 && people.length === lastCount) {
+          break;
         }
+        lastCount = people.length;
+        await wait(120);
+      }
+
+      const innerViewEveryone = findViewEveryoneButton();
+      if (innerViewEveryone) {
+        innerViewEveryone.click();
+        await wait(200);
+        people = collect();
       }
 
       const now = Date.now();
@@ -382,12 +492,16 @@
         sessionRoster.set(p.name.toLowerCase(), { name: p.name, present: p.present, lastSeen: now });
       }
 
-      if (people.length < 2 && sessionRoster.size > people.length) {
+      // Merge with recent session roster so momentarily unseen participants are retained
+      if (sessionRoster.size > people.length) {
         const merged = new Map();
         for (const [k, v] of sessionRoster.entries()) {
           if (now - v.lastSeen < 60000) {
             merged.set(k, { name: v.name, present: v.present });
           }
+        }
+        for (const p of people) {
+          merged.set(p.name.toLowerCase(), { name: p.name, present: p.present });
         }
         if (merged.size > people.length) {
           people = Array.from(merged.values());

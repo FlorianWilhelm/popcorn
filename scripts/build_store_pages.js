@@ -645,15 +645,14 @@ const s1Popup = `
       <h1>Daily Standup · Product Team</h1>
     </div>
     <div class="bar-side">
-      <span class="badge active">active</span>
+      <span class="badge on">on</span>
       <img class="header-logo" src="data:image/png;base64,${icon48Base64}" width="34" height="34" alt="POPCORN" />
     </div>
   </header>
 
   <nav class="tabs">
-    <button class="tab active">Update</button>
-    <button class="tab">People</button>
     <button class="tab">Meetings</button>
+    <button class="tab active">People</button>
     <button class="tab icon-tab" title="Settings">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="3"></circle>
@@ -663,8 +662,16 @@ const s1Popup = `
   </nav>
 
   <section style="display: block; padding-bottom: 14px;">
-    <div class="round-presence">
-      <span>7 present of 8 · 1 newly added</span>
+    <div class="people-toolbar">
+      <span class="people-presence">7 present of 8 · 1 newly added</span>
+      <div class="actions">
+        <button class="ghost icon-btn" title="Add person">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <button class="ghost icon-btn" title="Toggle delete mode">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        </button>
+      </div>
     </div>
     <ol class="list">
       <!-- Item 1: Alice Martin (Done) -->
@@ -740,31 +747,11 @@ const s1Popup = `
       </li>
     </ol>
 
-    <div class="row" style="margin-top: 10px;">
-      <button class="primary btn-with-icon" style="height: 38px;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M16 3h5v5"></path>
-          <path d="M4 20L21 3"></path>
-          <path d="M21 16v5h-5"></path>
-          <path d="M15 15l6 6"></path>
-          <path d="M4 4l5 5"></path>
-        </svg>
-        <span style="font-weight: 600;">More People</span>
-      </button>
-      <button class="ghost icon-btn" style="width: 38px; height: 38px;" title="Refresh attendance" aria-label="Refresh attendance">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-          <path d="M21 3v5h-5"/>
-          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-          <path d="M3 21v-5h5"/>
-        </svg>
-      </button>
+    <div class="bottom-bar">
+      <label class="check-inline">
+        <input type="checkbox" /> Include absent or ignored
+      </label>
     </div>
-
-    <label class="check">
-      <input type="checkbox" />
-      <span>Include absent</span>
-    </label>
   </section>
 </div>
 `;
@@ -790,15 +777,14 @@ const s2Popup = `
       <h1>Daily Standup · Product Team</h1>
     </div>
     <div class="bar-side">
-      <span class="badge active">active</span>
+      <span class="badge on">on</span>
       <img class="header-logo" src="data:image/png;base64,${icon48Base64}" width="34" height="34" alt="POPCORN" />
     </div>
   </header>
 
   <nav class="tabs">
-    <button class="tab">Update</button>
-    <button class="tab active">People</button>
     <button class="tab">Meetings</button>
+    <button class="tab active">People</button>
     <button class="tab icon-tab" title="Settings">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="3"></circle>
@@ -903,15 +889,14 @@ const s3Popup = `
       <h1>Daily Standup · Product Team</h1>
     </div>
     <div class="bar-side">
-      <span class="badge active">active</span>
+      <span class="badge on">on</span>
       <img class="header-logo" src="data:image/png;base64,${icon48Base64}" width="34" height="34" alt="POPCORN" />
     </div>
   </header>
 
   <nav class="tabs">
-    <button class="tab">Update</button>
-    <button class="tab">People</button>
     <button class="tab active">Meetings</button>
+    <button class="tab">People</button>
     <button class="tab icon-tab" title="Settings">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="3"></circle>
