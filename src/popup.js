@@ -763,9 +763,8 @@ function render() {
   }
 
   if ($("btnToggleAbsent")) {
-    const isAbsentShown = m ? !!m.includeAbsent : false;
+    const isAbsentShown = !!viewState.showAbsent;
     $("btnToggleAbsent").classList.toggle("active", isAbsentShown);
-    $("btnToggleAbsent").classList.toggle("dimmed", !isAbsentShown);
     $("btnToggleAbsent").title = isAbsentShown
       ? "Hide absent and ignored"
       : "Show absent and ignored";

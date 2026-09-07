@@ -390,14 +390,6 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   border-color: var(--accent-soft);
 }
 
-.icon-btn.dimmed {
-  opacity: 0.4;
-}
-
-.icon-btn.dimmed:hover {
-  opacity: 0.85;
-}
-
 .icon-btn.active {
   background: rgba(124, 131, 245, 0.18);
   border-color: var(--accent);
