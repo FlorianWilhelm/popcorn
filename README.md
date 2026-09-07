@@ -1,5 +1,6 @@
 # 🍿 POPCORN – Participant Order Picker for Candid On-call Reporting & Notes
 
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-POPCORN-blue?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/popcorn-%E2%80%93-google-meet-sta/ohfgelbmjoepoocbcmmlhlfcholfogmb)
 [![EffVer Versioning](https://img.shields.io/badge/version_scheme-EffVer-0097a7)](https://jacobtomlinson.dev/effver)
 
 **POPCORN** is a lightweight, privacy-friendly Chrome extension that brings fair and effortless "Popcorn-style" update rotation to Google Meet. It automatically tracks when participants last gave a project update and suggests the candidates whose updates are most overdue.
@@ -24,26 +25,31 @@ In agile team culture, passing the microphone organically is known as *"Popcorn 
 
 - 🎯 **Smart Rotation**: Suggests the top attendees present in the call who haven't spoken the longest.
 - ✅ **One-Click Check-Off**: Click a participant's checkbox to mark their update complete with an instant strikethrough.
-- 🔄 **Replenishment & Cycling**: "More People" removes checked participants and brings in fresh candidates from the pool seamlessly.
+- 👥 **Real-Time Attendance**: Syncs live attendees from Google Meet and highlights newly joined teammates.
 - 👁️ **Ignore Toggle**: Mute or exclude specific participants (e.g. guests or passive listeners) with a single click.
 - 🗑️ **Delete Mode**: Clean up outdated or temporary participants easily.
-- 📅 **Meeting Aliasing**: Recognizes recurring meetings even if calendar titles or meeting codes change.
-- 📝 **Full Markdown & JSON Import/Export**: Everything can also be exported and imported as clean, human-readable Markdown tables (or complete JSON backups) — view, edit, copy, and share meetings effortlessly across tools like Notion, Obsidian, GitHub, and Docs.
+- 📅 **Meeting Aliasing & History**: Recognizes recurring meetings and tracks multiple meetings across teams.
+- 📝 **Full Markdown & JSON Import/Export**: View, edit, copy, and share meetings effortlessly as clean Markdown tables across Notion, Obsidian, GitHub, and Docs.
 - 🔒 **Zero Telemetry / Local-Only**: Everything is saved locally in `chrome.storage.local`. No external servers.
 
 ---
 
 ## 🛠️ Installation
 
-### Option 1: Release Bundle (Easiest)
+### Option 1: Chrome Web Store (Recommended & Quickest)
+Install POPCORN directly from the official Google Chrome Web Store with automatic background updates:
+
+👉 **[Install from Chrome Web Store](https://chromewebstore.google.com/detail/popcorn-%E2%80%93-google-meet-sta/ohfgelbmjoepoocbcmmlhlfcholfogmb)**
+
+### Option 2: Release Bundle (.zip)
 1. Download the `popcorn-v*.zip` bundle from the latest [GitHub Release](https://github.com/FlorianWilhelm/popcorn/releases).
-2. Unzip the downloaded file.
-3. In Chrome (or any Chromium browser), navigate to `chrome://extensions`.
+2. Unzip the downloaded file into a folder.
+3. In Chrome (or any Chromium browser like Brave or Edge), navigate to `chrome://extensions`.
 4. Enable **Developer mode** in the top-right corner.
 5. Click **Load unpacked** and select the unzipped folder.
 6. Pin **POPCORN (🍿)** to your extension toolbar.
 
-### Option 2: From Source
+### Option 3: From Source (Developers)
 1. Clone this repository: `git clone https://github.com/FlorianWilhelm/popcorn.git`
 2. In Chrome, navigate to `chrome://extensions`.
 3. Enable **Developer mode** in the top-right corner.
@@ -59,11 +65,11 @@ By default, POPCORN is completely passive in untracked meetings. When you open t
 - If tracking is disabled, verify or adjust the meeting name and click **Enable Tracking**.
 - From that moment on, POPCORN remembers attendance and rotation history for all future occurrences.
 
-### 2. Giving Updates
-- The **Update** tab displays the top candidates for today's meeting.
-- As someone finishes their update, click their checkbox. The person is marked `doneToday` with a strikethrough.
-- Click **More People** to cycle in new candidates.
+### 2. Giving Updates & Rotation
+- The **People** tab displays attendance presence and the fair speaker rotation order for today's meeting.
+- As someone finishes their update, click their checkbox. The person is marked done with a strikethrough and timestamp.
 - Click the **Refresh (🔄)** icon to re-sync live attendance from Meet anytime.
+- Use the toolbar buttons to sort alphabetically, add participants, toggle delete mode, or show absent/ignored members.
 
 ### 3. Managing Attendees
 - In the **People** tab, view everyone ever tracked for the meeting, sorted by their last update date.
