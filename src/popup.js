@@ -257,17 +257,53 @@ async function save() {
 
 /* ---------- Meet auslesen ---------- */
 
-async function readMeet(withPeople) {
+let sessionPort = null;
+
+function ensureSessionPort(tabId, force = false) {
+  if (sessionPort && !force) return;
+  if (sessionPort && force) {
+    try {
+      sessionPort.disconnect();
+    } catch {}
+    sessionPort = null;
+  }
+  try {
+    sessionPort = chrome.tabs.connect(tabId, { name: "popcorn-session" });
+    sessionPort.onDisconnect.addListener(() => {
+      sessionPort = null;
+    });
+  } catch {}
+}
+
+function disconnectSession() {
+  if (sessionPort) {
+    try {
+      sessionPort.disconnect();
+    } catch {}
+    sessionPort = null;
+  }
+}
+
+window.addEventListener("pagehide", disconnectSession);
+window.addEventListener("beforeunload", disconnectSession);
+
+async function readMeet(withPeople, opts = {}) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !/^https:\/\/meet\.google\.com\//.test(tab.url || "")) {
     return { ok: false, reason: "nomeet" };
   }
-  const send = () => chrome.tabs.sendMessage(tab.id, { type: "MUR_SCRAPE", withPeople: !!withPeople });
+  ensureSessionPort(tab.id);
+  const send = () => chrome.tabs.sendMessage(tab.id, {
+    type: "MUR_SCRAPE",
+    withPeople: !!withPeople,
+    openIfClosed: !!opts.openIfClosed
+  });
   try {
     return await send();
   } catch {
     try {
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+      ensureSessionPort(tab.id, true);
       return await send();
     } catch {
       return { ok: false, reason: "noinject" };
@@ -582,7 +618,9 @@ function render() {
   // Header
   if (inMeet) {
     $("headEyebrow").textContent = "Current Meeting";
-    $("headName").textContent = current.title || current.code || "Untitled Meeting";
+    const titleText = current.title || current.code || "Untitled Meeting";
+    $("headName").textContent = titleText;
+    $("headName").title = titleText;
     if (currentId) {
       $("badge").textContent = "on";
       $("badge").className = "badge on";
@@ -595,12 +633,14 @@ function render() {
   } else if (m) {
     $("headEyebrow").textContent = "Selected List";
     $("headName").textContent = m.name;
+    $("headName").title = m.name;
     $("badge").textContent = "off";
     $("badge").className = "badge off";
     $("badge").title = "No active Google Meet call (viewing saved list)";
   } else {
     $("headEyebrow").textContent = "Google Meet";
     $("headName").textContent = "No meeting open";
+    $("headName").title = "No meeting open";
     $("badge").textContent = "off";
     $("badge").className = "badge off";
     $("badge").title = "No active Google Meet call";
@@ -814,7 +854,7 @@ async function refresh(newRound = false, options = {}) {
   }
 
   // Phase 2: now read people list
-  const full = await readMeet(true);
+  const full = await readMeet(true, { openIfClosed: !options.background });
   if (full && full.ok) {
     current.people = (full.people || [])
       .filter((p) => !isPresentationName(p.name) && !isNoiseOrIcon(p.name))

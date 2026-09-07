@@ -2,7 +2,9 @@
  * Content script for scraping Google Meet participant lists and title.
  */
 (() => {
-  if (window.__murLoaded) return;
+  if (window.__murCleanup) {
+    try { window.__murCleanup(); } catch {}
+  }
   window.__murLoaded = true;
 
   const CODE_RE = /^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i;
@@ -387,25 +389,133 @@
   const sessionRoster = new Map();
 
   function findPanelButton() {
-    // 1. Specific data-panel-id for People panel
-    const byPanelId = document.querySelector('button[data-panel-id="1"], [role="button"][data-panel-id="1"]');
-    if (byPanelId) return byPanelId;
+    // 1. Specific data-panel-id for People panel (element or button within)
+    const byId = document.querySelector('[data-panel-id="1"]');
+    if (byId) {
+      return byId.matches('button, [role="button"]')
+        ? byId
+        : (byId.querySelector('button, [role="button"]') || byId);
+    }
 
-    // 2. Search by aria-label / title / textContent across common languages
+    // 2. Search bottom control bar buttons (usually anchored in bottom 130px)
     const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
-    return buttons.find((b) => {
+    const bottomButtons = buttons.filter((b) => {
+      const rect = b.getBoundingClientRect();
+      return rect.top > window.innerHeight - 130 && rect.width > 0 && rect.height > 0;
+    });
+
+    const candidates = bottomButtons.length > 0 ? bottomButtons : buttons;
+    return candidates.find((b) => {
       const label = ((b.getAttribute("aria-label") || "") + " " + (b.getAttribute("title") || "") + " " + (b.textContent || "")).toLowerCase();
+      if (/chat|aktivitäten|activities|details|steuerelemente|host controls|sicherheit|security/.test(label)) return false;
       return /personen|teilnehmer|people|everyone|participants|show everyone|alle anzeigen|afficher tout le monde|mostrar a todos/.test(label);
     });
   }
 
+  function findSidePanelCloseButton() {
+    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
+    return buttons.find((b) => {
+      const rect = b.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return false;
+      // Must be on the right side of the screen where side panel is located
+      if (rect.right < window.innerWidth / 2) return false;
+      // Must not be in the bottom control bar
+      if (rect.top > window.innerHeight - 100) return false;
+
+      const aria = (b.getAttribute("aria-label") || "").toLowerCase();
+      const title = (b.getAttribute("title") || "").toLowerCase();
+      const txt = (b.textContent || "").trim().toLowerCase();
+
+      // Must not be leave call button
+      if (/anruf|call|verlassen|leave/.test(aria + " " + title)) return false;
+
+      return aria === "schließen" || aria === "close" ||
+             aria.includes("schließen") || aria.includes("close") ||
+             title === "schließen" || title === "close" ||
+             txt === "close";
+    });
+  }
+
   function isPeoplePanelOpen() {
+    // 1. Participant list container is visible in DOM
+    const list = document.querySelector('div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Personen" i], [aria-label="In call" i], [aria-label="Im Anruf" i], span[role="region"][aria-label*="call" i], span[role="region"][aria-label*="anruf" i]');
+    if (list && list.offsetParent !== null) {
+      return true;
+    }
+
+    // 2. A visible side panel close button on the right
+    const closeBtn = findSidePanelCloseButton();
+    if (closeBtn) {
+      const sidePanel = closeBtn.closest('aside, section, div[role="region"], div[role="tabpanel"], div[data-panel-id="1"]') || closeBtn.parentElement?.parentElement?.parentElement;
+      if (sidePanel) {
+        const text = (sidePanel.textContent || "").toLowerCase();
+        if (/personen|people|teilnehmer|participants|in call|im anruf|contributors|beitragende|eingeladen|invited/.test(text)) {
+          return true;
+        }
+      } else {
+        return true;
+      }
+    }
+
+    // 3. Participant listitems in the right half of the screen
+    const items = document.querySelectorAll('[role="listitem"]');
+    for (const it of items) {
+      if (it.offsetParent !== null) {
+        const rect = it.getBoundingClientRect();
+        if (rect.left > window.innerWidth / 2) {
+          return true;
+        }
+      }
+    }
+
+    // 4. Panel button aria state
     const btn = findPanelButton();
     if (btn) {
-      return btn.getAttribute("aria-pressed") === "true" || btn.getAttribute("aria-selected") === "true";
+      const target = btn.matches('button, [role="button"]') ? btn : (btn.querySelector('button, [role="button"]') || btn);
+      const pressed = target.getAttribute("aria-pressed") === "true" ||
+                      target.getAttribute("aria-expanded") === "true" ||
+                      target.getAttribute("aria-selected") === "true" ||
+                      btn.getAttribute("aria-pressed") === "true" ||
+                      btn.getAttribute("aria-expanded") === "true";
+      if (pressed) return true;
     }
-    const list = document.querySelector('div[role="list"][aria-label*="Participant"], div[role="list"][aria-label*="Teilnehmer"], [aria-label="In call"], [aria-label="Im Anruf"]');
-    return !!(list && list.offsetParent !== null);
+
+    return false;
+  }
+
+  function closePeoplePanel() {
+    if (!isPeoplePanelOpen()) return;
+
+    // 1. Click the close button in the side panel
+    const closeBtn = findSidePanelCloseButton();
+    if (closeBtn) {
+      closeBtn.click();
+      return;
+    }
+
+    // 2. Fallback: toggle via the main panel button in bottom control bar
+    const btn = findPanelButton();
+    if (btn) {
+      btn.click();
+    }
+  }
+
+  let openedByPopcorn = false;
+  const activeSessionPorts = new Set();
+
+  function onSessionConnect(port) {
+    if (port.name === "popcorn-session") {
+      activeSessionPorts.add(port);
+      port.onDisconnect.addListener(() => {
+        activeSessionPorts.delete(port);
+        if (activeSessionPorts.size === 0) {
+          if (openedByPopcorn) {
+            closePeoplePanel();
+            openedByPopcorn = false;
+          }
+        }
+      });
+    }
   }
 
   function findViewEveryoneButton() {
@@ -439,24 +549,25 @@
     }
   }
 
-  setInterval(updateLiveRoster, 1000);
+  const liveRosterInterval = setInterval(updateLiveRoster, 1000);
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   /* withPeople false heisst: nur Meeting-Name lesen, Personenliste nicht
    * antasten. So oeffnet die Erweiterung in nicht getrackten Meetings kein
    * Panel und bleibt vollstaendig passiv. */
-  async function scrape(withPeople) {
+  async function scrape(withPeople, openIfClosed = false) {
     let people = [];
     let openedPanel = false;
 
     if (withPeople) {
-      // Always ensure the People panel is opened if closed
-      if (!isPeoplePanelOpen()) {
+      // If requested and panel is closed, open it and track that Popcorn opened it
+      if (!isPeoplePanelOpen() && openIfClosed) {
         const btn = findPanelButton();
         if (btn) {
           btn.click();
           openedPanel = true;
+          openedByPopcorn = true;
           await wait(350);
         }
       }
@@ -519,12 +630,21 @@
     };
   }
 
-  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  const messageListener = (msg, _sender, sendResponse) => {
     if (msg && msg.type === "MUR_SCRAPE") {
-      scrape(msg.withPeople === true)
+      scrape(msg.withPeople === true, msg.openIfClosed === true)
         .then(sendResponse)
         .catch((e) => sendResponse({ ok: false, error: String(e && e.message ? e.message : e) }));
       return true;
     }
-  });
+  };
+  chrome.runtime.onMessage.addListener(messageListener);
+
+  chrome.runtime.onConnect.addListener(onSessionConnect);
+
+  window.__murCleanup = () => {
+    clearInterval(liveRosterInterval);
+    try { chrome.runtime.onMessage.removeListener(messageListener); } catch {}
+    try { chrome.runtime.onConnect.removeListener(onSessionConnect); } catch {}
+  };
 })();
