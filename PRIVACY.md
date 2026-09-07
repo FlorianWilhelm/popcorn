@@ -35,4 +35,4 @@ The Extension requests only the minimum permissions necessary to function:
 
 ## 5. Contact
 If you have any questions or concerns regarding this Privacy Policy, please open an issue on the official GitHub repository:
-https://github.com/fwilhelm/meet-update-rotator
+https://github.com/FlorianWilhelm/popcorn

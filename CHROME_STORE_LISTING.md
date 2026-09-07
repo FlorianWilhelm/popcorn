@@ -126,7 +126,7 @@ To facilitate fair popcorn-style speaker rotation and track update turns for att
 - **Certification:** Check **"I certify that my extension complies with the Chrome Web Store Developer Program Policies."**
 - **Privacy Policy URL:**
   ```text
-  https://github.com/fwilhelm/meet-update-rotator/blob/main/PRIVACY.md
+  https://github.com/FlorianWilhelm/popcorn/blob/main/PRIVACY.md
   ```
 
 ---

@@ -9,8 +9,10 @@ if (!fs.existsSync(pagesDir)) {
 }
 
 const srcDir = path.join(rootDir, 'src');
+const pkg = require(path.join(rootDir, 'package.json'));
+const appVersion = pkg.version;
 
-// Read popup.css to embed directly or link
+// Read popup.css to embed directly
 const popupCss = fs.readFileSync(path.join(srcDir, 'popup.css'), 'utf-8');
 const icon48Base64 = fs.readFileSync(path.join(srcDir, 'icons', 'icon48.png')).toString('base64');
 const icon128Base64 = fs.readFileSync(path.join(srcDir, 'icons', 'icon128.png')).toString('base64');
@@ -550,7 +552,7 @@ function getGoogleMeetCallHtml(popupHtml, isModal = false) {
           </div>
         </div>
 
-        <!-- 3: Present Screen (Laptop + Arrow) -->
+        <!-- 3: Present Screen -->
         <div class="dock-btn">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
             <rect x="3" y="4" width="18" height="12" rx="2"/>
@@ -559,7 +561,7 @@ function getGoogleMeetCallHtml(popupHtml, isModal = false) {
           </svg>
         </div>
 
-        <!-- 4: Reactions (Smiley) -->
+        <!-- 4: Reactions -->
         <div class="dock-btn">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
             <circle cx="12" cy="12" r="9"/>
@@ -634,7 +636,7 @@ function getGoogleMeetCallHtml(popupHtml, isModal = false) {
 }
 
 // -------------------------------------------------------------
-// SCREENSHOT 1: Standup Tab (Update Tab)
+// SCREENSHOT 1: People View – Active Popcorn Standup Rotation
 // -------------------------------------------------------------
 const s1Popup = `
 <style>${popupCss}</style>
@@ -646,7 +648,7 @@ const s1Popup = `
     </div>
     <div class="bar-side">
       <span class="badge on">on</span>
-      <img class="header-logo" src="data:image/png;base64,${icon48Base64}" width="34" height="34" alt="POPCORN" />
+      <img class="header-logo" src="data:image/png;base64,${icon48Base64}" width="32" height="32" alt="POPCORN" title="POPCORN v${appVersion}" />
     </div>
   </header>
 
@@ -661,96 +663,127 @@ const s1Popup = `
     </button>
   </nav>
 
-  <section style="display: block; padding-bottom: 14px;">
+  <section style="display: block; padding-bottom: 8px;">
+    <!-- People Toolbar (Matches real UI) -->
     <div class="people-toolbar">
-      <span class="people-presence">7 present of 8 · 1 newly added</span>
-      <div class="actions">
-        <button class="ghost icon-btn" title="Add person">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <div class="people-status-wrap">
+        <button class="ghost icon-btn mini" title="Refresh attendance">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M3 21v-5h5"/>
+          </svg>
         </button>
-        <button class="ghost icon-btn" title="Toggle delete mode">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        <span class="people-presence">7 present of 8 · 1 newly added</span>
+      </div>
+      <div class="toolbar-actions">
+        <button class="ghost icon-btn mini dimmed" title="Show absent and ignored">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 10h.01"/>
+            <path d="M15 10h.01"/>
+            <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/>
+          </svg>
+        </button>
+        <button class="ghost icon-btn mini" title="Sort alphabetically">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 16 4 4 4-4"/>
+            <path d="M7 20V4"/>
+            <path d="M20 8h-5"/>
+            <path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/>
+            <path d="M15 14h5l-5 6h5"/>
+          </svg>
+        </button>
+        <button class="ghost icon-btn mini" title="Add participant">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+        <button class="ghost icon-btn mini" title="Toggle delete mode">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
         </button>
       </div>
     </div>
-    <ol class="list">
-      <!-- Item 1: Alice Martin (Done) -->
-      <li class="item done">
-        <span class="pos">01</span>
-        <label class="check-item">
-          <input type="checkbox" checked />
-        </label>
-        <div class="name-wrap">
-          <span class="name">Alice Martin</span>
-        </div>
-        <span class="date">today · 10:15</span>
-      </li>
 
-      <!-- Item 2: Florian Wilhelm -->
-      <li class="item">
-        <span class="pos">02</span>
-        <label class="check-item">
-          <input type="checkbox" />
-        </label>
-        <div class="name-wrap">
-          <span class="name">Florian Wilhelm</span>
-        </div>
-        <span class="date">3d ago · 3 Sep</span>
-      </li>
+    <!-- Active Rotation List -->
+    <div class="people-scroll-area">
+      <ol class="list">
+        <!-- Item 1: Alice Martin (Done) -->
+        <li class="item done">
+          <span class="pos">01</span>
+          <label class="check-item">
+            <input type="checkbox" checked />
+          </label>
+          <div class="name-wrap">
+            <span class="name">Alice Martin</span>
+          </div>
+          <span class="date">today · 10:15</span>
+        </li>
 
-      <!-- Item 3: Sarah Connor -->
-      <li class="item">
-        <span class="pos">03</span>
-        <label class="check-item">
-          <input type="checkbox" />
-        </label>
-        <div class="name-wrap">
-          <span class="name">Sarah Connor</span>
-        </div>
-        <span class="date">1d ago · 5 Sep</span>
-      </li>
+        <!-- Item 2: Florian Wilhelm -->
+        <li class="item">
+          <span class="pos">02</span>
+          <label class="check-item">
+            <input type="checkbox" />
+          </label>
+          <div class="name-wrap">
+            <span class="name">Florian Wilhelm</span>
+          </div>
+          <span class="date">3d ago · 4 Sep</span>
+        </li>
 
-      <!-- Item 4: David Chen -->
-      <li class="item">
-        <span class="pos">04</span>
-        <label class="check-item">
-          <input type="checkbox" />
-        </label>
-        <div class="name-wrap">
-          <span class="name">David Chen</span>
-        </div>
-        <span class="date">yesterday</span>
-      </li>
+        <!-- Item 3: Sarah Connor -->
+        <li class="item">
+          <span class="pos">03</span>
+          <label class="check-item">
+            <input type="checkbox" />
+          </label>
+          <div class="name-wrap">
+            <span class="name">Sarah Connor</span>
+          </div>
+          <span class="date">1d ago · 6 Sep</span>
+        </li>
 
-      <!-- Item 5: Elena Rostova -->
-      <li class="item">
-        <span class="pos">05</span>
-        <label class="check-item">
-          <input type="checkbox" />
-        </label>
-        <div class="name-wrap">
-          <span class="name">Elena Rostova</span>
-        </div>
-        <span class="date">4d ago · 2 Sep</span>
-      </li>
+        <!-- Item 4: David Chen -->
+        <li class="item">
+          <span class="pos">04</span>
+          <label class="check-item">
+            <input type="checkbox" />
+          </label>
+          <div class="name-wrap">
+            <span class="name">David Chen</span>
+          </div>
+          <span class="date">yesterday</span>
+        </li>
 
-      <!-- Item 6: Liam Vance -->
-      <li class="item">
-        <span class="pos">06</span>
-        <label class="check-item">
-          <input type="checkbox" />
-        </label>
-        <div class="name-wrap">
-          <span class="name">Liam Vance</span>
-        </div>
-        <span class="date">5d ago · 1 Sep</span>
-      </li>
-    </ol>
+        <!-- Item 5: Elena Rostova -->
+        <li class="item">
+          <span class="pos">05</span>
+          <label class="check-item">
+            <input type="checkbox" />
+          </label>
+          <div class="name-wrap">
+            <span class="name">Elena Rostova</span>
+          </div>
+          <span class="date">4d ago · 3 Sep</span>
+        </li>
 
-    <div class="bottom-bar">
-      <label class="check-inline">
-        <input type="checkbox" /> Include absent or ignored
-      </label>
+        <!-- Item 6: Liam Vance -->
+        <li class="item">
+          <span class="pos">06</span>
+          <label class="check-item">
+            <input type="checkbox" />
+          </label>
+          <div class="name-wrap">
+            <span class="name">Liam Vance</span>
+          </div>
+          <span class="date">5d ago · 2 Sep</span>
+        </li>
+      </ol>
     </div>
   </section>
 </div>
@@ -766,7 +799,7 @@ fs.writeFileSync(path.join(pagesDir, 'screenshot1_standup.html'), s1Html);
 
 
 // -------------------------------------------------------------
-// SCREENSHOT 2: People Tab (Attendance & Statuses)
+// SCREENSHOT 2: People View – Roster Management & Absent/Ignored
 // -------------------------------------------------------------
 const s2Popup = `
 <style>${popupCss}</style>
@@ -778,7 +811,7 @@ const s2Popup = `
     </div>
     <div class="bar-side">
       <span class="badge on">on</span>
-      <img class="header-logo" src="data:image/png;base64,${icon48Base64}" width="34" height="34" alt="POPCORN" />
+      <img class="header-logo" src="data:image/png;base64,${icon48Base64}" width="32" height="32" alt="POPCORN" title="POPCORN v${appVersion}" />
     </div>
   </header>
 
@@ -793,76 +826,109 @@ const s2Popup = `
     </button>
   </nav>
 
-  <section style="display: block; padding: 12px 16px 14px;">
-    <!-- Add Person Input Row -->
-    <div class="row add" style="display: flex; gap: 8px; margin-bottom: 12px;">
-      <input type="text" placeholder="Add person..." style="flex: 1; height: 36px; background: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; padding: 0 10px; color: var(--text); font-size: 13px;" />
-      <button class="primary btn-with-icon" style="height: 36px; padding: 0 14px;">
-        <span style="font-weight: 600;">+ Add</span>
+  <section style="display: block; padding-bottom: 8px;">
+    <!-- People Toolbar with Absent button highlighted -->
+    <div class="people-toolbar">
+      <div class="people-status-wrap">
+        <button class="ghost icon-btn mini" title="Refresh attendance">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M3 21v-5h5"/>
+          </svg>
+        </button>
+        <span class="people-presence">7 present · 2 absent/ignored</span>
+      </div>
+      <div class="toolbar-actions">
+        <!-- Ghost button active / highlighted -->
+        <button class="ghost icon-btn mini" style="background: var(--ink-3); color: var(--accent);" title="Showing absent and ignored">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 10h.01"/>
+            <path d="M15 10h.01"/>
+            <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/>
+          </svg>
+        </button>
+        <button class="ghost icon-btn mini" title="Sort alphabetically">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 16 4 4 4-4"/>
+            <path d="M7 20V4"/>
+            <path d="M20 8h-5"/>
+            <path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/>
+            <path d="M15 14h5l-5 6h5"/>
+          </svg>
+        </button>
+        <button class="ghost icon-btn mini" title="Add participant">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+        <button class="ghost icon-btn mini" title="Toggle delete mode">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Expandable Add Person Row (Shown) -->
+    <div class="row add-person-row" style="display: flex; gap: 8px; margin: 6px 12px 10px;">
+      <input type="text" placeholder="Add participant name" value="Lucas Meyer" style="flex: 1;" />
+      <button class="primary btn-with-icon" style="flex: 0 0 auto;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Add</span>
       </button>
     </div>
 
-    <!-- Attendees List -->
-    <ul class="list plain" style="padding: 0; margin: 0; max-height: 270px; overflow-y: hidden;">
-      <li class="item">
-        <span class="status-dot present" title="Present"></span>
-        <span class="name" style="flex: 1; font-weight: 500;">Alice Martin</span>
-        <button class="ghost icon-btn btn-ignore" style="margin-right: 6px; width: 26px; height: 26px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-        <span class="due-tag due-overdue-high">5d overdue</span>
-      </li>
+    <div class="people-scroll-area">
+      <!-- Active rotation list -->
+      <ol class="list">
+        <li class="item">
+          <span class="pos">01</span>
+          <label class="check-item"><input type="checkbox" /></label>
+          <div class="name-wrap"><span class="name">Alice Martin</span></div>
+          <span class="date">today · 10:15</span>
+        </li>
+        <li class="item">
+          <span class="pos">02</span>
+          <label class="check-item"><input type="checkbox" /></label>
+          <div class="name-wrap"><span class="name">Florian Wilhelm</span></div>
+          <span class="date">3d ago · 4 Sep</span>
+        </li>
+        <li class="item">
+          <span class="pos">03</span>
+          <label class="check-item"><input type="checkbox" /></label>
+          <div class="name-wrap"><span class="name">Sarah Connor</span></div>
+          <span class="date">1d ago · 6 Sep</span>
+        </li>
+      </ol>
 
-      <li class="item">
-        <span class="status-dot present" title="Present"></span>
-        <span class="name" style="flex: 1; font-weight: 500;">Florian Wilhelm</span>
-        <button class="ghost icon-btn btn-ignore" style="margin-right: 6px; width: 26px; height: 26px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-        <span class="due-tag due-overdue-medium">3d overdue</span>
-      </li>
-
-      <li class="item">
-        <span class="status-dot present" title="Present"></span>
-        <span class="name" style="flex: 1; font-weight: 500;">Sarah Connor</span>
-        <button class="ghost icon-btn btn-ignore" style="margin-right: 6px; width: 26px; height: 26px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-        <span class="due-tag due-overdue-low">1d overdue</span>
-      </li>
-
-      <li class="item">
-        <span class="status-dot present" title="Present"></span>
-        <span class="name" style="flex: 1; font-weight: 500;">David Chen</span>
-        <button class="ghost icon-btn btn-ignore" style="margin-right: 6px; width: 26px; height: 26px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-        <span class="due-tag due-today">Today</span>
-      </li>
-
-      <li class="item">
-        <span class="status-dot absent" title="Absent"></span>
-        <span class="name" style="flex: 1; color: var(--muted);">Elena Rostova</span>
-        <button class="ghost icon-btn btn-ignore" style="margin-right: 6px; width: 26px; height: 26px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-        <span class="due-tag due-overdue-medium">3d overdue</span>
-      </li>
-
-      <li class="item">
-        <span class="status-dot ignored" title="Ignored"></span>
-        <span class="name" style="flex: 1; color: var(--muted); text-decoration: line-through;">Marcus Brody</span>
-        <button class="ghost icon-btn btn-ignore is-ignored" style="margin-right: 6px; width: 26px; height: 26px; color: #ef4444;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-        </button>
-        <span class="due-tag due-ignored">Ignored</span>
-      </li>
-    </ul>
-
-    <!-- Footer Stats & Actions -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--muted);">
-      <span>8 participants · 6 present</span>
-      <button class="ghost" style="font-size: 11px; padding: 4px 8px; border-radius: 4px;">Delete Mode</button>
+      <!-- Secondary list for absent & ignored people -->
+      <ul class="list secondary-list" style="margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px;">
+        <li class="item absent">
+          <div class="name-wrap">
+            <span class="name" style="color: var(--muted);">Thomas Clark</span>
+          </div>
+          <button class="ghost icon-btn btn-ignore" title="Toggle ignore">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+          <span class="status-badge absent">Absent</span>
+        </li>
+        <li class="item ignored">
+          <div class="name-wrap">
+            <span class="name" style="color: var(--muted); text-decoration: line-through;">Marcus Brody</span>
+          </div>
+          <button class="ghost icon-btn btn-ignore is-ignored" style="color: #ef4444;" title="Unignore">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+          <span class="status-badge ignored">Ignored</span>
+        </li>
+      </ul>
     </div>
   </section>
 </div>
@@ -878,7 +944,7 @@ fs.writeFileSync(path.join(pagesDir, 'screenshot2_people.html'), s2Html);
 
 
 // -------------------------------------------------------------
-// SCREENSHOT 3: Meetings Tab (Google Meet in Background)
+// SCREENSHOT 3: Meetings View – Multi-Meeting Tracking
 // -------------------------------------------------------------
 const s3Popup = `
 <style>${popupCss}</style>
@@ -890,7 +956,7 @@ const s3Popup = `
     </div>
     <div class="bar-side">
       <span class="badge on">on</span>
-      <img class="header-logo" src="data:image/png;base64,${icon48Base64}" width="34" height="34" alt="POPCORN" />
+      <img class="header-logo" src="data:image/png;base64,${icon48Base64}" width="32" height="32" alt="POPCORN" title="POPCORN v${appVersion}" />
     </div>
   </header>
 
@@ -905,63 +971,65 @@ const s3Popup = `
     </button>
   </nav>
 
-  <section style="display: block; padding: 12px 16px 14px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-      <span class="eyebrow" style="font-size: 11px;">Tracked Meetings</span>
-      <button class="ghost icon-btn" style="width: 24px; height: 24px; font-size: 16px; font-weight: bold;">+</button>
+  <section style="display: block; padding-bottom: 8px;">
+    <div class="row section-toolbar">
+      <span class="toolbar-title">Tracked Meetings</span>
+      <button class="ghost icon-btn mini" title="New meeting or import Markdown">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
     </div>
 
-    <!-- Meeting Cards -->
-    <div style="display: flex; flex-direction: column; gap: 8px;">
-      <!-- Meeting 1 -->
-      <div style="background: var(--ink-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;">
-        <div>
-          <div style="font-weight: 600; font-size: 13px; color: var(--text);">Daily Standup · Product Team</div>
-          <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">8 members · synced 2h ago</div>
-        </div>
-        <div style="display: flex; gap: 6px;">
-          <button class="ghost icon-btn" style="width: 28px; height: 28px;" title="Open link">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          </button>
-          <button class="ghost icon-btn" style="width: 28px; height: 28px;" title="Edit Markdown">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          </button>
-          <button class="ghost icon-btn" style="width: 28px; height: 28px;" title="Export">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          </button>
-        </div>
-      </div>
+    <!-- Meetings Scroll Area -->
+    <div class="meetings-scroll-area">
+      <ul class="list">
+        <!-- Meeting 1 -->
+        <li class="item meeting-item active">
+          <div class="meeting-info">
+            <span class="meeting-title">Daily Standup · Product Team</span>
+            <span class="meeting-sub">8 members · synced 2h ago</span>
+          </div>
+          <div class="meeting-actions">
+            <button class="ghost icon-btn" title="Open meeting link">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </button>
+            <button class="ghost icon-btn" title="Edit Markdown table">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </button>
+            <button class="ghost icon-btn" title="Export meeting">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+          </div>
+        </li>
 
-      <!-- Meeting 2 -->
-      <div style="background: var(--ink-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;">
-        <div>
-          <div style="font-weight: 600; font-size: 13px; color: var(--text);">Team Weekly DS &amp; NLP</div>
-          <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">37 members · synced yesterday</div>
-        </div>
-        <div style="display: flex; gap: 6px;">
-          <button class="ghost icon-btn" style="width: 28px; height: 28px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
-          <button class="ghost icon-btn" style="width: 28px; height: 28px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
-          <button class="ghost icon-btn" style="width: 28px; height: 28px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-        </div>
-      </div>
+        <!-- Meeting 2 -->
+        <li class="item meeting-item">
+          <div class="meeting-info">
+            <span class="meeting-title">Team Weekly DS &amp; NLP</span>
+            <span class="meeting-sub">37 members · synced yesterday</span>
+          </div>
+          <div class="meeting-actions">
+            <button class="ghost icon-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+            <button class="ghost icon-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+            <button class="ghost icon-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+          </div>
+        </li>
 
-      <!-- Meeting 3 -->
-      <div style="background: var(--ink-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;">
-        <div>
-          <div style="font-weight: 600; font-size: 13px; color: var(--text);">Sprint Retrospective &amp; Sync</div>
-          <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">12 members · synced 3d ago</div>
-        </div>
-        <div style="display: flex; gap: 6px;">
-          <button class="ghost icon-btn" style="width: 28px; height: 28px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
-          <button class="ghost icon-btn" style="width: 28px; height: 28px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
-          <button class="ghost icon-btn" style="width: 28px; height: 28px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Export Button -->
-    <div style="margin-top: 14px;">
-      <button class="ghost" style="width: 100%; height: 36px; font-weight: 500; font-size: 12.5px;">Export all meetings (.json)</button>
+        <!-- Meeting 3 -->
+        <li class="item meeting-item">
+          <div class="meeting-info">
+            <span class="meeting-title">Sprint Retrospective &amp; Planning</span>
+            <span class="meeting-sub">12 members · synced 3d ago</span>
+          </div>
+          <div class="meeting-actions">
+            <button class="ghost icon-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+            <button class="ghost icon-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+            <button class="ghost icon-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+          </div>
+        </li>
+      </ul>
     </div>
   </section>
 </div>
@@ -977,12 +1045,11 @@ fs.writeFileSync(path.join(pagesDir, 'screenshot3_meetings.html'), s3Html);
 
 
 // -------------------------------------------------------------
-// SCREENSHOT 4: Markdown Minutes & Table Modal
+// SCREENSHOT 4: Markdown Minutes & Minutes Editor Modal
 // -------------------------------------------------------------
 const s4Popup = `
 <style>${popupCss}</style>
 <div style="width: 384px; height: 520px; background: var(--ink); color: var(--text); font-family: var(--sans); position: relative; overflow: hidden; display: flex; flex-direction: column; box-sizing: border-box;">
-  <!-- Real POPCORN Markdown Overlay View (Fills entire overlay window) -->
   <div class="modal-backdrop" style="position: absolute; inset: 0;">
     <div class="modal-box">
       <div class="modal-header">
@@ -993,15 +1060,14 @@ const s4Popup = `
 
 | Person | Last Update |
 | --- | --- |
-| Alice Martin | 05/09/2026, 10:14:20 |
-| Florian Wilhelm | 05/09/2026, 10:12:05 |
-| Sarah Connor | 04/09/2026, 10:15:30 |
-| David Chen | 03/09/2026, 10:11:45 |
-| Elena Rostova | 02/09/2026, 10:09:12 |
-| Liam Vance | 01/09/2026, 10:15:00 |
+| Alice Martin | 07/09/2026, 10:15:20 |
+| Florian Wilhelm | 04/09/2026, 10:12:05 |
+| Sarah Connor | 06/09/2026, 10:15:30 |
+| David Chen | 06/09/2026, 10:11:45 |
+| Elena Rostova | 03/09/2026, 10:09:12 |
+| Liam Vance | 02/09/2026, 10:15:00 |
 | Marcus Brody | 25/08/2026, 10:05:18 |
-| Thomas Clark | ignored |
-| Jenny Wu | ignored |</textarea>
+| Thomas Clark | ignored |</textarea>
       <div class="modal-footer">
         <div class="modal-footer-left">
           <button class="ghost mini btn-with-icon" title="Copy Markdown to clipboard">
@@ -1247,4 +1313,4 @@ const promoSmallHtml = `<!DOCTYPE html>
 </html>`;
 fs.writeFileSync(path.join(pagesDir, 'promo_small.html'), promoSmallHtml);
 
-console.log("✅ Successfully generated all authentic HTML pages in store_assets/pages/");
+console.log(`✅ Successfully generated all authentic HTML pages (v${appVersion}) in store_assets/pages/`);
