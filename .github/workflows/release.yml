@@ -6,6 +6,11 @@ on:
       - 'v*'
       - '[0-9]+.*'
   workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Publish GitHub Release'
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -17,35 +22,62 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
+
+      - name: Determine release version
+        id: release_info
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${{ github.ref_name }}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+            TAG="v${VERSION}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Using release tag: ${TAG}"
 
       - name: Package extension bundle
         run: npm run package
         env:
-          RELEASE_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+          RELEASE_VERSION: ${{ steps.release_info.outputs.tag }}
 
       - name: Upload bundle artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: popcorn-extension-bundle
           path: dist/*.zip
           retention-days: 30
 
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*.zip
-          generate_release_notes: true
-          body: |
-            ### 🍿 POPCORN Chrome Extension – Installation
-            1. Download and extract the attached `.zip` bundle.
-            2. In Google Chrome (or any Chromium browser like Brave / Edge), navigate to `chrome://extensions/`.
-            3. Enable **Developer mode** in the top-right corner.
-            4. Click **Load unpacked** and select the extracted directory.
-            5. Pin **POPCORN (🍿)** to your browser toolbar and enjoy!
+      - name: Create or Update GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.create_release != 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.release_info.outputs.tag }}"
+          ZIP_FILE=$(ls dist/popcorn-*.zip | head -n 1)
+
+          cat << 'EOF' > release_notes.md
+          ### 🍿 POPCORN Chrome Extension – Installation
+          1. Download and extract the attached `.zip` bundle below.
+          2. In Google Chrome (or any Chromium browser like Brave / Edge), navigate to `chrome://extensions/`.
+          3. Enable **Developer mode** in the top-right corner.
+          4. Click **Load unpacked** and select the extracted folder.
+          5. Pin **POPCORN (🍿)** to your browser toolbar and enjoy!
+          EOF
+
+          # Check if release already exists
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists, uploading new asset..."
+            gh release upload "$TAG" "$ZIP_FILE" --clobber
+          else
+            echo "Creating new GitHub Release for $TAG..."
+            gh release create "$TAG" "$ZIP_FILE" \
+              --title "🍿 POPCORN $TAG" \
+              --generate-notes \
+              --notes-file release_notes.md
+          fi
