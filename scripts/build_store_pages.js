@@ -1185,7 +1185,7 @@ const marqueeHtml = `<!DOCTYPE html>
     <div class="feature-pills">
       <div class="pill"><span>🎯</span> Fair Rotation Algorithm</div>
       <div class="pill"><span>👥</span> Real-Time Attendance</div>
-      <div class="pill"><span>📝</span> Markdown Export</div>
+      <div class="pill"><span>📝</span> Markdown Export &amp; Import</div>
     </div>
   </div>
   <div class="right">

@@ -26,7 +26,7 @@ In agile team culture, passing the microphone organically is known as *"Popcorn 
 - 👁️ **Ignore Toggle**: Mute or exclude specific participants (e.g. guests or passive listeners) with a single click.
 - 🗑️ **Delete Mode**: Clean up outdated or temporary participants easily.
 - 📅 **Meeting Aliasing**: Recognizes recurring meetings even if calendar titles or meeting codes change.
-- 📝 **Markdown & JSON Export**: Import/export full meeting rosters as readable Markdown tables or complete JSON backups.
+- 📝 **Full Markdown & JSON Import/Export**: Everything can also be exported and imported as clean, human-readable Markdown tables (or complete JSON backups) — view, edit, copy, and share meetings effortlessly across tools like Notion, Obsidian, GitHub, and Docs.
 - 🔒 **Zero Telemetry / Local-Only**: Everything is saved locally in `chrome.storage.local`. No external servers.
 
 ---

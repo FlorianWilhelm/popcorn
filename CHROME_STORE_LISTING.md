@@ -56,10 +56,11 @@ POPCORN automatically tracks when attendees last gave a project update and sugge
 • Keep separate histories for different standups (e.g. "Core Team", "Sprint Review", "Cross-Team Sync").
 • Seamlessly reconnects even if calendar titles or meeting codes change.
 
-📝 Markdown Minutes & Export/Import:
-• In-app Markdown editor to copy attendance & update tables to clipboard.
-• One-click export to Notion, Obsidian, GitHub Discussions, or Google Docs.
-• Import existing rosters directly from Markdown or backup JSON files.
+📝 Full Markdown Import & Export:
+• Everything can also be exported and imported as clean, human-readable Markdown!
+• In-app Markdown editor with live validation to view, edit, or copy meeting rosters & update minutes directly to clipboard.
+• Export or import any meeting to/from Markdown files (.md) or paste directly into Notion, Obsidian, GitHub Discussions, or Google Docs.
+• Full JSON database backup and restore is also supported.
 
 🔒 100% Privacy & Zero Telemetry:
 • No backend, no external servers, no tracking, and no ads.
