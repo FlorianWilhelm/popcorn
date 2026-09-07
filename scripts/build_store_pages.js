@@ -664,7 +664,7 @@ const s1Popup = `
   </nav>
 
   <section style="display: block; padding-bottom: 8px;">
-    <!-- People Toolbar (Matches real UI) -->
+    <!-- People Toolbar -->
     <div class="people-toolbar">
       <div class="people-status-wrap">
         <button class="ghost icon-btn mini" title="Refresh attendance">
@@ -799,154 +799,9 @@ fs.writeFileSync(path.join(pagesDir, 'screenshot1_standup.html'), s1Html);
 
 
 // -------------------------------------------------------------
-// SCREENSHOT 2: People View – Roster Management & Absent/Ignored
+// SCREENSHOT 2: Meetings View – Multi-Meeting Tracking
 // -------------------------------------------------------------
 const s2Popup = `
-<style>${popupCss}</style>
-<div style="width: 384px; background: var(--ink); color: var(--text); font-family: var(--sans);">
-  <header class="bar">
-    <div class="bar-main">
-      <span class="eyebrow">Current Meeting</span>
-      <h1>Daily Standup · Product Team</h1>
-    </div>
-    <div class="bar-side">
-      <span class="badge on">on</span>
-      <img class="header-logo" src="data:image/png;base64,${icon48Base64}" width="32" height="32" alt="POPCORN" title="POPCORN v${appVersion}" />
-    </div>
-  </header>
-
-  <nav class="tabs">
-    <button class="tab">Meetings</button>
-    <button class="tab active">People</button>
-    <button class="tab icon-tab" title="Settings">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0 2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-      </svg>
-    </button>
-  </nav>
-
-  <section style="display: block; padding-bottom: 8px;">
-    <!-- People Toolbar with Absent button highlighted -->
-    <div class="people-toolbar">
-      <div class="people-status-wrap">
-        <button class="ghost icon-btn mini" title="Refresh attendance">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-            <path d="M21 3v5h-5"/>
-            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-            <path d="M3 21v-5h5"/>
-          </svg>
-        </button>
-        <span class="people-presence">7 present · 2 absent/ignored</span>
-      </div>
-      <div class="toolbar-actions">
-        <!-- Ghost button active / highlighted -->
-        <button class="ghost icon-btn mini" style="background: var(--ink-3); color: var(--accent);" title="Showing absent and ignored">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 10h.01"/>
-            <path d="M15 10h.01"/>
-            <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/>
-          </svg>
-        </button>
-        <button class="ghost icon-btn mini" title="Sort alphabetically">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m3 16 4 4 4-4"/>
-            <path d="M7 20V4"/>
-            <path d="M20 8h-5"/>
-            <path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/>
-            <path d="M15 14h5l-5 6h5"/>
-          </svg>
-        </button>
-        <button class="ghost icon-btn mini" title="Add participant">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </button>
-        <button class="ghost icon-btn mini" title="Toggle delete mode">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18"></path>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Expandable Add Person Row (Shown) -->
-    <div class="row add-person-row" style="display: flex; gap: 8px; margin: 6px 12px 10px;">
-      <input type="text" placeholder="Add participant name" value="Lucas Meyer" style="flex: 1;" />
-      <button class="primary btn-with-icon" style="flex: 0 0 auto;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        <span>Add</span>
-      </button>
-    </div>
-
-    <div class="people-scroll-area">
-      <!-- Active rotation list -->
-      <ol class="list">
-        <li class="item">
-          <span class="pos">01</span>
-          <label class="check-item"><input type="checkbox" /></label>
-          <div class="name-wrap"><span class="name">Alice Martin</span></div>
-          <span class="date">today · 10:15</span>
-        </li>
-        <li class="item">
-          <span class="pos">02</span>
-          <label class="check-item"><input type="checkbox" /></label>
-          <div class="name-wrap"><span class="name">Florian Wilhelm</span></div>
-          <span class="date">3d ago · 4 Sep</span>
-        </li>
-        <li class="item">
-          <span class="pos">03</span>
-          <label class="check-item"><input type="checkbox" /></label>
-          <div class="name-wrap"><span class="name">Sarah Connor</span></div>
-          <span class="date">1d ago · 6 Sep</span>
-        </li>
-      </ol>
-
-      <!-- Secondary list for absent & ignored people -->
-      <ul class="list secondary-list" style="margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px;">
-        <li class="item absent">
-          <div class="name-wrap">
-            <span class="name" style="color: var(--muted);">Thomas Clark</span>
-          </div>
-          <button class="ghost icon-btn btn-ignore" title="Toggle ignore">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-          <span class="status-badge absent">Absent</span>
-        </li>
-        <li class="item ignored">
-          <div class="name-wrap">
-            <span class="name" style="color: var(--muted); text-decoration: line-through;">Marcus Brody</span>
-          </div>
-          <button class="ghost icon-btn btn-ignore is-ignored" style="color: #ef4444;" title="Unignore">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-          </button>
-          <span class="status-badge ignored">Ignored</span>
-        </li>
-      </ul>
-    </div>
-  </section>
-</div>
-`;
-
-const s2Html = getChromeWindowWrap(
-  "Daily Standup - Google Meet",
-  "https://meet.google.com/wqe-ptro-xyz",
-  true,
-  getGoogleMeetCallHtml(s2Popup)
-);
-fs.writeFileSync(path.join(pagesDir, 'screenshot2_people.html'), s2Html);
-
-
-// -------------------------------------------------------------
-// SCREENSHOT 3: Meetings View – Multi-Meeting Tracking
-// -------------------------------------------------------------
-const s3Popup = `
 <style>${popupCss}</style>
 <div style="width: 384px; background: var(--ink); color: var(--text); font-family: var(--sans);">
   <header class="bar">
@@ -1035,19 +890,19 @@ const s3Popup = `
 </div>
 `;
 
-const s3Html = getChromeWindowWrap(
+const s2Html = getChromeWindowWrap(
   "Daily Standup - Google Meet",
   "https://meet.google.com/wqe-ptro-xyz",
   true,
-  getGoogleMeetCallHtml(s3Popup)
+  getGoogleMeetCallHtml(s2Popup)
 );
-fs.writeFileSync(path.join(pagesDir, 'screenshot3_meetings.html'), s3Html);
+fs.writeFileSync(path.join(pagesDir, 'screenshot2_meetings.html'), s2Html);
 
 
 // -------------------------------------------------------------
-// SCREENSHOT 4: Markdown Minutes & Minutes Editor Modal
+// SCREENSHOT 3: Markdown Minutes & Minutes Editor Modal
 // -------------------------------------------------------------
-const s4Popup = `
+const s3Popup = `
 <style>${popupCss}</style>
 <div style="width: 384px; height: 520px; background: var(--ink); color: var(--text); font-family: var(--sans); position: relative; overflow: hidden; display: flex; flex-direction: column; box-sizing: border-box;">
   <div class="modal-backdrop" style="position: absolute; inset: 0;">
@@ -1094,13 +949,13 @@ const s4Popup = `
 </div>
 `;
 
-const s4Html = getChromeWindowWrap(
+const s3Html = getChromeWindowWrap(
   "Daily Standup - Google Meet",
   "https://meet.google.com/wqe-ptro-xyz",
   true,
-  getGoogleMeetCallHtml(s4Popup, false)
+  getGoogleMeetCallHtml(s3Popup, false)
 );
-fs.writeFileSync(path.join(pagesDir, 'screenshot4_markdown.html'), s4Html);
+fs.writeFileSync(path.join(pagesDir, 'screenshot3_markdown.html'), s3Html);
 
 
 // -------------------------------------------------------------
@@ -1313,4 +1168,4 @@ const promoSmallHtml = `<!DOCTYPE html>
 </html>`;
 fs.writeFileSync(path.join(pagesDir, 'promo_small.html'), promoSmallHtml);
 
-console.log(`✅ Successfully generated all authentic HTML pages (v${appVersion}) in store_assets/pages/`);
+console.log(`✅ Successfully generated 3 authentic HTML pages (v${appVersion}) in store_assets/pages/`);

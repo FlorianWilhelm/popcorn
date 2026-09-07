@@ -27,6 +27,7 @@ if (!chromePath) {
 // 1. Build/update store pages first
 require("./build_store_pages.js");
 
+// 3 distinct screenshots + 2 promo tiles (all purely .jpeg)
 const assets = [
   {
     name: "Screenshot 1 (Standup Rotation)",
@@ -36,23 +37,16 @@ const assets = [
     height: 800
   },
   {
-    name: "Screenshot 2 (Roster & Presence)",
-    input: path.join(pagesDir, "screenshot2_people.html"),
-    output: path.join(assetsDir, "screenshot2_people_1280x800.jpeg"),
+    name: "Screenshot 2 (Tracked Meetings)",
+    input: path.join(pagesDir, "screenshot2_meetings.html"),
+    output: path.join(assetsDir, "screenshot2_meetings_1280x800.jpeg"),
     width: 1280,
     height: 800
   },
   {
-    name: "Screenshot 3 (Tracked Meetings)",
-    input: path.join(pagesDir, "screenshot3_meetings.html"),
-    output: path.join(assetsDir, "screenshot3_meetings_1280x800.jpeg"),
-    width: 1280,
-    height: 800
-  },
-  {
-    name: "Screenshot 4 (Markdown Minutes)",
-    input: path.join(pagesDir, "screenshot4_markdown.html"),
-    output: path.join(assetsDir, "screenshot4_markdown_1280x800.jpeg"),
+    name: "Screenshot 3 (Markdown Minutes)",
+    input: path.join(pagesDir, "screenshot3_markdown.html"),
+    output: path.join(assetsDir, "screenshot3_markdown_1280x800.jpeg"),
     width: 1280,
     height: 800
   },
@@ -111,10 +105,6 @@ function renderAsset(asset) {
 
   // Convert to high-quality JPEG using native macOS sips (clean RGB, 92 quality, no graphical filters)
   execSync(`/usr/bin/sips -s format jpeg -s formatOptions 92 "${tempPng}" --out "${asset.output}"`, { stdio: "ignore" });
-
-  // Also create .jpg alias
-  const jpgAlias = asset.output.replace(/\.jpeg$/, ".jpg");
-  fs.copyFileSync(asset.output, jpgAlias);
 
   // Clean up temp PNG
   fs.unlinkSync(tempPng);
@@ -195,26 +185,18 @@ function generatePreviewHtml() {
 
     <div class="card">
       <div class="card-header">
-        <span class="card-title">2. Roster Management (Attendance &amp; Absent/Ignored List)</span>
-        <span class="card-badge">screenshot2_people_1280x800.jpeg</span>
+        <span class="card-title">2. Tracked Meetings (Multi-team History &amp; Sync)</span>
+        <span class="card-badge">screenshot2_meetings_1280x800.jpeg</span>
       </div>
-      <img class="preview-img" src="screenshot2_people_1280x800.jpeg" alt="Screenshot 2" />
+      <img class="preview-img" src="screenshot2_meetings_1280x800.jpeg" alt="Screenshot 2" />
     </div>
 
     <div class="card">
       <div class="card-header">
-        <span class="card-title">3. Tracked Meetings (Multi-team History &amp; Sync)</span>
-        <span class="card-badge">screenshot3_meetings_1280x800.jpeg</span>
+        <span class="card-title">3. In-App Markdown Editor (Minutes &amp; Export/Import)</span>
+        <span class="card-badge">screenshot3_markdown_1280x800.jpeg</span>
       </div>
-      <img class="preview-img" src="screenshot3_meetings_1280x800.jpeg" alt="Screenshot 3" />
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">4. In-App Markdown Editor (Minutes &amp; Export/Import)</span>
-        <span class="card-badge">screenshot4_markdown_1280x800.jpeg</span>
-      </div>
-      <img class="preview-img" src="screenshot4_markdown_1280x800.jpeg" alt="Screenshot 4" />
+      <img class="preview-img" src="screenshot3_markdown_1280x800.jpeg" alt="Screenshot 3" />
     </div>
   </div>
 

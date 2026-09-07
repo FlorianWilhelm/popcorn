@@ -95,12 +95,11 @@ Keep your daily standups snappy, engaging, and fair with POPCORN! 🍿🎙️
 | **Store Icon** | `src/icons/icon128.png` | 128 x 128 px | Official POPCORN mascot store icon |
 | **Small Promo Tile** | `store_assets/promo_small_440x280.jpeg` | 440 x 280 px | Search catalog promo card (JPEG, no filters) |
 | **Marquee Banner** | `store_assets/promo_marquee_1400x560.jpeg` | 1400 x 560 px | Featured store showcase banner (JPEG, no filters) |
-| **Screenshot 1 (Standup)** | `store_assets/screenshot1_standup_1280x800.jpeg` | 1280 x 800 px | Live Google Meet call with candidate rotation (JPEG) |
-| **Screenshot 2 (People)** | `store_assets/screenshot2_people_1280x800.jpeg` | 1280 x 800 px | Roster attendance, overdue badges & ignore controls (JPEG) |
-| **Screenshot 3 (Meetings)** | `store_assets/screenshot3_meetings_1280x800.jpeg` | 1280 x 800 px | Multi-meeting tracking & history list outside Meet (JPEG) |
-| **Screenshot 4 (Markdown)** | `store_assets/screenshot4_markdown_1280x800.jpeg` | 1280 x 800 px | In-app Markdown editor, minutes & export/import (JPEG) |
+| **Screenshot 1 (Standup)** | `store_assets/screenshot1_standup_1280x800.jpeg` | 1280 x 800 px | Live Google Meet call with popcorn candidate rotation (JPEG) |
+| **Screenshot 2 (Meetings)** | `store_assets/screenshot2_meetings_1280x800.jpeg` | 1280 x 800 px | Multi-meeting tracking & history list (JPEG) |
+| **Screenshot 3 (Markdown)** | `store_assets/screenshot3_markdown_1280x800.jpeg` | 1280 x 800 px | In-app Markdown editor, minutes & export/import (JPEG) |
 
-> 💡 **Tip:** Both `.jpeg` and `.jpg` variants are generated in `store_assets/` (without graphical filters, fully compliant with Chrome Web Store guidelines). Open `store_assets/preview.html` in your browser to preview all screenshots and assets.
+> 💡 **Tip:** All screenshots are generated in `store_assets/` as compliant `.jpeg` files (without graphical filters, fully compliant with Chrome Web Store guidelines). Open `store_assets/preview.html` in your browser to preview all screenshots and assets.
 
 ---
 
