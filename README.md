@@ -113,7 +113,7 @@ POPCORN treats Markdown as a first-class citizen. Click the **Edit Markdown** bu
 - **Live Markdown Table:** View and edit meeting attendance and update timestamps in clean GFM (GitHub Flavored Markdown) table format.
 - **📋 Copy:** Instantly copy the table to your clipboard for pasting into daily meeting notes, Notion, Obsidian, GitHub issues, or Slack.
 - **📂 Load File:** Import an existing Markdown roster file directly from your disk.
-- **💾 Save Changes:** Edits made in the Markdown table immediately sync back to POPCORN's internal storage.
+- **💾 Save:** Edits made in the Markdown table immediately sync back to POPCORN's internal storage.
 
 ---
 

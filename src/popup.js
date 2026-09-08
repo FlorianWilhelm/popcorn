@@ -763,7 +763,7 @@ function render() {
   }
 
   if ($("btnToggleAbsent")) {
-    const isAbsentShown = !!viewState.showAbsent;
+    const isAbsentShown = m ? !!m.includeAbsent : false;
     $("btnToggleAbsent").classList.toggle("active", isAbsentShown);
     $("btnToggleAbsent").title = isAbsentShown
       ? "Hide absent and ignored"
@@ -890,8 +890,10 @@ function setupAutoRefresh() {
   if (auto && sec > 0) {
     refreshTimer = setInterval(async () => {
       if (document.hidden) return;
+      const modal = $("markdownModal");
+      if (modal && !modal.classList.contains("hidden")) return;
       const activeEl = document.activeElement;
-      const isEditingText = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") && (activeEl.type === "text" || activeEl.type === "number");
+      const isEditingText = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
       if (isEditingText && view !== "people") return;
       await refresh(false, { background: true });
     }, sec * 1000);
@@ -952,8 +954,8 @@ function parseDateTimeString(str) {
   const s = str.trim().toLowerCase();
   if (!s || s === "noch nie" || s === "never" || s === "-" || s === "–" || s === "0") return 0;
 
-  // Format DD.MM.YYYY[ ,][HH:mm[:ss]]
-  const deMatch = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  // Format DD.MM.YYYY or DD/MM/YYYY[ ,][HH:mm[:ss]]
+  const deMatch = s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
   if (deMatch) {
     const [, d, m, y, h, min, sec] = deMatch;
     const date = new Date(Number(y), Number(m) - 1, Number(d), Number(h || 0), Number(min || 0), Number(sec || 0));
@@ -1176,6 +1178,25 @@ async function importMarkdownText(text, sourceLabel = "clipboard") {
 }
 
 let editingMeetingId = null;
+let initialMarkdownText = "";
+
+function updateModalSaveButton() {
+  const textarea = $("markdownTextarea");
+  const saveBtn = $("btnModalSave");
+  if (!textarea || !saveBtn) return;
+  const val = textarea.value.trim();
+  if (!val) {
+    saveBtn.disabled = true;
+    return;
+  }
+  if (editingMeetingId) {
+    // Enabled only when content differs from original markdown
+    saveBtn.disabled = (val === initialMarkdownText.trim());
+  } else {
+    // New meeting / import: enabled when non-empty
+    saveBtn.disabled = false;
+  }
+}
 
 function clearModalError() {
   const errEl = $("modalError");
@@ -1239,14 +1260,23 @@ function openMarkdownModal(meetingId = null) {
     const m = data.meetings[meetingId];
     if (titleEl) titleEl.textContent = `Edit "${m.name}"`;
     if (hintEl) hintEl.textContent = "View, edit, or copy the Markdown table of this meeting:";
-    textarea.value = meetingToMarkdown(m);
-    if (saveBtn) saveBtn.textContent = "Save Changes";
+    const md = meetingToMarkdown(m);
+    textarea.value = md;
+    initialMarkdownText = md;
+    if (saveBtn) {
+      saveBtn.textContent = "Save";
+      saveBtn.disabled = true;
+    }
   } else {
     editingMeetingId = null;
     if (titleEl) titleEl.textContent = "New Meeting / Import";
     if (hintEl) hintEl.textContent = "Paste a Markdown table or load a file from disk:";
     textarea.value = "";
-    if (saveBtn) saveBtn.textContent = "Import";
+    initialMarkdownText = "";
+    if (saveBtn) {
+      saveBtn.textContent = "Import";
+      saveBtn.disabled = true;
+    }
   }
 
   modal.classList.remove("hidden");
@@ -1259,6 +1289,7 @@ function closeMarkdownModal() {
   if (modal) modal.classList.add("hidden");
   document.body.classList.remove("modal-open");
   editingMeetingId = null;
+  initialMarkdownText = "";
 }
 
 async function copyModalText() {
@@ -1331,6 +1362,8 @@ async function importFile(file) {
     const textarea = $("markdownTextarea");
     if (textarea) {
       textarea.value = text;
+      clearModalError();
+      updateModalSaveButton();
       return;
     }
   }
@@ -1510,9 +1543,15 @@ if ($("btnModalCopy")) $("btnModalCopy").addEventListener("click", copyModalText
 if ($("btnModalLoadFile")) $("btnModalLoadFile").addEventListener("click", () => $("fileInput").click());
 const modalTextarea = $("markdownTextarea");
 if (modalTextarea) {
-  modalTextarea.addEventListener("input", clearModalError);
+  modalTextarea.addEventListener("input", () => {
+    clearModalError();
+    updateModalSaveButton();
+  });
   modalTextarea.addEventListener("click", clearModalError);
-  modalTextarea.addEventListener("keyup", clearModalError);
+  modalTextarea.addEventListener("keyup", () => {
+    clearModalError();
+    updateModalSaveButton();
+  });
 }
 if ($("markdownModal")) {
   $("markdownModal").addEventListener("click", (e) => {

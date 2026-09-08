@@ -1060,7 +1060,7 @@ const s3Popup = `
         </div>
         <div class="modal-footer-right">
           <button class="ghost mini">Cancel</button>
-          <button class="primary mini">Save Changes</button>
+          <button class="primary mini">Save</button>
         </div>
       </div>
     </div>
