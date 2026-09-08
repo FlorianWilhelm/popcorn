@@ -1407,6 +1407,9 @@ for (const t of document.querySelectorAll(".tab")) {
     deleteMode = false;
     showAddRow = false;
     render();
+    if (view === "people" && current && current.inMeet) {
+      refresh(false);
+    }
   });
 }
 

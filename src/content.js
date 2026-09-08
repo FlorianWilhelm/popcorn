@@ -356,6 +356,7 @@
     const items = Array.from(document.querySelectorAll('[role="listitem"]'));
 
     for (const item of items) {
+      if (item.closest('aside[aria-label*="chat" i], div[aria-label*="chat" i], div[aria-label*="nachricht" i]')) continue;
       const hasId = item.hasAttribute("data-participant-id") || item.querySelector("[data-participant-id]") !== null;
       const inPeopleList = hasId || !!item.closest('[role="list"]');
       if (!inPeopleList) continue;
@@ -388,16 +389,50 @@
 
   const sessionRoster = new Map();
 
-  function findPanelButton() {
-    // 1. Specific data-panel-id for People panel (element or button within)
-    const byId = document.querySelector('[data-panel-id="1"]');
-    if (byId) {
-      return byId.matches('button, [role="button"]')
-        ? byId
-        : (byId.querySelector('button, [role="button"]') || byId);
+  function clickElement(el) {
+    if (!el) return;
+    try {
+      el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, view: window }));
+      el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true, view: window }));
+      el.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, view: window }));
+      el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true, view: window }));
+    } catch {}
+    el.click();
+  }
+
+  function isPeopleButton(b) {
+    if (!b) return false;
+    const label = ((b.getAttribute("aria-label") || "") + " " + (b.getAttribute("title") || "") + " " + (b.textContent || "")).toLowerCase();
+
+    // Explicitly exclude non-people buttons
+    if (/chat|chatten|nachricht|message|aktivitäten|activities|details|steuerelemente|host|sicherheit|security|hand|reaktion|reaction|untertitel|caption|kamera|camera|mikrofon|microphone|verlassen|leave|beenden|auflegen|bildschirm|present|screen/i.test(label)) {
+      return false;
     }
 
-    // 2. Search bottom control bar buttons (usually anchored in bottom 130px)
+    // Match people labels across languages
+    if (/personen|teilnehmer|people|participants|show everyone|alle anzeigen|afficher tout le monde|mostrar a todos|mostra tutti|mostrar todos/i.test(label)) {
+      return true;
+    }
+
+    // Match Google Material Icons/Symbols inside button
+    const icon = b.querySelector('.google-material-icons, [class*="icon" i], span, i');
+    if (icon) {
+      const iconTxt = (icon.textContent || "").trim().toLowerCase();
+      if (/^(?:people|people_outline|group|groups)$/i.test(iconTxt)) {
+        return true;
+      }
+    }
+
+    const directTxt = (b.textContent || "").trim().toLowerCase();
+    if (/^(?:people|people_outline|group|groups)$/i.test(directTxt)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function findPanelButton() {
+    // Search bottom control bar buttons (usually anchored in bottom 130px)
     const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
     const bottomButtons = buttons.filter((b) => {
       const rect = b.getBoundingClientRect();
@@ -405,14 +440,63 @@
     });
 
     const candidates = bottomButtons.length > 0 ? bottomButtons : buttons;
-    return candidates.find((b) => {
-      const label = ((b.getAttribute("aria-label") || "") + " " + (b.getAttribute("title") || "") + " " + (b.textContent || "")).toLowerCase();
-      if (/chat|aktivitäten|activities|details|steuerelemente|host controls|sicherheit|security/.test(label)) return false;
-      return /personen|teilnehmer|people|everyone|participants|show everyone|alle anzeigen|afficher tout le monde|mostrar a todos/.test(label);
-    });
+    const found = candidates.find(isPeopleButton);
+    if (found) {
+      return found.matches('button, [role="button"]') ? found : (found.querySelector('button, [role="button"]') || found);
+    }
+
+    // Fallback: check by data-panel-id="2" ONLY if it satisfies isPeopleButton
+    const byPanelId2 = document.querySelector('[data-panel-id="2"]');
+    if (byPanelId2 && isPeopleButton(byPanelId2)) {
+      return byPanelId2.matches('button, [role="button"]') ? byPanelId2 : (byPanelId2.querySelector('button, [role="button"]') || byPanelId2);
+    }
+
+    return null;
+  }
+
+  function findPeopleSidePanel() {
+    // Look for side panel containers on the right half of the screen
+    const containers = Array.from(document.querySelectorAll('aside, section, div[role="region"], div[role="tabpanel"], div[data-panel-id="2"]'));
+    for (const el of containers) {
+      if (el.offsetParent === null) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.right < window.innerWidth / 2 || rect.width < 100 || rect.height < 100) continue;
+      if (rect.top > window.innerHeight - 130) continue; // Not in control bar
+
+      const aria = (el.getAttribute("aria-label") || "").toLowerCase();
+      // Exclude chat, activities, details, host controls panels
+      if (/chat|nachrichten|messages|aktivitäten|activities|details|steuerelemente|host controls/i.test(aria)) continue;
+      if (el.querySelector('textarea, [contenteditable="true"]')) continue; // Chat message input
+
+      // Look for participant indicators
+      const hasPeopleList = el.querySelector('div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Personen" i], [aria-label*="In call" i], [aria-label*="Im Anruf" i], .zWGUib, [data-participant-id]');
+      if (hasPeopleList) return el;
+
+      const text = (el.textContent || "").slice(0, 500).toLowerCase();
+      if (/personen|people|teilnehmer|participants|in call|im anruf|everyone in this call|alle in diesem anruf/i.test(text)) {
+        return el;
+      }
+    }
+
+    // Fallback: check if participant list container itself is visible on right half
+    const directList = document.querySelector('div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Personen" i], [aria-label="In call" i], [aria-label="Im Anruf" i]');
+    if (directList && directList.offsetParent !== null) {
+      const rect = directList.getBoundingClientRect();
+      if (rect.left > window.innerWidth / 2) {
+        return directList.closest('aside, section, div[role="region"], div[role="tabpanel"]') || directList.parentElement;
+      }
+    }
+
+    return null;
   }
 
   function findSidePanelCloseButton() {
+    const panel = findPeopleSidePanel();
+    if (panel) {
+      const inPanelClose = panel.querySelector('button[aria-label*="schließen" i], button[aria-label*="close" i], button[title*="schließen" i], button[title*="close" i], [role="button"][aria-label*="schließen" i], [role="button"][aria-label*="close" i]');
+      if (inPanelClose) return inPanelClose;
+    }
+
     const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
     return buttons.find((b) => {
       const rect = b.getBoundingClientRect();
@@ -421,6 +505,9 @@
       if (rect.right < window.innerWidth / 2) return false;
       // Must not be in the bottom control bar
       if (rect.top > window.innerHeight - 100) return false;
+
+      // Must not be inside chat panel
+      if (b.closest('aside[aria-label*="chat" i], div[aria-label*="chat" i], div[aria-label*="nachricht" i]')) return false;
 
       const aria = (b.getAttribute("aria-label") || "").toLowerCase();
       const title = (b.getAttribute("title") || "").toLowerCase();
@@ -437,38 +524,12 @@
   }
 
   function isPeoplePanelOpen() {
-    // 1. Participant list container is visible in DOM
-    const list = document.querySelector('div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Personen" i], [aria-label="In call" i], [aria-label="Im Anruf" i], span[role="region"][aria-label*="call" i], span[role="region"][aria-label*="anruf" i]');
-    if (list && list.offsetParent !== null) {
+    // 1. People side panel container is visible in DOM
+    if (findPeopleSidePanel() !== null) {
       return true;
     }
 
-    // 2. A visible side panel close button on the right
-    const closeBtn = findSidePanelCloseButton();
-    if (closeBtn) {
-      const sidePanel = closeBtn.closest('aside, section, div[role="region"], div[role="tabpanel"], div[data-panel-id="1"]') || closeBtn.parentElement?.parentElement?.parentElement;
-      if (sidePanel) {
-        const text = (sidePanel.textContent || "").toLowerCase();
-        if (/personen|people|teilnehmer|participants|in call|im anruf|contributors|beitragende|eingeladen|invited/.test(text)) {
-          return true;
-        }
-      } else {
-        return true;
-      }
-    }
-
-    // 3. Participant listitems in the right half of the screen
-    const items = document.querySelectorAll('[role="listitem"]');
-    for (const it of items) {
-      if (it.offsetParent !== null) {
-        const rect = it.getBoundingClientRect();
-        if (rect.left > window.innerWidth / 2) {
-          return true;
-        }
-      }
-    }
-
-    // 4. Panel button aria state
+    // 2. People panel button aria state in bottom bar
     const btn = findPanelButton();
     if (btn) {
       const target = btn.matches('button, [role="button"]') ? btn : (btn.querySelector('button, [role="button"]') || btn);
@@ -477,7 +538,13 @@
                       target.getAttribute("aria-selected") === "true" ||
                       btn.getAttribute("aria-pressed") === "true" ||
                       btn.getAttribute("aria-expanded") === "true";
-      if (pressed) return true;
+      if (pressed) {
+        // Ensure another panel like Chat is not open instead
+        const chatInput = document.querySelector('textarea[aria-label*="chat" i], textarea[aria-label*="nachricht" i], [contenteditable="true"][aria-label*="chat" i]');
+        if (!chatInput || chatInput.offsetParent === null) {
+          return true;
+        }
+      }
     }
 
     return false;
@@ -489,14 +556,14 @@
     // 1. Click the close button in the side panel
     const closeBtn = findSidePanelCloseButton();
     if (closeBtn) {
-      closeBtn.click();
+      clickElement(closeBtn);
       return;
     }
 
     // 2. Fallback: toggle via the main panel button in bottom control bar
     const btn = findPanelButton();
     if (btn) {
-      btn.click();
+      clickElement(btn);
     }
   }
 
@@ -519,22 +586,30 @@
   }
 
   function findViewEveryoneButton() {
-    const clickable = Array.from(document.querySelectorAll('button, [role="button"], div[role="button"], a'));
+    const panel = findPeopleSidePanel();
+    if (!panel) return null;
+
+    const clickable = Array.from(panel.querySelectorAll('button, [role="button"], div[role="button"], a'));
     return clickable.find((b) => {
       const txt = (b.textContent || "").toLowerCase();
       const aria = (b.getAttribute("aria-label") || "").toLowerCase();
-      return /view everyone|alle in diesem anruf|alle teilnehmer anzeigen|everyone in this call/.test(txt + " " + aria);
+      if (/chat|nachricht|message/.test(txt + " " + aria)) return false;
+      return /view everyone|alle in diesem anruf|alle teilnehmer anzeigen|everyone in this call/i.test(txt + " " + aria);
     });
   }
 
   function expandCollapsedSections() {
-    const toggles = Array.from(document.querySelectorAll('div[role="button"][aria-expanded="false"], button[aria-expanded="false"]'));
+    const panel = findPeopleSidePanel();
+    if (!panel) return;
+
+    const toggles = Array.from(panel.querySelectorAll('div[role="button"][aria-expanded="false"], button[aria-expanded="false"]'));
     for (const t of toggles) {
       // Avoid participant action menus (3 dots)
       if (t.closest('[role="listitem"]') || t.hasAttribute("aria-haspopup")) continue;
       const text = ((t.textContent || "") + " " + (t.getAttribute("aria-label") || "")).toLowerCase();
-      if (/in call|im anruf|in this meeting|in the meeting|in der besprechung|contributors|beitragende|participants|teilnehmer|everyone|alle|also invited|ebenfalls eingeladen|not in (?:the )?call|nicht im anruf|invited|eingeladen/.test(text)) {
-        t.click();
+      if (/chat|nachricht|message|close|schließen|search|suchen/.test(text)) continue;
+      if (/\b(?:in (?:this |the )?call|im anruf|in (?:this |the )?meeting|in der besprechung|contributors|beitragende|also invited|ebenfalls eingeladen|not in (?:the )?call|nicht im anruf|invited|eingeladen|waiting to join|warten auf beitritt)\b|\b(?:everyone in this call|alle in diesem anruf|alle teilnehmer)\b/i.test(text)) {
+        clickElement(t);
       }
     }
   }
@@ -565,7 +640,7 @@
       if (!isPeoplePanelOpen() && openIfClosed) {
         const btn = findPanelButton();
         if (btn) {
-          btn.click();
+          clickElement(btn);
           openedPanel = true;
           openedByPopcorn = true;
           await wait(350);
@@ -575,7 +650,7 @@
       expandCollapsedSections();
       const viewEveryone = findViewEveryoneButton();
       if (viewEveryone) {
-        viewEveryone.click();
+        clickElement(viewEveryone);
         await wait(200);
       }
 
@@ -593,7 +668,7 @@
 
       const innerViewEveryone = findViewEveryoneButton();
       if (innerViewEveryone) {
-        innerViewEveryone.click();
+        clickElement(innerViewEveryone);
         await wait(200);
         people = collect();
       }
