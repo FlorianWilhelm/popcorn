@@ -58,7 +58,7 @@ POPCORN automatically tracks when attendees last gave a project update and sugge
 
 📝 Full Markdown Import & Export:
 • Everything can also be exported and imported as clean, human-readable Markdown!
-• In-app Markdown editor with live validation to view, edit, or copy meeting rosters & update minutes directly to clipboard.
+• In-app Markdown editor with live validation to view, edit, or copy meeting rosters & update timestamps directly to clipboard.
 • Export or import any meeting to/from Markdown files (.md) or paste directly into Notion, Obsidian, GitHub Discussions, or Google Docs.
 • Full JSON database backup and restore is also supported.
 
@@ -97,7 +97,7 @@ Keep your daily standups snappy, engaging, and fair with POPCORN! 🍿🎙️
 | **Marquee Banner** | `store_assets/promo_marquee_1400x560.jpeg` | 1400 x 560 px | Featured store showcase banner (JPEG, no filters) |
 | **Screenshot 1 (Standup)** | `store_assets/screenshot1_standup_1280x800.jpeg` | 1280 x 800 px | Live Google Meet call with popcorn candidate rotation (JPEG) |
 | **Screenshot 2 (Meetings)** | `store_assets/screenshot2_meetings_1280x800.jpeg` | 1280 x 800 px | Multi-meeting tracking & history list (JPEG) |
-| **Screenshot 3 (Markdown)** | `store_assets/screenshot3_markdown_1280x800.jpeg` | 1280 x 800 px | In-app Markdown editor, minutes & export/import (JPEG) |
+| **Screenshot 3 (Markdown)** | `store_assets/screenshot3_markdown_1280x800.jpeg` | 1280 x 800 px | In-app Markdown editor, roster table & export/import (JPEG) |
 
 > 💡 **Tip:** All screenshots are generated in `store_assets/` as compliant `.jpeg` files (without graphical filters, fully compliant with Chrome Web Store guidelines). Open `store_assets/preview.html` in your browser to preview all screenshots and assets.
 

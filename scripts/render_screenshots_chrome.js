@@ -44,7 +44,7 @@ const assets = [
     height: 800
   },
   {
-    name: "Screenshot 3 (Markdown Minutes)",
+    name: "Screenshot 3 (Markdown Roster)",
     input: path.join(pagesDir, "screenshot3_markdown.html"),
     output: path.join(assetsDir, "screenshot3_markdown_1280x800.jpeg"),
     width: 1280,
@@ -193,7 +193,7 @@ function generatePreviewHtml() {
 
     <div class="card">
       <div class="card-header">
-        <span class="card-title">3. In-App Markdown Editor (Minutes &amp; Export/Import)</span>
+        <span class="card-title">3. In-App Markdown Editor (Roster &amp; Export/Import)</span>
         <span class="card-badge">screenshot3_markdown_1280x800.jpeg</span>
       </div>
       <img class="preview-img" src="screenshot3_markdown_1280x800.jpeg" alt="Screenshot 3" />

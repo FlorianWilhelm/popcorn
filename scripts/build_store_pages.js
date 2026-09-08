@@ -900,7 +900,7 @@ fs.writeFileSync(path.join(pagesDir, 'screenshot2_meetings.html'), s2Html);
 
 
 // -------------------------------------------------------------
-// SCREENSHOT 3: Markdown Minutes & Minutes Editor Modal
+// SCREENSHOT 3: Markdown Roster & Table Editor Modal
 // -------------------------------------------------------------
 const s3Popup = `
 <style>${popupCss}</style>

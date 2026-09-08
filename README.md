@@ -34,7 +34,7 @@ In agile culture, passing the microphone organically is known as *"Popcorn style
 - 🔤 **Dual Sorting Modes**: Toggle between fair rotation priority and alphabetical order with a single click—without losing priority rankings!
 - 👻 **Absent & Ignored Roster**: Keep guests or passive listeners muted/ignored, or toggle visibility of absent members.
 - 📅 **Multi-Meeting Tracking**: Manages independent rosters and histories for multiple daily standups, weekly syncs, and retros.
-- 📝 **Markdown Minutes & Table Editor**: View, edit, copy, and export/import meetings directly as clean Markdown tables—ideal for Notion, Obsidian, GitHub, Slack, and Docs.
+- 📝 **Markdown Roster & Table Editor**: View, edit, copy, and export/import meeting rosters directly as clean Markdown tables—ideal for Notion, Obsidian, GitHub, Slack, and Docs.
 - 🔒 **Zero Telemetry / 100% Local**: All data remains strictly in your browser's `chrome.storage.local`. No analytics, no accounts, and no external servers.
 
 ---
@@ -101,17 +101,17 @@ Switch to the **Meetings** tab to see and manage all your tracked teams and recu
 
 ---
 
-### 3. In-App Markdown Minutes & Table Editor
+### 3. In-App Markdown Roster & Table Editor
 
 POPCORN treats Markdown as a first-class citizen. Click the **Edit Markdown** button on any meeting to open the interactive editor:
 
 <p align="center">
-  <img src="store_assets/screenshot3_markdown_1280x800.jpeg" alt="POPCORN In-App Markdown Minutes Editor" width="100%" />
+  <img src="store_assets/screenshot3_markdown_1280x800.jpeg" alt="POPCORN In-App Markdown Roster Editor" width="100%" />
 </p>
 
 - **Live Markdown Table:** View and edit meeting attendance and update timestamps in clean GFM (GitHub Flavored Markdown) table format.
 - **📋 Copy:** Instantly copy the table to your clipboard for pasting into daily meeting notes, Notion, Obsidian, GitHub issues, or Slack.
-- **📂 Load File:** Import an existing Markdown minutes file directly from your disk.
+- **📂 Load File:** Import an existing Markdown roster file directly from your disk.
 - **💾 Save Changes:** Edits made in the Markdown table immediately sync back to POPCORN's internal storage.
 
 ---
