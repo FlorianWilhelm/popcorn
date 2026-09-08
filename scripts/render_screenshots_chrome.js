@@ -74,10 +74,12 @@ function renderAsset(asset) {
   const tempPng = path.join(tempDir, `${path.basename(asset.output, ".jpeg")}.png`);
   if (fs.existsSync(tempPng)) fs.unlinkSync(tempPng);
 
+  const userDataDir = path.join(tempDir, "user-data");
   const args = [
     "--headless=new",
     "--no-first-run",
     "--no-default-browser-check",
+    `--user-data-dir=${userDataDir}`,
     "--disable-gpu",
     "--disable-extensions",
     "--disable-background-networking",

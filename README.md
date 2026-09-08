@@ -92,11 +92,12 @@ Switch to the **Meetings** tab to see and manage all your tracked teams and recu
   <img src="store_assets/screenshot2_meetings_1280x800.jpeg" alt="POPCORN Multi-Meeting Management" width="100%" />
 </p>
 
-- **Meeting Overview:** See all tracked meetings, active status, attendee count, and last sync time.
+- **Meeting Overview:** See all tracked meetings, inline-editable meeting names, attendee counts, and the currently active meeting indicator.
 - **Quick Actions:**
-  - 🔗 **Open Meeting:** Jump directly to the meeting URL.
-  - 📝 **Markdown Editor:** Open the in-app Markdown table editor for that meeting.
+  - ↗️ **Open Meeting:** Switch directly to the People roster and rotation for that meeting.
+  - 📝 **Markdown Editor:** Open the in-app Markdown roster editor for that meeting.
   - 💾 **Export Meeting:** Download the meeting's roster and update history as a `.md` file.
+  - 🗑️ **Delete Meeting:** Stop tracking and delete meeting history.
 - **Add / Import:** Click the **➕** button at the top to create a new meeting or paste in an existing Markdown table.
 
 ---
