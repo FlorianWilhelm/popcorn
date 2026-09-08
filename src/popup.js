@@ -77,16 +77,22 @@ const NOISE_WORDS = new Set([
   "mute all", "alle stummschalten", "turn off all mics", "alle mikrofone deaktivieren",
   "pinned", "angepinnt", "stummgeschaltet", "muted", "hand raised", "hand gehoben",
   "joined", "beigetreten", "left", "verlassen", "calling", "ringing",
-  "more actions", "weitere aktionen", "back", "zurück"
+  "more actions", "weitere aktionen", "back", "zurück",
+  "open the people panel", "close the people panel", "people panel", "chat panel",
+  "show everyone", "alle anzeigen", "show in-call messages", "in-call messages"
 ]);
 
-const NOISE_PATTERN = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in the meeting|in der besprechung|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|waiting to join|warten auf beitritt|wartet auf teilnahme|waiting to pair with you|wartet auf kopplung|visitor badge|besucher-badge|visitor|besucher|more actions|weitere aktionen|back|zurück|keyboard_arrow_down|keyboard_arrow_up|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten)$/i;
+const NOISE_PATTERN = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in the meeting|in der besprechung|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|waiting to join|warten auf beitritt|wartet auf teilnahme|waiting to pair with you|wartet auf kopplung|visitor badge|besucher-badge|visitor|besucher|more actions|weitere aktionen|back|zurück|keyboard_arrow_down|keyboard_arrow_up|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten|open\s+(?:the\s+)?people\s+panel|close\s+(?:the\s+)?people\s+panel|people\s+panel|chat\s+panel|show\s+everyone|alle\s+anzeigen)$/i;
+
+const UI_PHRASE_RE = /^(?:open|close|öffnen|schließen|show|hide|view)\s+(?:the\s+)?(?:people|chat|activities|details|host controls?|teilnehmer|personen|chatten|nachrichten|everyone|alle)\s*(?:panel|leiste|fenster|list|liste)?$/i;
+const PANEL_RE = /^(?:people|chat|activities|details|host controls?|teilnehmer|personen)\s*(?:panel|leiste|fenster|list|liste)$/i;
 
 const isNoiseOrIcon = (s) => {
   if (!s) return true;
   const lower = (s || "").toLowerCase().trim();
   if (NOISE_WORDS.has(lower)) return true;
   if (NOISE_PATTERN.test(lower)) return true;
+  if (UI_PHRASE_RE.test(lower) || PANEL_RE.test(lower)) return true;
   return false;
 };
 
@@ -259,7 +265,10 @@ async function save() {
 
 let sessionPort = null;
 
+let lastActiveTabId = null;
+
 function ensureSessionPort(tabId, force = false) {
+  lastActiveTabId = tabId;
   if (sessionPort && !force) return;
   if (sessionPort && force) {
     try {
@@ -276,6 +285,11 @@ function ensureSessionPort(tabId, force = false) {
 }
 
 function disconnectSession() {
+  if (lastActiveTabId) {
+    try {
+      chrome.tabs.sendMessage(lastActiveTabId, { type: "MUR_POPUP_CLOSING" }).catch(() => {});
+    } catch {}
+  }
   if (sessionPort) {
     try {
       sessionPort.disconnect();
@@ -286,6 +300,12 @@ function disconnectSession() {
 
 window.addEventListener("pagehide", disconnectSession);
 window.addEventListener("beforeunload", disconnectSession);
+window.addEventListener("blur", disconnectSession);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    disconnectSession();
+  }
+});
 
 async function readMeet(withPeople, opts = {}) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

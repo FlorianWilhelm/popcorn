@@ -52,10 +52,15 @@
     "mute all", "alle stummschalten", "turn off all mics", "alle mikrofone deaktivieren",
     "pinned", "angepinnt", "stummgeschaltet", "muted", "hand raised", "hand gehoben",
     "joined", "beigetreten", "left", "verlassen", "calling", "ringing",
-    "more actions", "weitere aktionen", "back", "zurück"
+    "more actions", "weitere aktionen", "back", "zurück",
+    "open the people panel", "close the people panel", "people panel", "chat panel",
+    "show everyone", "alle anzeigen", "show in-call messages", "in-call messages"
   ]);
 
-  const NOISE = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in the meeting|in der besprechung|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|waiting to join|warten auf beitritt|wartet auf teilnahme|waiting to pair with you|wartet auf kopplung|visitor badge|besucher-badge|visitor|besucher|more actions|weitere aktionen|back|zurück|keyboard_arrow_down|keyboard_arrow_up|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten)$/i;
+  const NOISE = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in the meeting|in der besprechung|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|waiting to join|warten auf beitritt|wartet auf teilnahme|waiting to pair with you|wartet auf kopplung|visitor badge|besucher-badge|visitor|besucher|more actions|weitere aktionen|back|zurück|keyboard_arrow_down|keyboard_arrow_up|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten|open\s+(?:the\s+)?people\s+panel|close\s+(?:the\s+)?people\s+panel|people\s+panel|chat\s+panel|show\s+everyone|alle\s+anzeigen)$/i;
+
+  const UI_PHRASE_RE = /^(?:open|close|öffnen|schließen|show|hide|view)\s+(?:the\s+)?(?:people|chat|activities|details|host controls?|teilnehmer|personen|chatten|nachrichten|everyone|alle)\s*(?:panel|leiste|fenster|list|liste)?$/i;
+  const PANEL_RE = /^(?:people|chat|activities|details|host controls?|teilnehmer|personen)\s*(?:panel|leiste|fenster|list|liste)$/i;
 
   const clean = (s) => (s || "").replace(/\s+/g, " ").trim();
 
@@ -109,6 +114,7 @@
     if (!s) return false;
     if (s.length < 2 || s.length > 70) return false;
     if (NOISE.test(s)) return false;
+    if (UI_PHRASE_RE.test(s) || PANEL_RE.test(s)) return false;
     if (ICON_WORDS.has(s.toLowerCase())) return false;
     if (isPresentation(s)) return false;
     if (/^[a-z0-9]+(_[a-z0-9]+)+$/i.test(s)) return false;
@@ -353,12 +359,21 @@
   function collect() {
     const ctx = getAbsentContext();
     const seen = new Map();
+    const panel = findPeopleSidePanel();
     const items = Array.from(document.querySelectorAll('[role="listitem"]'));
 
     for (const item of items) {
       if (item.closest('aside[aria-label*="chat" i], div[aria-label*="chat" i], div[aria-label*="nachricht" i]')) continue;
+      if (item.closest('[role="toolbar"], nav, header')) continue;
+
+      const rect = item.getBoundingClientRect();
+      if (rect.top > window.innerHeight - 110) continue;
+      if (rect.width === 0 || rect.height === 0) continue;
+
       const hasId = item.hasAttribute("data-participant-id") || item.querySelector("[data-participant-id]") !== null;
-      const inPeopleList = hasId || !!item.closest('[role="list"]');
+      const inPeopleList = hasId ||
+        !!item.querySelector(".zWGUib") ||
+        (panel !== null && panel.contains(item));
       if (!inPeopleList) continue;
 
       if (item.getAttribute("data-is-screen-share") === "true" || item.getAttribute("data-is-presenting") === "true") continue;
@@ -391,40 +406,106 @@
 
   function clickElement(el) {
     if (!el) return;
+    const target = el.matches('button, [role="button"], a, input')
+      ? el
+      : (el.closest('button, [role="button"], a, input') || el);
+
+    const rect = target.getBoundingClientRect();
+    const cx = Math.round(rect.left + (rect.width > 0 ? rect.width / 2 : 0));
+    const cy = Math.round(rect.top + (rect.height > 0 ? rect.height / 2 : 0));
+
+    const eventProps = {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      view: window,
+      clientX: cx,
+      clientY: cy,
+      screenX: cx,
+      screenY: cy,
+      pageX: cx,
+      pageY: cy
+    };
+
     try {
-      el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, view: window }));
-      el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true, view: window }));
-      el.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, view: window }));
-      el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true, view: window }));
+      target.focus();
     } catch {}
-    el.click();
+
+    try {
+      target.dispatchEvent(new PointerEvent("pointerdown", {
+        ...eventProps,
+        button: 0,
+        buttons: 1,
+        pointerId: 1,
+        pointerType: "mouse",
+        isPrimary: true
+      }));
+      target.dispatchEvent(new MouseEvent("mousedown", {
+        ...eventProps,
+        button: 0,
+        buttons: 1
+      }));
+      target.dispatchEvent(new PointerEvent("pointerup", {
+        ...eventProps,
+        button: 0,
+        buttons: 0,
+        pointerId: 1,
+        pointerType: "mouse",
+        isPrimary: true
+      }));
+      target.dispatchEvent(new MouseEvent("mouseup", {
+        ...eventProps,
+        button: 0,
+        buttons: 0
+      }));
+    } catch {}
+
+    try {
+      target.click();
+    } catch {}
   }
+
+  const NON_PEOPLE_BUTTON_RE = /\b(?:chat|chatten|nachricht(?:en)?|in-call messages|mikrofon|microphone|kamera|camera|verlassen|leave call|anruf verlassen|beenden|auflegen|jetzt präsentieren|present now|bildschirm freigeben|share screen|melden|raise hand|reaktion(?:en)?|send a reaction|untertitel|captions?|besprechungsdetails|meeting details|details zur besprechung|host controls|steuerelemente für den host|sicherheit|safety|security|weitere optionen|more options|einstellungen)\b/i;
+
+  const PEOPLE_LABEL_RE = /\b(?:people|person(?:en)?|teilnehm(?:er|erliste|ende)?|participants?|show everyone|alle anzeigen|afficher tout le monde|mostrar a todos|mostra tutti|mostrar todos)\b/i;
+
+  const PEOPLE_ICON_RE = /\b(?:people|people_outline|group|groups|person|person_outline)\b/i;
 
   function isPeopleButton(b) {
     if (!b) return false;
-    const label = ((b.getAttribute("aria-label") || "") + " " + (b.getAttribute("title") || "") + " " + (b.textContent || "")).toLowerCase();
+    const aria = (b.getAttribute("aria-label") || "").trim();
+    const tooltip = (b.getAttribute("data-tooltip") || "").trim();
+    const title = (b.getAttribute("title") || "").trim();
+    const combinedLabels = `${aria} ${tooltip} ${title}`.toLowerCase();
 
-    // Explicitly exclude non-people buttons
-    if (/chat|chatten|nachricht|message|aktivitäten|activities|details|steuerelemente|host|sicherheit|security|hand|reaktion|reaction|untertitel|caption|kamera|camera|mikrofon|microphone|verlassen|leave|beenden|auflegen|bildschirm|present|screen/i.test(label)) {
+    // 1. Explicitly exclude other known bottom bar control buttons
+    if (NON_PEOPLE_BUTTON_RE.test(combinedLabels)) {
       return false;
     }
 
-    // Match people labels across languages
-    if (/personen|teilnehmer|people|participants|show everyone|alle anzeigen|afficher tout le monde|mostrar a todos|mostra tutti|mostrar todos/i.test(label)) {
+    // 2. Match people labels across languages (both singular and plural)
+    if (PEOPLE_LABEL_RE.test(combinedLabels)) {
       return true;
     }
 
-    // Match Google Material Icons/Symbols inside button
-    const icon = b.querySelector('.google-material-icons, [class*="icon" i], span, i');
-    if (icon) {
+    // 3. Match Google Material Icons/Symbols inside button
+    const icons = Array.from(b.querySelectorAll('.google-material-icons, [class*="icon" i], span, i'));
+    for (const icon of icons) {
       const iconTxt = (icon.textContent || "").trim().toLowerCase();
-      if (/^(?:people|people_outline|group|groups)$/i.test(iconTxt)) {
+      if (PEOPLE_ICON_RE.test(iconTxt)) {
         return true;
       }
     }
 
+    // 4. Check direct text content of button
     const directTxt = (b.textContent || "").trim().toLowerCase();
-    if (/^(?:people|people_outline|group|groups)$/i.test(directTxt)) {
+    if (PEOPLE_ICON_RE.test(directTxt) || PEOPLE_LABEL_RE.test(directTxt)) {
+      return true;
+    }
+
+    // 5. Check aria-controls attribute
+    const ariaControls = (b.getAttribute("aria-controls") || "").toLowerCase();
+    if (ariaControls && /people|participant|teilnehm|person/i.test(ariaControls)) {
       return true;
     }
 
@@ -432,17 +513,22 @@
   }
 
   function findPanelButton() {
-    // Search bottom control bar buttons (usually anchored in bottom 130px)
+    // Search bottom control bar buttons first (usually anchored in bottom 160px)
     const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
     const bottomButtons = buttons.filter((b) => {
       const rect = b.getBoundingClientRect();
-      return rect.top > window.innerHeight - 130 && rect.width > 0 && rect.height > 0;
+      return rect.top > window.innerHeight - 160 && rect.width > 0 && rect.height > 0;
     });
 
-    const candidates = bottomButtons.length > 0 ? bottomButtons : buttons;
-    const found = candidates.find(isPeopleButton);
-    if (found) {
-      return found.matches('button, [role="button"]') ? found : (found.querySelector('button, [role="button"]') || found);
+    const foundInBottom = bottomButtons.find(isPeopleButton);
+    if (foundInBottom) {
+      return foundInBottom.matches('button, [role="button"]') ? foundInBottom : (foundInBottom.querySelector('button, [role="button"]') || foundInBottom);
+    }
+
+    // Fallback: search all buttons on screen
+    const foundAnywhere = buttons.find(isPeopleButton);
+    if (foundAnywhere) {
+      return foundAnywhere.matches('button, [role="button"]') ? foundAnywhere : (foundAnywhere.querySelector('button, [role="button"]') || foundAnywhere);
     }
 
     // Fallback: check by data-panel-id="2" ONLY if it satisfies isPeopleButton
@@ -455,35 +541,46 @@
   }
 
   function findPeopleSidePanel() {
-    // Look for side panel containers on the right half of the screen
-    const containers = Array.from(document.querySelectorAll('aside, section, div[role="region"], div[role="tabpanel"], div[data-panel-id="2"]'));
+    // 1. Look for actual side panel containers positioned at the right edge of the viewport
+    const containers = Array.from(document.querySelectorAll('aside, section, div[role="region"], div[role="tabpanel"], div[data-panel-id]'));
     for (const el of containers) {
       if (el.offsetParent === null) continue;
+      const style = window.getComputedStyle(el);
+      if (style.visibility === "hidden" || style.display === "none") continue;
+
       const rect = el.getBoundingClientRect();
-      if (rect.right < window.innerWidth / 2 || rect.width < 100 || rect.height < 100) continue;
-      if (rect.top > window.innerHeight - 130) continue; // Not in control bar
+      // Must be physically anchored and visible on the right edge of the screen
+      if (rect.left >= window.innerWidth - 50 || rect.left < window.innerWidth * 0.4) continue;
+      if (rect.right < window.innerWidth - 35 || rect.right > window.innerWidth + 35) continue;
+      // Must be typical side-panel width (not full screen, not a tiny button)
+      if (rect.width < 240 || rect.width > 550 || rect.height < window.innerHeight * 0.4) continue;
+      if (rect.top > window.innerHeight - 120) continue; // Not in control bar
+      if (el.closest('[role="main"]')) continue; // Never inside main video stage
+      if (el.querySelector('video')) continue; // Panels do not contain video elements
 
       const aria = (el.getAttribute("aria-label") || "").toLowerCase();
       // Exclude chat, activities, details, host controls panels
-      if (/chat|nachrichten|messages|aktivitäten|activities|details|steuerelemente|host controls/i.test(aria)) continue;
+      if (/chat|nachrichten|messages|aktivitäten|activities|details zur|besprechungsdetails|steuerelemente/i.test(aria)) continue;
       if (el.querySelector('textarea, [contenteditable="true"]')) continue; // Chat message input
 
-      // Look for participant indicators
-      const hasPeopleList = el.querySelector('div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Personen" i], [aria-label*="In call" i], [aria-label*="Im Anruf" i], .zWGUib, [data-participant-id]');
-      if (hasPeopleList) return el;
-
       const text = (el.textContent || "").slice(0, 500).toLowerCase();
-      if (/personen|people|teilnehmer|participants|in call|im anruf|everyone in this call|alle in diesem anruf/i.test(text)) {
+      const hasPeople = el.querySelector('div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Person" i], [aria-label*="In call" i], [aria-label*="Im Anruf" i], [aria-label*="Ebenfalls eingeladen" i], [aria-label*="Also invited" i]');
+
+      if (hasPeople || PEOPLE_LABEL_RE.test(aria) || PEOPLE_LABEL_RE.test(text) || /in call|im anruf|also invited|ebenfalls eingeladen/i.test(text)) {
         return el;
       }
     }
 
-    // Fallback: check if participant list container itself is visible on right half
-    const directList = document.querySelector('div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Personen" i], [aria-label="In call" i], [aria-label="Im Anruf" i]');
+    // 2. Fallback: check if participant list container itself is visible on right edge
+    const directList = document.querySelector('div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Person" i], [aria-label="In call" i], [aria-label="Im Anruf" i]');
     if (directList && directList.offsetParent !== null) {
-      const rect = directList.getBoundingClientRect();
-      if (rect.left > window.innerWidth / 2) {
-        return directList.closest('aside, section, div[role="region"], div[role="tabpanel"]') || directList.parentElement;
+      const style = window.getComputedStyle(directList);
+      if (style.visibility !== "hidden" && style.display !== "none") {
+        const rect = directList.getBoundingClientRect();
+        if (rect.left > window.innerWidth * 0.4 && rect.left < window.innerWidth - 50 &&
+            rect.right >= window.innerWidth - 35 && rect.right <= window.innerWidth + 35) {
+          return directList.closest('aside, section, div[role="region"], div[role="tabpanel"]') || directList.parentElement;
+        }
       }
     }
 
@@ -493,6 +590,18 @@
   function findSidePanelCloseButton() {
     const panel = findPeopleSidePanel();
     if (panel) {
+      // 1. Look for close button in panel header
+      const headerClose = Array.from(panel.querySelectorAll('button, [role="button"]')).find((b) => {
+        const rect = b.getBoundingClientRect();
+        if (rect.top > 180 || rect.width === 0 || rect.height === 0) return false;
+        const aria = (b.getAttribute("aria-label") || "").toLowerCase();
+        const icon = b.querySelector('.google-material-icons, [class*="icon" i], span, i');
+        const txt = ((icon && icon.textContent) || b.textContent || "").trim().toLowerCase();
+        return aria.includes("schließen") || aria.includes("close") || txt === "close" || txt === "clear";
+      });
+      if (headerClose) return headerClose;
+
+      // 2. Look anywhere inside panel
       const inPanelClose = panel.querySelector('button[aria-label*="schließen" i], button[aria-label*="close" i], button[title*="schließen" i], button[title*="close" i], [role="button"][aria-label*="schließen" i], [role="button"][aria-label*="close" i]');
       if (inPanelClose) return inPanelClose;
     }
@@ -512,6 +621,8 @@
       const aria = (b.getAttribute("aria-label") || "").toLowerCase();
       const title = (b.getAttribute("title") || "").toLowerCase();
       const txt = (b.textContent || "").trim().toLowerCase();
+      const icon = b.querySelector('.google-material-icons, [class*="icon" i], span, i');
+      const iconTxt = ((icon && icon.textContent) || "").trim().toLowerCase();
 
       // Must not be leave call button
       if (/anruf|call|verlassen|leave/.test(aria + " " + title)) return false;
@@ -519,31 +630,22 @@
       return aria === "schließen" || aria === "close" ||
              aria.includes("schließen") || aria.includes("close") ||
              title === "schließen" || title === "close" ||
-             txt === "close";
+             txt === "close" || iconTxt === "close";
     });
   }
 
   function isPeoplePanelOpen() {
-    // 1. People side panel container is visible in DOM
+    // 1. Direct visual presence of the side panel in viewport
     if (findPeopleSidePanel() !== null) {
       return true;
     }
 
-    // 2. People panel button aria state in bottom bar
+    // 2. Active button in bottom control bar
     const btn = findPanelButton();
-    if (btn) {
-      const target = btn.matches('button, [role="button"]') ? btn : (btn.querySelector('button, [role="button"]') || btn);
-      const pressed = target.getAttribute("aria-pressed") === "true" ||
-                      target.getAttribute("aria-expanded") === "true" ||
-                      target.getAttribute("aria-selected") === "true" ||
-                      btn.getAttribute("aria-pressed") === "true" ||
-                      btn.getAttribute("aria-expanded") === "true";
-      if (pressed) {
-        // Ensure another panel like Chat is not open instead
-        const chatInput = document.querySelector('textarea[aria-label*="chat" i], textarea[aria-label*="nachricht" i], [contenteditable="true"][aria-label*="chat" i]');
-        if (!chatInput || chatInput.offsetParent === null) {
-          return true;
-        }
+    if (btn && isButtonActive(btn)) {
+      const chatInput = document.querySelector('textarea[aria-label*="chat" i], textarea[aria-label*="nachricht" i], [contenteditable="true"][aria-label*="chat" i]');
+      if (!chatInput || chatInput.offsetParent === null) {
+        return true;
       }
     }
 
@@ -551,35 +653,137 @@
   }
 
   function closePeoplePanel() {
-    if (!isPeoplePanelOpen()) return;
-
-    // 1. Click the close button in the side panel
-    const closeBtn = findSidePanelCloseButton();
-    if (closeBtn) {
-      clickElement(closeBtn);
+    // 1. Primary: toggle bottom bar People button (the exact button that opened it)
+    const panelBtn = findPanelButton();
+    if (panelBtn) {
+      clickElement(panelBtn);
       return;
     }
 
-    // 2. Fallback: toggle via the main panel button in bottom control bar
-    const btn = findPanelButton();
-    if (btn) {
-      clickElement(btn);
+    // 2. Fallback: Close button in side panel header
+    const closeBtn = findSidePanelCloseButton();
+    if (closeBtn) {
+      clickElement(closeBtn);
     }
   }
 
-  let openedByPopcorn = false;
+  const CHAT_LABEL_RE = /\b(?:chat|chatten|nachricht(?:en)?|in-call messages?|mit allen chatten|chat with everyone)\b/i;
+  const ACTIVITIES_LABEL_RE = /\b(?:aktivitäten|activities)\b/i;
+  const DETAILS_LABEL_RE = /\b(?:besprechungsdetails|meeting details|details zur besprechung)\b/i;
+  const HOST_LABEL_RE = /\b(?:host controls|steuerelemente für den host)\b/i;
+
+  function isButtonActive(b) {
+    if (!b) return false;
+    const target = b.matches('button, [role="button"]') ? b : (b.querySelector('button, [role="button"]') || b);
+    return target.getAttribute("aria-pressed") === "true" ||
+           target.getAttribute("aria-expanded") === "true" ||
+           target.getAttribute("aria-selected") === "true" ||
+           b.getAttribute("aria-pressed") === "true" ||
+           b.getAttribute("aria-expanded") === "true" ||
+           b.getAttribute("aria-selected") === "true";
+  }
+
+  function findChatButton() {
+    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
+    return buttons.find((b) => {
+      const rect = b.getBoundingClientRect();
+      if (rect.top <= window.innerHeight - 160 || rect.width === 0 || rect.height === 0) return false;
+      if (b.getAttribute("data-panel-id") === "1") return true;
+      const label = `${b.getAttribute("aria-label") || ""} ${b.getAttribute("data-tooltip") || ""} ${b.getAttribute("title") || ""} ${b.textContent || ""}`.toLowerCase();
+      return CHAT_LABEL_RE.test(label);
+    });
+  }
+
+  function findOtherActivePanelButton() {
+    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
+    return buttons.find((b) => {
+      const rect = b.getBoundingClientRect();
+      if (rect.top <= window.innerHeight - 160 || rect.width === 0 || rect.height === 0) return false;
+      if (isPeopleButton(b)) return false;
+
+      // Exclude non-panel controls: mic, cam, hand, captions, reactions, leave
+      const label = `${b.getAttribute("aria-label") || ""} ${b.getAttribute("data-tooltip") || ""} ${b.getAttribute("title") || ""} ${b.textContent || ""}`.toLowerCase();
+      if (/mikrofon|microphone|kamera|camera|verlassen|leave|hand|melden|reaktion|reaction|untertitel|caption|bildschirm|present|screen/i.test(label)) {
+        return false;
+      }
+
+      if (CHAT_LABEL_RE.test(label) || ACTIVITIES_LABEL_RE.test(label) || DETAILS_LABEL_RE.test(label) || HOST_LABEL_RE.test(label) || b.hasAttribute("data-panel-id")) {
+        return isButtonActive(b);
+      }
+      return false;
+    });
+  }
+
+  let initialSessionState = null;
+  let openedPanelByPopcorn = false;
   const activeSessionPorts = new Set();
+
+  function captureInitialState() {
+    if (initialSessionState !== null) return;
+
+    // 1. Is People sidebar already open?
+    if (isPeoplePanelOpen()) {
+      initialSessionState = { type: "PEOPLE" };
+      return;
+    }
+
+    // 2. Is Chat input visible or Chat button active?
+    const chatInput = document.querySelector('textarea[aria-label*="chat" i], textarea[aria-label*="nachricht" i], [contenteditable="true"][aria-label*="chat" i]');
+    const chatBtn = findChatButton();
+    if ((chatInput && chatInput.offsetParent !== null) || (chatBtn && isButtonActive(chatBtn))) {
+      initialSessionState = { type: "OTHER", button: chatBtn };
+      return;
+    }
+
+    // 3. Is another panel button active (Activities, Details, Host)?
+    const otherActiveBtn = findOtherActivePanelButton();
+    if (otherActiveBtn) {
+      initialSessionState = { type: "OTHER", button: otherActiveBtn };
+      return;
+    }
+
+    // 4. No panel was open
+    initialSessionState = { type: "NONE" };
+  }
+
+  function restoreInitialState() {
+    const state = initialSessionState;
+    const wasOpened = openedPanelByPopcorn;
+    initialSessionState = null;
+    openedPanelByPopcorn = false;
+
+    // If Popcorn never opened or altered the panel, leave Meet exactly as is
+    if (!wasOpened || !state) return;
+
+    if (state.type === "PEOPLE") {
+      // 1) People sidebar was already open: keep it open
+      return;
+    }
+
+    if (state.type === "OTHER" && state.button) {
+      // 2a) Another panel (e.g. Chat) was open: switch back to it if not already active
+      if (!isButtonActive(state.button)) {
+        clickElement(state.button);
+      }
+      return;
+    }
+
+    if (state.type === "NONE") {
+      // 2b) No sidebar was open: close People panel
+      closePeoplePanel();
+      return;
+    }
+  }
 
   function onSessionConnect(port) {
     if (port.name === "popcorn-session") {
       activeSessionPorts.add(port);
+      captureInitialState();
+
       port.onDisconnect.addListener(() => {
         activeSessionPorts.delete(port);
         if (activeSessionPorts.size === 0) {
-          if (openedByPopcorn) {
-            closePeoplePanel();
-            openedByPopcorn = false;
-          }
+          restoreInitialState();
         }
       });
     }
@@ -598,20 +802,33 @@
     });
   }
 
+  const SECTION_EXPAND_RE = /\b(?:in (?:this |the )?call|im anruf|in (?:this |the )?meeting|in der besprechung|contributors|beitragende|also invited|ebenfalls eingeladen|not in (?:the )?call|nicht im anruf|andere eingeladene|weitere eingeladene|eingeladen|invited|waiting to join|warten auf beitritt|everyone in this call|alle in diesem anruf|alle teilnehmer)\b/i;
+
   function expandCollapsedSections() {
     const panel = findPeopleSidePanel();
-    if (!panel) return;
+    const searchRoot = panel || document;
 
-    const toggles = Array.from(panel.querySelectorAll('div[role="button"][aria-expanded="false"], button[aria-expanded="false"]'));
+    const toggles = Array.from(searchRoot.querySelectorAll('div[role="button"][aria-expanded="false"], button[aria-expanded="false"]'));
+    let clickedAny = false;
     for (const t of toggles) {
+      const rect = t.getBoundingClientRect();
+      // Must not be in control bar
+      if (rect.top > window.innerHeight - 120) continue;
+      // If no panel resolved yet, restrict to right half of screen
+      if (!panel && rect.left < window.innerWidth * 0.45) continue;
+
       // Avoid participant action menus (3 dots)
       if (t.closest('[role="listitem"]') || t.hasAttribute("aria-haspopup")) continue;
+
       const text = ((t.textContent || "") + " " + (t.getAttribute("aria-label") || "")).toLowerCase();
-      if (/chat|nachricht|message|close|schließen|search|suchen/.test(text)) continue;
-      if (/\b(?:in (?:this |the )?call|im anruf|in (?:this |the )?meeting|in der besprechung|contributors|beitragende|also invited|ebenfalls eingeladen|not in (?:the )?call|nicht im anruf|invited|eingeladen|waiting to join|warten auf beitritt)\b|\b(?:everyone in this call|alle in diesem anruf|alle teilnehmer)\b/i.test(text)) {
+      if (/chat|nachricht|message|close|schließen|search|suchen/i.test(text)) continue;
+
+      if (SECTION_EXPAND_RE.test(text)) {
         clickElement(t);
+        clickedAny = true;
       }
     }
+    return clickedAny;
   }
 
   function updateLiveRoster() {
@@ -619,8 +836,14 @@
     const currentCollected = collect();
     const now = Date.now();
     for (const p of currentCollected) {
+      if (!p.name || !looksLikeName(p.name)) continue;
       const k = p.name.toLowerCase();
       sessionRoster.set(k, { name: p.name, present: p.present, lastSeen: now });
+    }
+    for (const [k, v] of sessionRoster.entries()) {
+      if (!looksLikeName(v.name) || now - v.lastSeen > 120000) {
+        sessionRoster.delete(k);
+      }
     }
   }
 
@@ -636,32 +859,55 @@
     let openedPanel = false;
 
     if (withPeople) {
+      captureInitialState();
+
       // If requested and panel is closed, open it and track that Popcorn opened it
       if (!isPeoplePanelOpen() && openIfClosed) {
         const btn = findPanelButton();
         if (btn) {
           clickElement(btn);
           openedPanel = true;
-          openedByPopcorn = true;
-          await wait(350);
+          openedPanelByPopcorn = true;
+          await wait(400);
         }
       }
 
-      expandCollapsedSections();
+      // Initial section expand pass
+      const expandedInitial = expandCollapsedSections();
+      if (expandedInitial) {
+        await wait(250);
+      }
+
       const viewEveryone = findViewEveryoneButton();
       if (viewEveryone) {
         clickElement(viewEveryone);
         await wait(200);
       }
 
-      // Poll up to 1000ms until participants are loaded and count stabilizes
+      // Poll until participants are loaded and count stabilizes
+      // Note: Do NOT abort prematurely when only 1 participant (video tile) is found!
+      // Allow up to 10 iterations (~1200ms) for the sidebar to load and render attendees.
       let lastCount = 0;
-      for (let i = 0; i < 8; i++) {
-        expandCollapsedSections();
-        people = collect();
-        if (people.length > 0 && people.length === lastCount) {
-          break;
+      let stableRounds = 0;
+      for (let i = 0; i < 10; i++) {
+        const didExpand = expandCollapsedSections();
+        if (didExpand) {
+          await wait(200);
         }
+        people = collect();
+
+        // Stabilization condition:
+        // - If we have 2+ people and count didn't change: break after 1 stable round
+        // - If we only have 1 person (e.g. video tile): require at least 3 stable rounds and at least 4 iterations (~600ms)
+        if (people.length > 0 && people.length === lastCount) {
+          stableRounds++;
+          if (people.length >= 2 || (stableRounds >= 3 && i >= 4)) {
+            break;
+          }
+        } else {
+          stableRounds = 0;
+        }
+
         lastCount = people.length;
         await wait(120);
       }
@@ -675,19 +921,23 @@
 
       const now = Date.now();
       for (const p of people) {
-        sessionRoster.set(p.name.toLowerCase(), { name: p.name, present: p.present, lastSeen: now });
+        if (p.name && looksLikeName(p.name)) {
+          sessionRoster.set(p.name.toLowerCase(), { name: p.name, present: p.present, lastSeen: now });
+        }
       }
 
       // Merge with recent session roster so momentarily unseen participants are retained
       if (sessionRoster.size > people.length) {
         const merged = new Map();
         for (const [k, v] of sessionRoster.entries()) {
-          if (now - v.lastSeen < 60000) {
+          if (now - v.lastSeen < 60000 && looksLikeName(v.name)) {
             merged.set(k, { name: v.name, present: v.present });
           }
         }
         for (const p of people) {
-          merged.set(p.name.toLowerCase(), { name: p.name, present: p.present });
+          if (looksLikeName(p.name)) {
+            merged.set(p.name.toLowerCase(), { name: p.name, present: p.present });
+          }
         }
         if (merged.size > people.length) {
           people = Array.from(merged.values());
@@ -712,13 +962,26 @@
         .catch((e) => sendResponse({ ok: false, error: String(e && e.message ? e.message : e) }));
       return true;
     }
+    if (msg && msg.type === "MUR_POPUP_CLOSING") {
+      restoreInitialState();
+      sendResponse({ ok: true });
+      return true;
+    }
   };
   chrome.runtime.onMessage.addListener(messageListener);
 
   chrome.runtime.onConnect.addListener(onSessionConnect);
 
+  const onWindowFocus = () => {
+    if (activeSessionPorts.size === 0 && openedPanelByPopcorn) {
+      restoreInitialState();
+    }
+  };
+  window.addEventListener("focus", onWindowFocus);
+
   window.__murCleanup = () => {
     clearInterval(liveRosterInterval);
+    window.removeEventListener("focus", onWindowFocus);
     try { chrome.runtime.onMessage.removeListener(messageListener); } catch {}
     try { chrome.runtime.onConnect.removeListener(onSessionConnect); } catch {}
   };
