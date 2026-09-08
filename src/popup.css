@@ -650,8 +650,13 @@ input[type="number"] {
 }
 
 .icon-btn.copied {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: #22c55e !important;
+  border-color: rgba(34, 197, 94, 0.6) !important;
+  background: rgba(34, 197, 94, 0.14) !important;
+}
+
+.icon-btn.copied svg {
+  stroke: #22c55e !important;
 }
 
 .meeting {

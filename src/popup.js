@@ -1324,13 +1324,47 @@ async function copyModalText() {
   }
   if (copyBtn) {
     const origHtml = copyBtn.innerHTML;
+    const origTitle = copyBtn.title || "Copy Markdown to clipboard";
     copyBtn.classList.add("copied");
-    copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Copied!</span>`;
+    copyBtn.title = "Copied!";
+    copyBtn.setAttribute("aria-label", "Copied!");
+    copyBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
     setTimeout(() => {
       copyBtn.classList.remove("copied");
+      copyBtn.title = origTitle;
+      copyBtn.setAttribute("aria-label", origTitle);
       copyBtn.innerHTML = origHtml;
     }, 1500);
   }
+}
+
+function downloadModalMarkdown() {
+  const textarea = $("markdownTextarea");
+  if (!textarea || !textarea.value.trim()) return;
+  const md = textarea.value;
+
+  let rawName = "";
+  if (editingMeetingId && data.meetings[editingMeetingId]) {
+    rawName = data.meetings[editingMeetingId].name || "";
+  }
+  if (!rawName) {
+    const titleMatch = md.match(/^#\s+(.+)$/m);
+    if (titleMatch && titleMatch[1]) {
+      rawName = titleMatch[1].trim();
+    }
+  }
+
+  const slug = (rawName || "meeting")
+    .toLowerCase()
+    .replace(/[^a-z0-9äöüß]+/gi, "-")
+    .replace(/^-+|-+$/g, "");
+
+  const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${slug || "meeting"}.md`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
 async function saveMarkdownModal() {
@@ -1562,6 +1596,8 @@ if ($("fileInput")) {
 if ($("btnModalClose")) $("btnModalClose").addEventListener("click", closeMarkdownModal);
 if ($("btnModalCancel")) $("btnModalCancel").addEventListener("click", closeMarkdownModal);
 if ($("btnModalSave")) $("btnModalSave").addEventListener("click", saveMarkdownModal);
+if ($("btnModalUpload")) $("btnModalUpload").addEventListener("click", () => $("fileInput").click());
+if ($("btnModalDownload")) $("btnModalDownload").addEventListener("click", downloadModalMarkdown);
 if ($("btnModalCopy")) $("btnModalCopy").addEventListener("click", copyModalText);
 if ($("btnModalLoadFile")) $("btnModalLoadFile").addEventListener("click", () => $("fileInput").click());
 const modalTextarea = $("markdownTextarea");
