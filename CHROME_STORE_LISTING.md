@@ -45,7 +45,8 @@ POPCORN automatically tracks when attendees last gave a project update and sugge
 🎯 Smart Popcorn Rotation:
 • Automatically suggests the next speakers based on who hasn't spoken in the longest time.
 • One-click checkboxes mark participants done for today with an instant strikethrough.
-• "More People" button cycles in fresh candidates from the pool on demand.
+• Scrollable active rotation list displaying all present attendees in priority order (01, 02, ...).
+• Dual sorting modes: toggle between fair rotation priority and alphabetical view at any time.
 
 👥 Automatic Roster & Presence Tracking:
 • Automatically detects attendees currently present in your Google Meet call.
@@ -74,7 +75,7 @@ POPCORN automatically tracks when attendees last gave a project update and sugge
 2. Click the POPCORN mascot icon in your Chrome toolbar.
 3. Click "Enable Tracking" for the current meeting.
 4. Open the Meet People panel once so POPCORN can detect all attendees.
-5. Watch POPCORN suggest candidates, check them off as teammates complete their updates, and click "More People" to rotate in the next speakers!
+5. Watch POPCORN order attendees fairly, and simply check them off as each teammate completes their update!
 
 Keep your daily standups snappy, engaging, and fair with POPCORN! 🍿🎙️
 ```
