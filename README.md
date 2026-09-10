@@ -2,6 +2,7 @@
 
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-POPCORN-blue?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/popcorn-%E2%80%93-google-meet-sta/ohfgelbmjoepoocbcmmlhlfcholfogmb)
 [![EffVer Versioning](https://img.shields.io/badge/version_scheme-EffVer-0097a7)](https://jacobtomlinson.dev/effver)
+[![Keep a Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-orange)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
@@ -126,15 +127,15 @@ Click the **⚙️ Settings** icon in the tab bar to customize your setup:
 
 ---
 
-## 🏷️ Versioning
+## 🏷️ Versioning & Changelog
 
-This project strictly follows **[EffVer (Intended Effort Versioning)](https://jacobtomlinson.dev/effver/)** (`Macro.Meso.Micro`):
+This project strictly follows **[EffVer (Intended Effort Versioning)](https://jacobtomlinson.dev/effver/)** (`Macro.Meso.Micro`) and documents all notable changes in **[CHANGELOG.md](CHANGELOG.md)** based on [Keep a Changelog](https://keepachangelog.com/).
 
 - **Macro**: Significant effort required to adopt (major overhauls, extensive breaking changes).
 - **Meso**: Some small effort required to adopt (minor breaking adjustments, changes affecting workarounds).
 - **Micro**: No effort required (bug fixes, enhancements, seamless updates).
 
-To bump the version across all files, run:
+To bump the version across all project files, run:
 ```bash
 npm run bump -- micro    # No effort to adopt (e.g. 0.28.0 -> 0.28.1)
 npm run bump -- meso     # Some effort to adopt (e.g. 0.28.0 -> 0.29.0)

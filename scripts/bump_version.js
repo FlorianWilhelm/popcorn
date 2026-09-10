@@ -6,6 +6,7 @@ const pkgPath = path.join(rootDir, "package.json");
 const manifestPath = path.join(rootDir, "src", "manifest.json");
 const popupHtmlPath = path.join(rootDir, "src", "popup.html");
 const listingPath = path.join(rootDir, "CHROME_STORE_LISTING.md");
+const changelogPath = path.join(rootDir, "CHANGELOG.md");
 
 const target = process.argv[2];
 
@@ -119,6 +120,37 @@ if (fs.existsSync(listingPath)) {
   if (updatedListing !== listing) {
     fs.writeFileSync(listingPath, updatedListing, "utf8");
     console.log(`  ✓ CHROME_STORE_LISTING:  updated bundle to popcorn-v${newVersion}.zip`);
+  }
+}
+
+// 5. Update CHANGELOG.md
+if (fs.existsSync(changelogPath)) {
+  let changelog = fs.readFileSync(changelogPath, "utf8");
+  const today = new Date().toISOString().slice(0, 10);
+  const pattern = /## \[Unreleased\]\s*\n([\s\S]*?)(?=\n---\s*\n## \[\d|\n## \[\d|$)/;
+  const match = changelog.match(pattern);
+
+  if (match && match[1].trim().length > 0) {
+    const unreleasedBody = match[1].trim();
+    const newReleaseBlock = `## [Unreleased]\n\n---\n\n## [${newVersion}] - ${today}\n\n${unreleasedBody}\n\n`;
+    changelog = changelog.replace(pattern, newReleaseBlock);
+
+    // Update link references at bottom
+    const repoUrl = "https://github.com/FlorianWilhelm/popcorn";
+    const unreleasedLink = `[Unreleased]: ${repoUrl}/compare/v${newVersion}...HEAD`;
+    const prevTag = `v${currentRaw}`;
+    const newTag = `v${newVersion}`;
+    const newReleaseLink = `[${newVersion}]: ${repoUrl}/compare/${prevTag}...${newTag}`;
+
+    changelog = changelog.replace(
+      /\[Unreleased\]: [^\n]+/,
+      `${unreleasedLink}\n${newReleaseLink}`
+    );
+
+    fs.writeFileSync(changelogPath, changelog, "utf8");
+    console.log(`  ✓ CHANGELOG.md:          promoted [Unreleased] to [${newVersion}] - ${today}`);
+  } else {
+    console.log(`  ℹ CHANGELOG.md:          no unreleased changes found, keeping [Unreleased]`);
   }
 }
 
