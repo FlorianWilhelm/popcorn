@@ -14,7 +14,7 @@
 
 ## 2. Local Storage
 - Meeting names, participant lists, attendance timestamps, and custom settings (such as auto-refresh intervals) are stored exclusively in your browser's local storage via `chrome.storage.local`.
-- This data never leaves your device and is never synchronized with any third-party service unless you explicitly export it using the Markdown/JSON export feature.
+- This data never leaves your device and is never synchronized with any third-party service unless you explicitly export it using the Markdown export feature.
 
 ---
 

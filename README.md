@@ -118,12 +118,10 @@ POPCORN treats Markdown as a first-class citizen. Click the **Edit Markdown** bu
 
 ---
 
-### 4. Settings & Backups (⚙️ Tab)
+### 4. Settings (⚙️ Tab)
 
 Click the **⚙️ Settings** icon in the tab bar to customize your setup:
 - **Attendance Refresh:** Configure automatic refresh intervals for Google Meet calls.
-- **Full Database Backup:** Export your entire POPCORN configuration and history as JSON.
-- **Restore Backup:** Import previously exported JSON backup files anytime.
 
 ---
 

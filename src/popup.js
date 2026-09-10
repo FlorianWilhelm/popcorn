@@ -952,7 +952,7 @@ function setupAutoRefresh() {
   }
 }
 
-/* ---------- Import und Export (Markdown & JSON) ---------- */
+/* ---------- Import und Export (Markdown) ---------- */
 
 function meetingToMarkdown(m) {
   const rows = Object.values(m.people || {})
@@ -1152,39 +1152,7 @@ function parseMarkdownMeeting(mdText) {
   return { meetingName, people };
 }
 
-function exportData() {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `update-rotator-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-}
 
-function mergeInto(target, incoming) {
-  for (const [id, g] of Object.entries(incoming.meetings || {})) {
-    sanitizeMeetingData(g);
-    const existing =
-      target.meetings[id] ||
-      Object.values(target.meetings).find((x) => norm(x.name) === norm(g.name));
-    if (!existing) {
-      target.meetings[id] = g;
-      continue;
-    }
-    for (const [k, p] of Object.entries(g.people || {})) {
-      if (!existing.people[k]) {
-        existing.people[k] = p;
-      } else {
-        existing.people[k].last = Math.max(existing.people[k].last || 0, p.last || 0);
-        if (p.ignored) existing.people[k].ignored = true;
-      }
-    }
-    for (const a of g.aliases || []) addAlias(existing, a);
-    for (const c of g.codes || []) if (!existing.codes.includes(c)) existing.codes.push(c);
-    sanitizeMeetingData(existing);
-  }
-  return target;
-}
 
 async function importMarkdownText(text, sourceLabel = "clipboard") {
   if (!text || typeof text !== "string") {
@@ -1454,35 +1422,10 @@ async function importFile(file) {
     }
   }
 
-  // 1. First check if it is a Markdown meeting
+  // Import as Markdown meeting
   if (text.includes("|") && text.includes("#")) {
-    const success = await importMarkdownText(text, `"${file.name}"`);
-    if (success) return;
+    await importMarkdownText(text, `"${file.name}"`);
   }
-
-  // 2. Import as JSON backup
-  let parsed;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return;
-  }
-  if (!parsed || typeof parsed !== "object" || !(parsed.meetings || parsed.groups)) {
-    return;
-  }
-  const replace = confirm(
-    "OK replaces all saved lists with the file.\nCancel merges the file into the existing lists."
-  );
-  if (replace) {
-    data = parsed.meetings ? parsed : { version: 2, meetings: {} };
-    for (const m of Object.values(data.meetings || {})) {
-      sanitizeMeetingData(m);
-    }
-  } else {
-    mergeInto(data, parsed);
-  }
-  await save();
-  await refresh();
 }
 
 /* ---------- Events ---------- */
@@ -1616,7 +1559,6 @@ if ($("btnToggleDeleteMode")) {
   });
 }
 if ($("btnNewMeeting")) $("btnNewMeeting").addEventListener("click", () => openMarkdownModal(null));
-if ($("btnExportJson")) $("btnExportJson").addEventListener("click", exportData);
 if ($("fileInput")) {
   $("fileInput").addEventListener("change", (e) => {
     const f = e.target.files[0];
@@ -1631,7 +1573,6 @@ if ($("btnModalSave")) $("btnModalSave").addEventListener("click", saveMarkdownM
 if ($("btnModalUpload")) $("btnModalUpload").addEventListener("click", () => $("fileInput").click());
 if ($("btnModalDownload")) $("btnModalDownload").addEventListener("click", downloadModalMarkdown);
 if ($("btnModalCopy")) $("btnModalCopy").addEventListener("click", copyModalText);
-if ($("btnModalLoadFile")) $("btnModalLoadFile").addEventListener("click", () => $("fileInput").click());
 const modalTextarea = $("markdownTextarea");
 if (modalTextarea) {
   modalTextarea.addEventListener("input", () => {

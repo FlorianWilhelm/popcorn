@@ -61,7 +61,7 @@
           enable tracking there, or create a meeting using the + button.
         </p>
       </div>
-      <input type="file" id="fileInput" accept=".md,.txt,.json,application/json,text/markdown" hidden />
+      <input type="file" id="fileInput" accept=".md,.txt,text/markdown" hidden />
     </section>
 
     <!-- People tab (merged standup updates & roster management) -->
@@ -148,16 +148,7 @@
       </label>
       <p class="hint" id="hintRefreshInterval">Interval for automatic refreshing (default: 2 seconds).</p>
 
-      <div class="row" style="margin-top: 14px;">
-        <button id="btnExportJson" class="ghost btn-with-icon" style="width: 100%;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          <span>Export full backup (JSON)</span>
-        </button>
-      </div>
+
 
       <div class="version-info" style="margin-top: 14px; text-align: center; font-size: 11px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
         <span>🍿 POPCORN v<span id="appVersion">0.30.0</span></span>
