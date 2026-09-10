@@ -95,10 +95,10 @@ Switch to the **Meetings** tab to see and manage all your tracked teams and recu
 
 - **Meeting Overview:** See all tracked meetings, inline-editable meeting names, attendee counts, and the currently active meeting indicator.
 - **Quick Actions:**
-  - ↗️ **Open Meeting:** Switch directly to the People roster and rotation for that meeting.
-  - 📝 **Markdown Editor:** Open the in-app Markdown roster editor for that meeting.
-  - 💾 **Export Meeting:** Download the meeting's roster and update history as a `.md` file.
-  - 🗑️ **Delete Meeting:** Stop tracking and delete meeting history.
+  - ↗️ **Open:** Switch directly to the People roster and rotation for that meeting.
+  - 📝 **Edit:** Open the in-app Markdown roster editor for that meeting.
+  - 💾 **Export:** Download the meeting's roster and update history as a `.md` file.
+  - 🗑️ **Delete:** Stop tracking and delete meeting history.
 - **Add / Import:** Click the **➕** button at the top to create a new meeting or paste in an existing Markdown table.
 
 ---
