@@ -79,7 +79,7 @@ When you are in a Google Meet call, open the POPCORN popup to see the active sta
 - **Fair Ordering:** Teammates who haven't spoken the longest naturally bubble to the top of the list.
 - **Toolbar Controls:**
   - 👻 **Ghost:** Toggle visibility of absent or ignored members in a secondary list below the main rotation.
-  - 🔤 **Sort:** Switch between rotation order and alphabetical view (while preserving priority numbers `01`, `02`, ...).
+  - 🔤 **Sort:** Switch between last update and alphabetical order.
   - ➕ **Add:** Add an attendee manually to the current meeting.
   - 🗑️ **Trash:** Toggle delete mode to quickly prune former teammates.
 
