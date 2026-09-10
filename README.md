@@ -112,17 +112,18 @@ POPCORN treats Markdown as a first-class citizen. Click the **Edit Markdown** bu
 </p>
 
 - **Live Markdown Table:** View and edit meeting attendance and update timestamps in clean GFM (GitHub Flavored Markdown) table format.
-- **📤 Upload:** Load and import an existing Markdown roster file directly into the editor.
-- **📥 Download:** Export the meeting roster and history as a `.md` file directly from the editor toolbar.
-- **📋 Copy:** Instantly copy the table to your clipboard for pasting into daily meeting notes, Notion, Obsidian, GitHub issues, or Slack.
-- **💾 Save:** Edits made in the Markdown table immediately sync back to POPCORN's internal storage.
+- 📤 **Upload Icon:** Load and import an existing Markdown roster file directly from your disk into the editor.
+- 📥 **Download Icon:** Export the meeting roster and history as a `.md` file directly from the editor toolbar.
+- 📋 **Copy Icon:** Instantly copy the table to your clipboard for pasting into daily meeting notes, Notion, Obsidian, GitHub issues, or Slack.
+- 💾 **Save Button:** Edits made in the Markdown table immediately sync back to POPCORN's internal storage.
 
 ---
 
 ### 4. Settings (⚙️ Tab)
 
 Click the **⚙️ Settings** icon in the tab bar to customize your setup:
-- **Attendance Refresh:** Configure automatic refresh intervals for Google Meet calls.
+- **Automatic Attendance Refresh:** Toggle automatic re-syncing of active attendees during Google Meet calls.
+- **Refresh Interval:** Set the automatic polling frequency in seconds (default: 2 seconds).
 
 ---
 
