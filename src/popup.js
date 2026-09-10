@@ -818,8 +818,8 @@ function render() {
     const isAbsentShown = m ? !!m.includeAbsent : false;
     $("btnToggleAbsent").classList.toggle("active", isAbsentShown);
     $("btnToggleAbsent").title = isAbsentShown
-      ? "Hide absent and ignored"
-      : "Show absent and ignored";
+      ? "Hide absent or ignored"
+      : "Show absent or ignored";
     $("btnToggleAbsent").setAttribute("aria-label", $("btnToggleAbsent").title);
     $("btnToggleAbsent").disabled = !m;
   }

@@ -33,7 +33,7 @@ In agile culture, passing the microphone organically is known as *"Popcorn style
 - ✅ **One-Click Check-Off**: Click a participant's checkbox as they finish their update to record the timestamp with an instant strikethrough.
 - 👥 **Real-Time Attendance**: Syncs live attendees from Google Meet and highlights newly joined teammates.
 - 🔤 **Dual Sorting Modes**: Toggle between fair rotation priority and alphabetical order with a single click—without losing priority rankings!
-- 👻 **Absent & Ignored Roster**: Keep guests or passive listeners muted/ignored, or toggle visibility of absent members.
+- 👻 **Absent or Ignored Roster**: Keep guests or passive listeners muted/ignored, or toggle visibility of absent members.
 - 📅 **Multi-Meeting Tracking**: Manages independent rosters and histories for multiple daily standups, weekly syncs, and retros.
 - 📝 **Markdown Roster & Table Editor**: View, edit, copy, and export/import meeting rosters directly as clean Markdown tables—ideal for Notion, Obsidian, GitHub, Slack, and Docs.
 - 🔒 **Zero Telemetry / 100% Local**: All data remains strictly in your browser's `chrome.storage.local`. No analytics, no accounts, and no external servers.
@@ -78,7 +78,7 @@ When you are in a Google Meet call, open the POPCORN popup to see the active sta
 - **Checking Off Speakers:** As each teammate speaks, check their box. POPCORN timestamps their update (`today · 10:15`) and applies a strikethrough.
 - **Fair Ordering:** Teammates who haven't spoken the longest naturally bubble to the top of the list.
 - **Toolbar Controls:**
-  - 👻 **Ghost:** Toggle visibility of absent and ignored members in a secondary list below the main rotation.
+  - 👻 **Ghost:** Toggle visibility of absent or ignored members in a secondary list below the main rotation.
   - 🔤 **Sort:** Switch between rotation order and alphabetical view (while preserving priority numbers `01`, `02`, ...).
   - ➕ **Add:** Add an attendee manually to the current meeting.
   - 🗑️ **Trash:** Toggle delete mode to quickly prune former teammates.

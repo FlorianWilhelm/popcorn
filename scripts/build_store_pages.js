@@ -678,7 +678,7 @@ const s1Popup = `
         <span class="people-presence">7 present of 8 · 1 newly added</span>
       </div>
       <div class="toolbar-actions">
-        <button class="ghost icon-btn mini" title="Show absent and ignored">
+        <button class="ghost icon-btn mini" title="Show absent or ignored">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 10h.01"/>
             <path d="M15 10h.01"/>
