@@ -7,6 +7,10 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 
 ## [Unreleased]
 
+---
+
+## [0.31.0] - 2026-09-10
+
 ### Changed
 - **Dynamic rotation reordering for late joiners**: Participants who join a meeting late (or are detected in later DOM scraping passes) are now dynamically sorted into the pending speaker queue according to priority (`never` first by first name, then longest since last update), rather than unconditionally appended at the end of the round.
 - **Fixed completed speaker positions**: Participants who have already completed their turn today (`doneToday` / checked off) maintain their fixed positions at the top of the meeting round and are neither shifted nor overtaken by late joiners.
@@ -17,7 +21,9 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 
 ### Documentation
 - Clarified browser extension toolbar pinning tip in `README.md`.
+- Updated Markdown modal editor toolbar action descriptions in `README.md`.
 - Updated Chrome Web Store screenshots and listing guide.
+
 
 ---
 
@@ -287,7 +293,8 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 ### Added
 - Initial release of Meet Update Rotator.
 
-[Unreleased]: https://github.com/FlorianWilhelm/popcorn/compare/v0.30.0...HEAD
+[Unreleased]: https://github.com/FlorianWilhelm/popcorn/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/FlorianWilhelm/popcorn/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/FlorianWilhelm/popcorn/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/FlorianWilhelm/popcorn/compare/v0.28.3...v0.29.0
 [0.28.3]: https://github.com/FlorianWilhelm/popcorn/compare/v0.28.2...v0.28.3

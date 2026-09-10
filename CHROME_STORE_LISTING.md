@@ -11,7 +11,7 @@ Everything is prepared and packaged to submit **POPCORN** to the Chrome Web Stor
    *(If you don't have a developer account yet, there is a one-time \$5 registration fee from Google).*
 
 2. **Click "New Item"** (top right) and upload the ready-made ZIP file:
-   📂 `dist/popcorn-v0.30.0.zip`
+   📂 `dist/popcorn-v0.31.0.zip`
    *(You can rebuild it anytime by running `npm run package`)*
 
 3. **Fill out the fields below (Copy & Paste ready)**:
