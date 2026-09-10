@@ -52,14 +52,14 @@ Install POPCORN directly from the official Google Chrome Web Store with automati
 3. In Chrome (or any Chromium browser like Brave or Edge), navigate to `chrome://extensions`.
 4. Enable **Developer mode** in the top-right corner.
 5. Click **Load unpacked** and select the unzipped folder.
-6. Pin **POPCORN (🍿)** to your extension toolbar.
 
 ### Option 3: From Source (Developers)
 1. Clone this repository: `git clone https://github.com/FlorianWilhelm/popcorn.git`
 2. In Chrome, navigate to `chrome://extensions`.
 3. Enable **Developer mode** in the top-right corner.
 4. Click **Load unpacked** and select the `src/` directory in this repository.
-5. Pin **POPCORN (🍿)** to your extension toolbar.
+
+> 💡 **Tip:** Whichever installation option you choose, remember to pin **POPCORN (🍿)** to your extension toolbar (via Chrome's puzzle piece icon 🧩) so it is always one click away during calls.
 
 ---
 
