@@ -78,10 +78,10 @@ When you are in a Google Meet call, open the POPCORN popup to see the active sta
 - **Checking Off Speakers:** As each teammate speaks, check their box. POPCORN timestamps their update (`today · 10:15`) and applies a strikethrough.
 - **Fair Ordering:** Teammates who haven't spoken the longest naturally bubble to the top of the list.
 - **Toolbar Controls:**
-  - 👻 **Ghost Icon:** Toggle visibility of absent and ignored members in a secondary list below the main rotation.
-  - 🔤 **Sort Icon:** Switch between rotation order and alphabetical view (while preserving priority numbers `01`, `02`, ...).
-  - ➕ **Add Icon:** Add an attendee manually to the current meeting.
-  - 🗑️ **Trash Icon:** Toggle delete mode to quickly prune former teammates.
+  - 👻 **Ghost:** Toggle visibility of absent and ignored members in a secondary list below the main rotation.
+  - 🔤 **Sort:** Switch between rotation order and alphabetical view (while preserving priority numbers `01`, `02`, ...).
+  - ➕ **Add:** Add an attendee manually to the current meeting.
+  - 🗑️ **Trash:** Toggle delete mode to quickly prune former teammates.
 
 ---
 
