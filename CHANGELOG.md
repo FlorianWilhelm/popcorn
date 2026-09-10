@@ -10,6 +10,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 ### Changed
 - **Dynamic rotation reordering for late joiners**: Participants who join a meeting late (or are detected in later DOM scraping passes) are now dynamically sorted into the pending speaker queue according to priority (`never` first by first name, then longest since last update), rather than unconditionally appended at the end of the round.
 - **Fixed completed speaker positions**: Participants who have already completed their turn today (`doneToday` / checked off) maintain their fixed positions at the top of the meeting round and are neither shifted nor overtaken by late joiners.
+- **Expanded popup window width**: Increased popup width from 384px to 420px so that the full POPCORN acronym subtitle in Settings fits cleanly on a single line without wrapping.
 
 ### Removed
 - **JSON backup & export**: Removed the obsolete JSON export button and legacy JSON merge/import code. Roster sharing and backups are handled via clean, human-readable Markdown per meeting.

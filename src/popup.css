@@ -14,7 +14,7 @@
 * { box-sizing: border-box; }
 
 body {
-  width: 384px;
+  width: 420px;
   margin: 0;
   padding: 0 0 12px;
   background: var(--ink);
@@ -98,7 +98,7 @@ h1 {
   font-size: 15px;
   font-weight: 600;
   line-height: 1.2;
-  max-width: 200px;
+  max-width: 236px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -781,11 +781,12 @@ section { padding-bottom: 4px; }
 }
 
 .version-info .acronym-hint {
-  font-family: var(--font);
+  font-family: var(--mono);
   font-size: 10px;
   color: var(--muted);
   opacity: 0.8;
   line-height: 1.4;
+  white-space: nowrap;
 }
 
 /* --- Markdown Full-Overlay View --- */
