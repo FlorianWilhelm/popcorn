@@ -12,6 +12,9 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - **Consistent name cleaning**: The popup now strips `(invited)` / `(eingeladen)` qualifiers from names just like the Meet scraper does, and treats whitespace-only names as invalid.
 
 ### Fixed
+- **Lost check-offs during refresh**: Checking off a participant while an attendance refresh was running (every 2 seconds by default) could be undone immediately, because each refresh replaced the in-memory data the click had just changed. The popup now loads its data once and keeps it in memory.
+- Absent participants no longer flash into the rotation while attendance is being refreshed.
+- Automatic refreshes no longer overlap when scraping Meet takes longer than the refresh interval.
 - Dates with impossible values (e.g. month 13 or day 32) are rejected on import instead of silently rolling over into another date.
 - A v1 → v2 storage migration is now saved immediately instead of being repeated on every popup open until the next edit.
 

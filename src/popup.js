@@ -535,34 +535,45 @@ function render() {
 
 /* ---------- Workflow ---------- */
 
+/** Picks the start view once, on the first foreground refresh after the popup opens. */
+function resolveInitialView(nextView, options) {
+  if (initialViewResolved || options.background) return;
+  initialViewResolved = true;
+  view = nextView;
+}
+
+let refreshesInFlight = 0;
+
 async function refresh(options = {}) {
-  data = await load();
+  refreshesInFlight++;
+  try {
+    await runRefresh(options);
+  } finally {
+    refreshesInFlight--;
+  }
+}
 
-  // Phase 1: read title and code only, leave roster untouched
+/* `data` is loaded once at startup and then only changed in memory. The popup is the only writer,
+ * and Chrome closes it on blur, so there is never a second instance whose changes we could miss.
+ * Reloading here would replace the objects that event handlers are about to mutate and lose clicks. */
+async function runRefresh(options) {
+  // Phase 1: read title and code only, leave the roster untouched
   const probe = await readMeet(false);
-  current =
-    probe && probe.ok
-      ? { inMeet: true, code: probe.code, title: probe.title, people: [] }
-      : { inMeet: false, code: null, title: null, people: [] };
-
-  currentId = null;
-  presentKeys = new Set();
-
-  if (!current.inMeet) {
-    if (!initialViewResolved && !options.background) {
-      initialViewResolved = true;
-      view = "meetings";
-    }
+  if (!probe || !probe.ok) {
+    current = { inMeet: false, code: null, title: null, people: [] };
+    currentId = null;
+    presentKeys = new Set();
+    resolveInitialView("meetings", options);
     render();
     return;
   }
 
+  current = { inMeet: true, code: probe.code, title: probe.title, people: [] };
   const hit = matchMeeting(data.meetings, current.title, current.code);
   if (!hit) {
-    if (!initialViewResolved && !options.background) {
-      initialViewResolved = true;
-      view = "meetings";
-    }
+    currentId = null;
+    presentKeys = new Set();
+    resolveInitialView("meetings", options);
     render();
     return;
   }
@@ -570,36 +581,25 @@ async function refresh(options = {}) {
   const m = hit.meeting;
   currentId = m.id;
   selectedId = null;
-
-  if (!initialViewResolved && !options.background) {
-    initialViewResolved = true;
-    view = "people";
-  }
-
+  resolveInitialView("people", options);
   rememberMeetIdentity(m, current);
 
-  // Phase 2: now read people list
+  // Phase 2: read the people list. Presence is replaced only after the scrape has finished,
+  // so renders triggered by clicks in the meantime keep using the last known presence.
   const full = await readMeet(true, { openIfClosed: !options.background });
-  if (full && full.ok) {
-    current.people = normalizeScrapedPeople(full.people);
-    presentKeys = new Set(current.people.filter((p) => p.present).map((p) => normalizeKey(p.name)));
-    const added = syncRoster(m, current.people);
-    orderRound(m);
-    await save();
-    render();
+  const scraped = !!(full && full.ok);
+  current.people = scraped ? normalizeScrapedPeople(full.people) : [];
+  presentKeys = new Set(current.people.filter((p) => p.present).map((p) => normalizeKey(p.name)));
+  const added = syncRoster(m, current.people);
+  orderRound(m);
+  await save();
+  render();
 
-    const total = Object.keys(m.people).length;
-    const parts = [`${presentKeys.size} present of ${total}`];
+  if (scraped) {
+    const parts = [`${presentKeys.size} present of ${Object.keys(m.people).length}`];
     if (added) parts.push(`${added} newly added`);
     if (current.people.length === 0) parts.push("Open the people list in Meet");
-    const presEl = $("peoplePresence");
-    if (presEl) {
-      presEl.textContent = parts.join(" · ");
-    }
-  } else {
-    orderRound(m);
-    await save();
-    render();
+    $("peoplePresence").textContent = parts.join(" · ");
   }
 }
 
@@ -618,6 +618,8 @@ function setupAutoRefresh() {
       const activeEl = document.activeElement;
       const isEditingText = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
       if (isEditingText && view !== "people") return;
+      // Skip this tick if the previous scrape is still running (slow Meet DOM or short interval)
+      if (refreshesInFlight > 0) return;
       await refresh({ background: true });
     }, sec * 1000);
   }
@@ -1035,6 +1037,10 @@ try {
   if ($("headerLogo")) $("headerLogo").title = `POPCORN v${v}`;
 } catch {}
 
-refresh().then(() => {
+async function init() {
+  data = await load();
+  await refresh();
   setupAutoRefresh();
-});
+}
+
+init();
