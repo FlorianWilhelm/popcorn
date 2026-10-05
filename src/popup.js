@@ -211,8 +211,9 @@ function buildPersonItem(m, person, index) {
   const li = document.createElement("li");
   li.className = "item";
   const doneToday = isDoneRecently(person);
+  const absent = presentKeys.size > 0 && !presentKeys.has(person.key);
   li.classList.toggle("done", doneToday);
-  li.classList.toggle("absent", presentKeys.size > 0 && !presentKeys.has(person.key));
+  li.classList.toggle("absent", absent);
   li.classList.toggle("ignored", !!person.ignored);
 
   if (index !== null) {
@@ -252,11 +253,16 @@ function buildPersonItem(m, person, index) {
   name.className = "name";
   name.textContent = person.name;
 
+  // The eye shows whether the person is in the rotation; the click toggles "ignored".
+  // Absent people get a plain crossed-out eye, ignored people a highlighted one.
+  let ignoreTitle = "In the rotation (click to ignore)";
+  if (person.ignored) ignoreTitle = "Ignored (click to include in updates)";
+  else if (absent) ignoreTitle = "Absent, so not in the rotation (click to ignore)";
   const ignoreBtn = createIconButton({
     className: "mini ghost icon-btn ignore-btn" + (person.ignored ? " ignored" : ""),
-    title: person.ignored ? "Ignored (click to include in updates)" : "Include in updates (click to ignore)",
+    title: ignoreTitle,
     label: person.ignored ? "Unignore person" : "Ignore person",
-    iconName: person.ignored ? "eyeOff" : "eye",
+    iconName: person.ignored || absent ? "eyeOff" : "eye",
     onClick: (e) => {
       e.stopPropagation();
       applyChange(() => {

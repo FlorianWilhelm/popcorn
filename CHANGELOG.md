@@ -11,6 +11,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - **Locale-independent Markdown export**: Exported rosters now use `YYYY-MM-DD HH:mm` (local time) instead of the browser's locale format. Older exports in German, British, or US formats can still be imported.
 - **No background scanning**: The content script used to scan the whole Meet page every second in every Meet tab, even in untracked meetings and with the popup closed. It now tracks attendance only while the POPCORN popup is open.
 - **Hidden-people toggle icon**: The toolbar button that shows absent or ignored people now uses a crossed-out eye instead of a ghost, matching the per-person ignore icon. It stays the same icon and is highlighted while active, like the other toolbar toggles.
+- **Per-person eye icon**: The eye next to each person now shows whether they are in the rotation. It is open for present people, crossed out for absent people, and crossed out and highlighted for ignored people. Before, absent people showed an open eye although they were not in the rotation. Clicking it still toggles whether the person is ignored.
 - **Consistent name cleaning**: The popup now strips `(invited)` / `(eingeladen)` qualifiers from names just like the Meet scraper does, and treats whitespace-only names as invalid.
 
 ### Fixed
