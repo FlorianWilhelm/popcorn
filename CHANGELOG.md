@@ -13,6 +13,9 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 
 ### Chore
 - Translated remaining German code comments to English.
+- Added ESLint and Prettier (`npm run lint`, `npm run format`, `npm run format:check`) and formatted the codebase once. The formatting commit is listed in `.git-blame-ignore-revs`.
+- Removed dead code: unused helpers (`setStatus`, `copyMeetingMarkdown`, `stripQualifier`), unused parameters and scrape response fields, and unused CSS rules.
+- Fixed the `.gitignore` entry for the screenshot renderer's temp directory (`.chrome-temp/`).
 
 ---
 

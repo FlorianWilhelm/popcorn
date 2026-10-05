@@ -247,7 +247,7 @@ function run() {
   // Clean up temp dir
   try {
     fs.rmSync(tempDir, { recursive: true, force: true });
-  } catch (_) {}
+  } catch {}
 
   console.log("\n🎉 All Chrome Store screenshots and promo assets successfully updated!");
   console.log("👉 Open 'store_assets/preview.html' in your browser to inspect the complete set.");

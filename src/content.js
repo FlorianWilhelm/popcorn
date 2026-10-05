@@ -7,7 +7,6 @@
       window.__murCleanup();
     } catch {}
   }
-  window.__murLoaded = true;
 
   const CODE_RE = /^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i;
 
@@ -130,10 +129,6 @@
       return true;
     if (/\((?:präsentation|presentation|bildschirm|screen|dein bildschirm|your presentation)\)/i.test(str)) return true;
     return false;
-  }
-
-  function stripQualifier(name) {
-    return cleanPersonName(name);
   }
 
   function looksLikeName(s) {
@@ -321,7 +316,7 @@
     return { absentHeaders, absentContainers };
   }
 
-  function isItemPresent(item, hasId, ctx) {
+  function isItemPresent(item, ctx) {
     // 1. Direct button or action on the item indicating "ask to join" / "invite"
     const itemText = (item.textContent || "").toLowerCase();
     const itemAria = (item.getAttribute("aria-label") || "").toLowerCase();
@@ -425,7 +420,7 @@
       const name = extractName(item);
       if (!name || isPresentation(name) || !looksLikeName(name)) continue;
 
-      const present = isItemPresent(item, hasId, ctx);
+      const present = isItemPresent(item, ctx);
       const key = name.toLowerCase();
       const prev = seen.get(key);
       seen.set(key, { name, present: (prev && prev.present) || present });
@@ -966,7 +961,6 @@
    * untracked meetings and stays completely passive. */
   async function scrape(withPeople, openIfClosed = false) {
     let people = [];
-    let openedPanel = false;
 
     if (withPeople) {
       captureInitialState();
@@ -976,7 +970,6 @@
         const btn = findPanelButton();
         if (btn) {
           clickElement(btn);
-          openedPanel = true;
           openedPanelByPopcorn = true;
           await wait(400);
         }
@@ -1059,9 +1052,7 @@
       ok: true,
       code: meetCode(),
       title: meetingTitle(),
-      openedPanel,
-      people,
-      inCall: !!document.querySelector("[data-participant-id]")
+      people
     };
   }
 

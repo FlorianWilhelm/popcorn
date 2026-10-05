@@ -482,7 +482,7 @@ function waitedText(last) {
   return `${days}d ago · ${date}`;
 }
 
-function buildPersonItem(m, person, index, opts = {}) {
+function buildPersonItem(m, person, index) {
   const li = document.createElement("li");
   li.className = "item";
   const doneToday = person.last && Date.now() - person.last < 86400000;
@@ -677,11 +677,6 @@ function buildMeetingItem(m) {
 }
 
 /* ---------- Rendering ---------- */
-
-function setStatus(_text) {
-  // Global status banner has been completely removed.
-  // Direct UI feedback (button states, list changes) is used instead.
-}
 
 function show(id) {
   for (const s of ["viewMeetings", "viewPeople", "viewSettings"]) {
@@ -1009,29 +1004,13 @@ function downloadMeetingMarkdown(m) {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
-async function copyMeetingMarkdown(m) {
-  const md = meetingToMarkdown(m);
-  try {
-    await navigator.clipboard.writeText(md);
-    return true;
-  } catch {
-    const ta = document.createElement("textarea");
-    ta.value = md;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    document.body.removeChild(ta);
-    return true;
-  }
-}
-
 function parseDateTimeString(str) {
   if (!str) return 0;
   const s = str.trim().toLowerCase();
   if (!s || s === "noch nie" || s === "never" || s === "-" || s === "–" || s === "0") return 0;
 
   // Format DD.MM.YYYY or DD/MM/YYYY[ ,][HH:mm[:ss]]
-  const deMatch = s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  const deMatch = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
   if (deMatch) {
     const [, d, m, y, h, min, sec] = deMatch;
     const date = new Date(Number(y), Number(m) - 1, Number(d), Number(h || 0), Number(min || 0), Number(sec || 0));
@@ -1115,7 +1094,7 @@ function validateAndParseMarkdownMeeting(mdText) {
 
     // Validate Column 2 (Last Update)
     const isIgnored = /\b(ignored|ignoriert)\b/i.test(col2);
-    const datePart = col2.replace(/\s*[\(\[]?\b(ignored|ignoriert)\b[\)\]]?/gi, "").trim();
+    const datePart = col2.replace(/\s*[([]?\b(ignored|ignoriert)\b[)\]]?/gi, "").trim();
     let last = 0;
     if (datePart) {
       last = parseDateTimeString(datePart);
@@ -1174,7 +1153,7 @@ function parseMarkdownMeeting(mdText) {
         const cleanName = cleanPersonName(col1);
         if (!cleanName || isPresentationName(cleanName) || isNoiseOrIcon(cleanName)) continue;
         const isIgnored = /\b(ignored|ignoriert)\b/i.test(col2);
-        const datePart = col2.replace(/\s*[\(\[]?\b(ignored|ignoriert)\b[\)\]]?/gi, "").trim();
+        const datePart = col2.replace(/\s*[([]?\b(ignored|ignoriert)\b[)\]]?/gi, "").trim();
         const last = parseDateTimeString(datePart);
         people[keyOf(cleanName)] = { name: cleanName, last, prev: null, ignored: isIgnored };
       }

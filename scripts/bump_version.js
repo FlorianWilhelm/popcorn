@@ -49,7 +49,7 @@ let curMicro = currentParts[2] ?? 0;
 let newMacro = curMacro;
 let newMeso = curMeso;
 let newMicro = curMicro;
-let effortDesc = "";
+let effortDesc;
 
 const mode = target.trim().toLowerCase();
 if (mode === "micro" || mode === "patch") {

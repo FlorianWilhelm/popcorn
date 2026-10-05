@@ -175,11 +175,6 @@ h1 {
   counter-reset: pos;
 }
 
-.list.plain {
-  max-height: 380px;
-  overflow-y: auto;
-}
-
 .item {
   display: flex;
   align-items: center;
@@ -350,10 +345,6 @@ h1 {
   display: flex;
   gap: 8px;
   padding: 4px 16px 0;
-}
-
-.row.add {
-  padding-top: 12px;
 }
 
 button {
@@ -626,12 +617,6 @@ input[type="number"] {
   color: var(--text);
   font-family: var(--sans);
   font-size: 12px;
-}
-
-.hint.sep {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
 }
 
 .untracked-card {
