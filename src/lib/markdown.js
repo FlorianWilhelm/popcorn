@@ -132,8 +132,9 @@
       if (isHeaderRow(nameCell, updateCell) || isSeparatorRow(nameCell)) continue;
 
       const name = cleanPersonName(nameCell);
-      if (!name || isPresentation(name) || isNoiseOrIcon(name))
-        return fail(i, "Person name cannot be empty or invalid");
+      if (!name) return fail(i, "Person name cannot be empty");
+      // Meet labels such as "You are presenting" that older versions stored as people. Dropped like on load.
+      if (isPresentation(name) || isNoiseOrIcon(name)) continue;
 
       const datePart = updateCell.replace(IGNORED_STRIP_RE, "").trim();
       const last = parseTimestamp(datePart);

@@ -3,6 +3,7 @@
  *
  * Loaded as a classic script (exposes globalThis.PopcornNames) and via require() in tests.
  * Google Meet runs in many UI languages, so the filters contain German and English phrases.
+ * "Presenting" status labels are matched in many more languages, see PRESENTING_WORDS.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
@@ -100,6 +101,72 @@
 
   const collapseWhitespace = (s) => (s || "").replace(/\s+/g, " ").trim();
 
+  /** Lowercase without accents and other combining marks, e.g. "Präsentiert" -> "prasentiert". */
+  const foldText = (s) =>
+    collapseWhitespace(s)
+      .normalize("NFKD")
+      .replace(/\p{M}+/gu, "")
+      .toLowerCase();
+
+  // Words in Meet's labels for a running presentation, e.g. "You are presenting", "Anna is presenting",
+  // "Du präsentierst", "Vous présentez". Meet shows these in the user's UI language, so the list covers
+  // the common ones. Only full words count, so names that merely start with "Present..." stay valid.
+  // prettier-ignore
+  const PRESENTING_WORDS = new Set([
+    // English, German
+    "presenting", "presentation", "presenter",
+    "präsentierst", "präsentieren", "präsentiert", "präsentation", "praesentierst", "praesentieren", "praesentiert",
+    // French, Spanish, Catalan, Portuguese, Italian
+    "présentez", "présentes", "présente", "présenter", "présentation",
+    "presentando", "presentas", "presentación", "presentant", "presentació", "presenteu",
+    "apresentando", "apresenta", "apresentação", "presentazione",
+    // Dutch, Swedish, Danish, Norwegian, Finnish, Estonian
+    "presenteert", "presenteer", "presenteren", "presentatie",
+    "presenterar", "præsenterer", "præsentation", "presenterer", "presentasjon",
+    "esität", "esittää", "esitys", "esittelet", "esittelee", "esitlete", "esitled", "esitleb", "esitlus",
+    // Polish, Czech, Slovak, Slovenian, Croatian, Serbian, Hungarian, Romanian
+    "prezentujesz", "prezentuje", "prezentacja", "prezentujete", "prezentuješ", "prezentace", "prezentácia",
+    "predstavljate", "predstavljaš", "predstavlja", "predstavitev", "prezentirate", "prezentiraš", "prezentira",
+    "prezentacija", "представљате", "представља", "презентација",
+    "bemutatsz", "bemutat", "bemutató", "prezentálsz", "prezentál", "prezentáció",
+    "prezentați", "prezinți", "prezintă", "prezentare",
+    // Lithuanian, Latvian, Greek, Turkish
+    "pristatote", "pristatai", "pristato", "pristatymas", "prezentējat", "prezentē", "prezentācija",
+    "παρουσιάζετε", "παρουσιάζεις", "παρουσιάζει", "παρουσίαση",
+    "sunuyorsunuz", "sunuyorsun", "sunuyor", "sunum",
+    // Russian, Ukrainian, Bulgarian
+    "показываете", "показывает", "демонстрируете", "демонстрирует", "демонстрация", "презентуете", "презентация",
+    "показуєте", "показує", "демонструєте", "демонструє", "демонстрація", "презентуєте", "презентація",
+    "представяте", "представя", "презентирате", "презентация",
+    // Hebrew, Arabic, Persian
+    "מציג", "מציגה", "מציגים", "מצגת", "تقدم", "يقدم", "تعرض", "يعرض", "تقديمي", "ارائه",
+    // Indonesian, Malay, Hindi, Bengali
+    "presentasi", "mempresentasikan", "membentangkan", "pembentangan",
+    "प्रज़ेंट", "प्रेजेंट", "प्रस्तुत", "प्रस्तुति", "উপস্থাপনা", "প্রেজেন্ট"
+  ].map(foldText));
+
+  // The same for languages that do not separate words by spaces, matched as parts of the label.
+  // prettier-ignore
+  const PRESENTING_FRAGMENTS = [
+    "演示", "展示", "共享屏幕", "簡報", "分享畫面", // Chinese
+    "プレゼン", "発表中", "画面を共有", "画面共有", // Japanese
+    "발표", "프레젠테이션", "화면 공유", // Korean
+    "นำเสนอ", // Thai
+    "trình bày" // Vietnamese (two words)
+  ].map(foldText);
+
+  // Status labels are short. Longer texts (e.g. whole list items) are not checked word by word.
+  const MAX_STATUS_WORDS = 8;
+
+  /** True for Meet's "presenting" status labels in any of the languages above. */
+  function isPresentingStatus(raw) {
+    const s = foldText(raw);
+    if (!s) return false;
+    const words = s.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    if (words.length > MAX_STATUS_WORDS) return false;
+    return words.some((w) => PRESENTING_WORDS.has(w)) || PRESENTING_FRAGMENTS.some((f) => s.includes(f));
+  }
+
   /** Normalized lookup key for names and meeting titles (case-, width- and whitespace-insensitive). */
   const normalizeKey = (s) => collapseWhitespace((s || "").normalize("NFKC")).toLowerCase();
 
@@ -125,11 +192,11 @@
     return collapseWhitespace(s);
   }
 
-  /** True for screen share and presentation tiles. */
+  /** True for screen share and presentation tiles and for "presenting" status labels. */
   function isPresentation(raw) {
     if (!raw) return false;
     const str = collapseWhitespace(raw);
-    return PRESENTATION_PATTERNS.some((re) => re.test(str));
+    return PRESENTATION_PATTERNS.some((re) => re.test(str)) || isPresentingStatus(str);
   }
 
   /** True for Meet UI labels, icon ligature names, and status phrases that are not person names. */
@@ -159,6 +226,7 @@
     collapseWhitespace,
     normalizeKey,
     cleanPersonName,
+    isPresentingStatus,
     isPresentation,
     isNoiseOrIcon,
     looksLikeName

@@ -64,6 +64,19 @@
     );
   }
 
+  // Material icon names are the same in every UI language, unlike the labels next to them.
+  const PRESENTING_ICONS = new Set(["present_to_all", "stop_screen_share", "cancel_presentation", "screen_share"]);
+
+  /**
+   * True if the element shows one of Meet's presentation icons. Only used for video tiles: in the people list,
+   * the row of a person who is presenting might show such an icon next to a real name.
+   */
+  function hasPresentingIcon(el) {
+    return Array.from(el.querySelectorAll(".google-material-icons, .material-icons, .material-icons-extended, i")).some(
+      (icon) => PRESENTING_ICONS.has(clean(icon.textContent).toLowerCase())
+    );
+  }
+
   function extractName(item) {
     // 0. Skip accordion toggles, section headings, and tabs
     if (item.getAttribute("aria-expanded") !== null) return null;
@@ -328,7 +341,7 @@
     // Also scan video tiles with data-participant-id directly (must NOT be inside side panel)
     for (const tile of document.querySelectorAll("[data-participant-id]")) {
       if (tile.closest('[role="listitem"], [role="list"], aside, [role="tabpanel"]')) continue;
-      if (isScreenShare(tile)) continue;
+      if (isScreenShare(tile) || hasPresentingIcon(tile)) continue;
       const name = extractName(tile);
       if (!name || isPresentation(name) || !looksLikeName(name)) continue;
       seen.set(normalizeKey(name), { name, present: true });

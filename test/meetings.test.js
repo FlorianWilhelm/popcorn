@@ -95,9 +95,11 @@ test("sanitizeMeeting cleans names, merges duplicates, and drops noise", () => {
       "anna schmidt": person("Anna Schmidt", 200),
       mic_off: person("mic_off"),
       "your presentation": person("Your presentation"),
+      "you are presenting": person("You are presenting"),
+      "du präsentierst": person("Du präsentierst", 0, { ignored: true }),
       ben: person("Ben", 0, { ignored: true })
     },
-    round: { keys: ["anna schmidt (you)", "anna schmidt", "mic_off", "ben"], createdAt: NOW }
+    round: { keys: ["anna schmidt (you)", "anna schmidt", "mic_off", "you are presenting", "ben"], createdAt: NOW }
   };
   assert.equal(sanitizeMeeting(m), true);
   assert.deepEqual(m.people, {

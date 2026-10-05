@@ -53,7 +53,7 @@ store_assets/            Generated store screenshots and promo tiles
 The Meet DOM is undocumented, obfuscated, and changes without notice. The scraping in `content.js` therefore relies on layered heuristics (ARIA labels, roles, geometry, bilingual German/English text patterns) rather than single selectors. When changing it:
 
 - Keep every existing fallback unless you have verified it is obsolete.
-- Remember that users run Meet in different UI languages. Add German and English variants for any new phrase.
+- Remember that users run Meet in different UI languages. Add German and English variants for any new phrase. Labels for a running presentation are matched in many languages (`PRESENTING_WORDS` in `lib/names.js`), and language-independent signals such as Material icon names (`PRESENTING_ICONS` in `content.js`) are preferred where they exist.
 - Prefer filtering out noise over loosening `looksLikeName`. False positives end up permanently stored in users' rosters.
 
 ## Development Workflow

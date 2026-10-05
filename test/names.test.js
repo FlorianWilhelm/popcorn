@@ -5,6 +5,7 @@ const {
   collapseWhitespace,
   normalizeKey,
   cleanPersonName,
+  isPresentingStatus,
   isPresentation,
   isNoiseOrIcon,
   looksLikeName
@@ -64,6 +65,68 @@ test("isPresentation detects screen shares and presentations", () => {
   }
   assert.equal(isPresentation("Anna Schmidt"), false);
   assert.equal(isPresentation(""), false);
+});
+
+test("isPresentingStatus detects presenting labels in many UI languages", () => {
+  for (const s of [
+    "You are presenting",
+    "You're presenting",
+    "YOU ARE PRESENTING",
+    "Anna Schmidt is presenting",
+    "You are presenting to everyone",
+    "Du präsentierst",
+    "Sie präsentieren gerade",
+    "Anna praesentiert",
+    "Vous présentez",
+    "Vous presentez",
+    "Estás presentando",
+    "Você está apresentando",
+    "Stai presentando",
+    "Je presenteert",
+    "Du presenterar",
+    "Prezentujesz",
+    "Prezentujete",
+    "Sunuyorsunuz",
+    "Вы демонстрируете экран",
+    "Ви презентуєте",
+    "Παρουσιάζετε",
+    "אתה מציג",
+    "您正在演示",
+    "你正在簡報",
+    "画面を共有しています",
+    "発表中です",
+    "발표 중입니다",
+    "คุณกำลังนำเสนอ",
+    "Bạn đang trình bày"
+  ]) {
+    assert.equal(isPresentingStatus(s), true, s);
+    assert.equal(isPresentation(s), true, s);
+    assert.equal(looksLikeName(s), false, s);
+  }
+});
+
+test("isPresentingStatus keeps real names, including ones that look similar", () => {
+  for (const s of [
+    "Anna Schmidt",
+    "Florian Wilhelm",
+    "Foggy (M, 2.OG)",
+    "Present Gonzalez",
+    "Anna Presenti",
+    "Joe Presentable",
+    "Sunu Kumar",
+    "Trinh Bao",
+    "René Fa",
+    "Marie-Kristin Wirsching",
+    "Phuong Mai Mai",
+    ""
+  ]) {
+    assert.equal(isPresentingStatus(s), false, s);
+  }
+  assert.equal(
+    isPresentingStatus("Anna Schmidt Meeting host more_vert keep mic_off Presenting now"),
+    false,
+    "long texts such as whole list items are not checked word by word"
+  );
 });
 
 test("isNoiseOrIcon detects Meet UI labels in German and English", () => {

@@ -218,8 +218,7 @@ test("parseMeetingMarkdown reports the first invalid line", () => {
   const cases = [
     ["# T\n| Anna | |\nnot a row", 2, /Expected a table row/],
     ["| Anna", 0, /at least 2 columns/],
-    ["| Anna | |\n|  | 2026-09-10 |", 1, /name cannot be empty/],
-    ["| mic_off | |", 0, /name cannot be empty or invalid/],
+    ["| Anna | |\n|  | 2026-09-10 |", 1, /Person name cannot be empty/],
     ["| Anna | sometime |", 0, /Invalid date format in "Last Update" \(sometime\)/],
     [
       "| Anna | | yes |\n| Ben | 2026-09-10 | maybe |",
@@ -234,6 +233,26 @@ test("parseMeetingMarkdown reports the first invalid line", () => {
     assert.match(result.error, new RegExp(`^Line ${lineIndex + 1}: `), text);
     assert.match(result.error, error, text);
   }
+});
+
+test("parseMeetingMarkdown drops Meet labels that older versions stored as people", () => {
+  const result = parseMeetingMarkdown(
+    [
+      "| Person | Last Update |",
+      "| --- | --- |",
+      "| Anna | 02/10/2026, 13:12:42 |",
+      "| You are presenting |  |",
+      "| Du präsentierst | ignored |",
+      "| mic_off | sometime |",
+      "| Ben |  |"
+    ].join("\n")
+  );
+  assert.equal(result.ok, true);
+  assert.deepEqual(Object.keys(result.people), ["anna", "ben"]);
+  assert.deepEqual(parseMeetingMarkdown("| You are presenting | |"), {
+    ok: false,
+    error: "No participants found in the Markdown table."
+  });
 });
 
 test("parseMeetingMarkdown requires at least one participant", () => {
