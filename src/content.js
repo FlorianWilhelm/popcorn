@@ -3,12 +3,16 @@
  */
 (() => {
   if (window.__murCleanup) {
-    try { window.__murCleanup(); } catch {}
+    try {
+      window.__murCleanup();
+    } catch {}
   }
   window.__murLoaded = true;
 
   const CODE_RE = /^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i;
 
+  // Grouped by topic; keep the compact layout.
+  // prettier-ignore
   const ICON_WORDS = new Set([
     "mic", "mic_off", "videocam", "videocam_off", "more_vert", "more_horiz", "push_pin",
     "present_to_all", "devices", "person_add", "domain_disabled",
@@ -57,10 +61,13 @@
     "show everyone", "alle anzeigen", "show in-call messages", "in-call messages"
   ]);
 
-  const NOISE = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in the meeting|in der besprechung|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|waiting to join|warten auf beitritt|wartet auf teilnahme|waiting to pair with you|wartet auf kopplung|visitor badge|besucher-badge|visitor|besucher|more actions|weitere aktionen|back|zurück|keyboard_arrow_down|keyboard_arrow_up|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten|open\s+(?:the\s+)?people\s+panel|close\s+(?:the\s+)?people\s+panel|people\s+panel|chat\s+panel|show\s+everyone|alle\s+anzeigen)$/i;
+  const NOISE =
+    /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in the meeting|in der besprechung|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|waiting to join|warten auf beitritt|wartet auf teilnahme|waiting to pair with you|wartet auf kopplung|visitor badge|besucher-badge|visitor|besucher|more actions|weitere aktionen|back|zurück|keyboard_arrow_down|keyboard_arrow_up|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten|open\s+(?:the\s+)?people\s+panel|close\s+(?:the\s+)?people\s+panel|people\s+panel|chat\s+panel|show\s+everyone|alle\s+anzeigen)$/i;
 
-  const UI_PHRASE_RE = /^(?:open|close|öffnen|schließen|show|hide|view)\s+(?:the\s+)?(?:people|chat|activities|details|host controls?|teilnehmer|personen|chatten|nachrichten|everyone|alle)\s*(?:panel|leiste|fenster|list|liste)?$/i;
-  const PANEL_RE = /^(?:people|chat|activities|details|host controls?|teilnehmer|personen)\s*(?:panel|leiste|fenster|list|liste)$/i;
+  const UI_PHRASE_RE =
+    /^(?:open|close|öffnen|schließen|show|hide|view)\s+(?:the\s+)?(?:people|chat|activities|details|host controls?|teilnehmer|personen|chatten|nachrichten|everyone|alle)\s*(?:panel|leiste|fenster|list|liste)?$/i;
+  const PANEL_RE =
+    /^(?:people|chat|activities|details|host controls?|teilnehmer|personen)\s*(?:panel|leiste|fenster|list|liste)$/i;
 
   const clean = (s) => (s || "").replace(/\s+/g, " ").trim();
 
@@ -73,7 +80,10 @@
     s = s.replace(/\s*·\s*\d+\s*$/g, "");
 
     // Action prefixes and suffixes from Meet UI / accessibility labels
-    s = s.replace(/^(?:you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von)\s+(.+?)(?:(?:\x27s|s)?\s+microphone|\s+nicht\s+stummschalten)?$/i, "$1");
+    s = s.replace(
+      /^(?:you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von)\s+(.+?)(?:(?:\x27s|s)?\s+microphone|\s+nicht\s+stummschalten)?$/i,
+      "$1"
+    );
     s = s.replace(/^pin\s+(.+?)\s+to\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
     s = s.replace(/^unpin\s+(.+?)\s+from\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
     s = s.replace(/^pin\s+(.+?)\s+to\s+screen$/i, "$1");
@@ -81,7 +91,10 @@
     s = s.replace(/^(.+?)\s+an\s+(?:den\s+)?(?:hauptbildschirm|bildschirm)\s+anpinnen$/i, "$1");
     s = s.replace(/^(.+?)\s+vom\s+(?:hauptbildschirm|bildschirm)\s+(?:lösen|entfernen|entpinnen)$/i, "$1");
     s = s.replace(/^(.+?)\s+(?:nicht\s+mehr\s+anpinnen|anpinnen|anheften)$/i, "$1");
-    s = s.replace(/^(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für)\s+(.+)$/i, "$1");
+    s = s.replace(
+      /^(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für)\s+(.+)$/i,
+      "$1"
+    );
     s = s.replace(/^(?:send\s+a\s+message\s+to|nachricht\s+an)\s+(.+?)(?:\s+senden)?$/i, "$1");
     s = s.replace(/^(?:chat\s+with|chatten\s+mit)\s+(.+)$/i, "$1");
     s = s.replace(/^(?:mute|unmute|stummschalten\s+für)\s+(.+)$/i, "$1");
@@ -90,7 +103,10 @@
     s = s.replace(/^(.+?)'s\s+video$/i, "$1");
 
     // Remove parenthetical qualifiers: (Du), (You), (Host), (Presentation), (Visitor), (abwesend), etc.
-    s = s.replace(/\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal|contributor|beitragende|beitragender|abwesend|absent|visitor|besucher|eingeladen|invited)\)/gi, "");
+    s = s.replace(
+      /\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal|contributor|beitragende|beitragender|abwesend|absent|visitor|besucher|eingeladen|invited)\)/gi,
+      ""
+    );
     s = s.replace(/[·•]/g, " ");
 
     return clean(s);
@@ -99,9 +115,19 @@
   function isPresentation(raw) {
     if (!raw) return false;
     const str = clean(raw);
-    if (/^(?:dein\s+bildschirm|your\s+screen|deine\s+präsentation|your\s+presentation|bildschirmübertragung|screen\s*share)$/i.test(str)) return true;
+    if (
+      /^(?:dein\s+bildschirm|your\s+screen|deine\s+präsentation|your\s+presentation|bildschirmübertragung|screen\s*share)$/i.test(
+        str
+      )
+    )
+      return true;
     if (/^(?:presentation|präsentation|praesentation)(?:\s+(?:von|of|by)\s+.*)?$/i.test(str)) return true;
-    if (/(?:\x27s|’s|s|\x27|’)\s*(?:presentation|präsentation|praesentation|screen|bildschirm|bildschirmfreigabe|bildschirmübertragung)$/i.test(str)) return true;
+    if (
+      /(?:\x27s|’s|s|\x27|’)\s*(?:presentation|präsentation|praesentation|screen|bildschirm|bildschirmfreigabe|bildschirmübertragung)$/i.test(
+        str
+      )
+    )
+      return true;
     if (/\((?:präsentation|presentation|bildschirm|screen|dein bildschirm|your presentation)\)/i.test(str)) return true;
     return false;
   }
@@ -148,7 +174,9 @@
     for (const el of actionElements) {
       const aria = el.getAttribute("aria-label");
       if (!aria) continue;
-      const match = aria.match(/(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für|nachricht\s+an|send\s+a\s+message\s+to|chat\s+with|chatten\s+mit|you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von|bitten,?\s+(?:sie\s+)?|ask\s+)\s*(.+?)(?:\s+(?:beizutreten|to\s+join))?$/i);
+      const match = aria.match(
+        /(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für|nachricht\s+an|send\s+a\s+message\s+to|chat\s+with|chatten\s+mit|you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von|bitten,?\s+(?:sie\s+)?|ask\s+)\s*(.+?)(?:\s+(?:beizutreten|to\s+join))?$/i
+      );
       if (match && (match[1] || match[2])) {
         const rawExtracted = match[1] || match[2];
         const cleaned = cleanPersonName(rawExtracted);
@@ -172,7 +200,10 @@
     );
 
     const nonButtonLeaves = allLeaves.filter(
-      (el) => !el.closest('button, [role="button"], [role="menu"], [role="menuitem"], [role="tooltip"], [role="img"], [aria-haspopup="true"], .d93U2d')
+      (el) =>
+        !el.closest(
+          'button, [role="button"], [role="menu"], [role="menuitem"], [role="tooltip"], [role="img"], [aria-haspopup="true"], .d93U2d'
+        )
     );
     for (const leaf of nonButtonLeaves) {
       if (isPresentation(leaf.textContent)) return null;
@@ -227,18 +258,23 @@
     return null;
   }
 
-  const ABSENT_SECTION_RE = /also invited|ebenfalls eingeladen|not in (?:the )?call|nicht im anruf|andere eingeladene|weitere eingeladene|ausstehend|awaiting response|no response|également invités|egalement invites|pas dans l'appel|también invitados|tambien invitados|no están en la llamada|no estan en la llamada/i;
-  const IN_CALL_SECTION_RE = /\b(?:in call|im anruf|in this call|in diesem anruf|in meeting|in the meeting|in der besprechung|contributors|beitragende|dans l'appel|en la llamada)\b/i;
-  const ASK_TO_JOIN_RE = /bitten,?\s+(?:sie\s+)?(?:beizutreten|teilzunehmen)|ask(?:\s+.*)?\s+to\s+join|teilnahme\s+anfragen|demander(?:\s+.*)?\s+à\s+participer|pedir(?:\s+.*)?\s+que\s+se\s+una/i;
+  const ABSENT_SECTION_RE =
+    /also invited|ebenfalls eingeladen|not in (?:the )?call|nicht im anruf|andere eingeladene|weitere eingeladene|ausstehend|awaiting response|no response|également invités|egalement invites|pas dans l'appel|también invitados|tambien invitados|no están en la llamada|no estan en la llamada/i;
+  const IN_CALL_SECTION_RE =
+    /\b(?:in call|im anruf|in this call|in diesem anruf|in meeting|in the meeting|in der besprechung|contributors|beitragende|dans l'appel|en la llamada)\b/i;
+  const ASK_TO_JOIN_RE =
+    /bitten,?\s+(?:sie\s+)?(?:beizutreten|teilzunehmen)|ask(?:\s+.*)?\s+to\s+join|teilnahme\s+anfragen|demander(?:\s+.*)?\s+à\s+participer|pedir(?:\s+.*)?\s+que\s+se\s+una/i;
 
   function getAbsentContext() {
     const absentHeaders = [];
     const absentContainers = new Set();
 
     // Scan for section headers / buttons / accordions / headings
-    const candidates = Array.from(document.querySelectorAll(
-      'button, [role="button"], [role="heading"], h1, h2, h3, h4, h5, h6, [aria-level], [aria-controls], div, span, p'
-    ));
+    const candidates = Array.from(
+      document.querySelectorAll(
+        'button, [role="button"], [role="heading"], h1, h2, h3, h4, h5, h6, [aria-level], [aria-controls], div, span, p'
+      )
+    );
 
     for (const el of candidates) {
       if (el.closest('[role="listitem"]') || el.hasAttribute("aria-haspopup")) continue;
@@ -313,7 +349,10 @@
     // 3. Check DOM position relative to absent section headers in the same side panel
     if (ctx && ctx.absentHeaders && ctx.absentHeaders.length > 0) {
       for (const h of ctx.absentHeaders) {
-        const panel = h.closest('aside, [role="tabpanel"], div[aria-label*="panel" i], div[aria-label*="Personen" i], div[aria-label*="People" i]') || h.parentElement;
+        const panel =
+          h.closest(
+            'aside, [role="tabpanel"], div[aria-label*="panel" i], div[aria-label*="Personen" i], div[aria-label*="People" i]'
+          ) || h.parentElement;
         if (panel && panel.contains(item)) {
           const pos = h.compareDocumentPosition(item);
           if ((pos & (Node.DOCUMENT_POSITION_FOLLOWING | Node.DOCUMENT_POSITION_CONTAINED_BY)) !== 0) {
@@ -349,7 +388,11 @@
     }
 
     // 6. Check item itself for not-in-call status text / badges
-    if (/\b(?:not in (?:the )?call|nicht im anruf|also invited|ebenfalls eingeladen|awaiting response|no response|antwort ausstehend|noch keine antwort|invited|eingeladen)\b/i.test(combined)) {
+    if (
+      /\b(?:not in (?:the )?call|nicht im anruf|also invited|ebenfalls eingeladen|awaiting response|no response|antwort ausstehend|noch keine antwort|invited|eingeladen)\b/i.test(
+        combined
+      )
+    ) {
       return false;
     }
 
@@ -363,7 +406,8 @@
     const items = Array.from(document.querySelectorAll('[role="listitem"]'));
 
     for (const item of items) {
-      if (item.closest('aside[aria-label*="chat" i], div[aria-label*="chat" i], div[aria-label*="nachricht" i]')) continue;
+      if (item.closest('aside[aria-label*="chat" i], div[aria-label*="chat" i], div[aria-label*="nachricht" i]'))
+        continue;
       if (item.closest('[role="toolbar"], nav, header')) continue;
 
       const rect = item.getBoundingClientRect();
@@ -371,12 +415,11 @@
       if (rect.width === 0 || rect.height === 0) continue;
 
       const hasId = item.hasAttribute("data-participant-id") || item.querySelector("[data-participant-id]") !== null;
-      const inPeopleList = hasId ||
-        !!item.querySelector(".zWGUib") ||
-        (panel !== null && panel.contains(item));
+      const inPeopleList = hasId || !!item.querySelector(".zWGUib") || (panel !== null && panel.contains(item));
       if (!inPeopleList) continue;
 
-      if (item.getAttribute("data-is-screen-share") === "true" || item.getAttribute("data-is-presenting") === "true") continue;
+      if (item.getAttribute("data-is-screen-share") === "true" || item.getAttribute("data-is-presenting") === "true")
+        continue;
       if (isPresentation(item.textContent) || isPresentation(item.getAttribute("aria-label"))) continue;
 
       const name = extractName(item);
@@ -391,7 +434,8 @@
     // Also scan video tiles with data-participant-id directly (must NOT be inside side panel)
     for (const tile of document.querySelectorAll("[data-participant-id]")) {
       if (tile.closest('[role="listitem"], [role="list"], aside, [role="tabpanel"]')) continue;
-      if (tile.getAttribute("data-is-screen-share") === "true" || tile.getAttribute("data-is-presenting") === "true") continue;
+      if (tile.getAttribute("data-is-screen-share") === "true" || tile.getAttribute("data-is-presenting") === "true")
+        continue;
       if (isPresentation(tile.textContent) || isPresentation(tile.getAttribute("aria-label"))) continue;
       const name = extractName(tile);
       if (!name || isPresentation(name) || !looksLikeName(name)) continue;
@@ -408,7 +452,7 @@
     if (!el) return;
     const target = el.matches('button, [role="button"], a, input')
       ? el
-      : (el.closest('button, [role="button"], a, input') || el);
+      : el.closest('button, [role="button"], a, input') || el;
 
     const rect = target.getBoundingClientRect();
     const cx = Math.round(rect.left + (rect.width > 0 ? rect.width / 2 : 0));
@@ -432,32 +476,40 @@
     } catch {}
 
     try {
-      target.dispatchEvent(new PointerEvent("pointerdown", {
-        ...eventProps,
-        button: 0,
-        buttons: 1,
-        pointerId: 1,
-        pointerType: "mouse",
-        isPrimary: true
-      }));
-      target.dispatchEvent(new MouseEvent("mousedown", {
-        ...eventProps,
-        button: 0,
-        buttons: 1
-      }));
-      target.dispatchEvent(new PointerEvent("pointerup", {
-        ...eventProps,
-        button: 0,
-        buttons: 0,
-        pointerId: 1,
-        pointerType: "mouse",
-        isPrimary: true
-      }));
-      target.dispatchEvent(new MouseEvent("mouseup", {
-        ...eventProps,
-        button: 0,
-        buttons: 0
-      }));
+      target.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          ...eventProps,
+          button: 0,
+          buttons: 1,
+          pointerId: 1,
+          pointerType: "mouse",
+          isPrimary: true
+        })
+      );
+      target.dispatchEvent(
+        new MouseEvent("mousedown", {
+          ...eventProps,
+          button: 0,
+          buttons: 1
+        })
+      );
+      target.dispatchEvent(
+        new PointerEvent("pointerup", {
+          ...eventProps,
+          button: 0,
+          buttons: 0,
+          pointerId: 1,
+          pointerType: "mouse",
+          isPrimary: true
+        })
+      );
+      target.dispatchEvent(
+        new MouseEvent("mouseup", {
+          ...eventProps,
+          button: 0,
+          buttons: 0
+        })
+      );
     } catch {}
 
     try {
@@ -465,9 +517,11 @@
     } catch {}
   }
 
-  const NON_PEOPLE_BUTTON_RE = /\b(?:chat|chatten|nachricht(?:en)?|in-call messages|mikrofon|microphone|kamera|camera|verlassen|leave call|anruf verlassen|beenden|auflegen|jetzt präsentieren|present now|bildschirm freigeben|share screen|melden|raise hand|reaktion(?:en)?|send a reaction|untertitel|captions?|besprechungsdetails|meeting details|details zur besprechung|host controls|steuerelemente für den host|sicherheit|safety|security|weitere optionen|more options|einstellungen)\b/i;
+  const NON_PEOPLE_BUTTON_RE =
+    /\b(?:chat|chatten|nachricht(?:en)?|in-call messages|mikrofon|microphone|kamera|camera|verlassen|leave call|anruf verlassen|beenden|auflegen|jetzt präsentieren|present now|bildschirm freigeben|share screen|melden|raise hand|reaktion(?:en)?|send a reaction|untertitel|captions?|besprechungsdetails|meeting details|details zur besprechung|host controls|steuerelemente für den host|sicherheit|safety|security|weitere optionen|more options|einstellungen)\b/i;
 
-  const PEOPLE_LABEL_RE = /\b(?:people|person(?:en)?|teilnehm(?:er|erliste|ende)?|participants?|show everyone|alle anzeigen|afficher tout le monde|mostrar a todos|mostra tutti|mostrar todos)\b/i;
+  const PEOPLE_LABEL_RE =
+    /\b(?:people|person(?:en)?|teilnehm(?:er|erliste|ende)?|participants?|show everyone|alle anzeigen|afficher tout le monde|mostrar a todos|mostra tutti|mostrar todos)\b/i;
 
   const PEOPLE_ICON_RE = /\b(?:people|people_outline|group|groups|person|person_outline)\b/i;
 
@@ -522,19 +576,25 @@
 
     const foundInBottom = bottomButtons.find(isPeopleButton);
     if (foundInBottom) {
-      return foundInBottom.matches('button, [role="button"]') ? foundInBottom : (foundInBottom.querySelector('button, [role="button"]') || foundInBottom);
+      return foundInBottom.matches('button, [role="button"]')
+        ? foundInBottom
+        : foundInBottom.querySelector('button, [role="button"]') || foundInBottom;
     }
 
     // Fallback: search all buttons on screen
     const foundAnywhere = buttons.find(isPeopleButton);
     if (foundAnywhere) {
-      return foundAnywhere.matches('button, [role="button"]') ? foundAnywhere : (foundAnywhere.querySelector('button, [role="button"]') || foundAnywhere);
+      return foundAnywhere.matches('button, [role="button"]')
+        ? foundAnywhere
+        : foundAnywhere.querySelector('button, [role="button"]') || foundAnywhere;
     }
 
     // Fallback: check by data-panel-id="2" ONLY if it satisfies isPeopleButton
     const byPanelId2 = document.querySelector('[data-panel-id="2"]');
     if (byPanelId2 && isPeopleButton(byPanelId2)) {
-      return byPanelId2.matches('button, [role="button"]') ? byPanelId2 : (byPanelId2.querySelector('button, [role="button"]') || byPanelId2);
+      return byPanelId2.matches('button, [role="button"]')
+        ? byPanelId2
+        : byPanelId2.querySelector('button, [role="button"]') || byPanelId2;
     }
 
     return null;
@@ -542,7 +602,9 @@
 
   function findPeopleSidePanel() {
     // 1. Look for actual side panel containers positioned at the right edge of the viewport
-    const containers = Array.from(document.querySelectorAll('aside, section, div[role="region"], div[role="tabpanel"], div[data-panel-id]'));
+    const containers = Array.from(
+      document.querySelectorAll('aside, section, div[role="region"], div[role="tabpanel"], div[data-panel-id]')
+    );
     for (const el of containers) {
       if (el.offsetParent === null) continue;
       const style = window.getComputedStyle(el);
@@ -556,30 +618,46 @@
       if (rect.width < 240 || rect.width > 550 || rect.height < window.innerHeight * 0.4) continue;
       if (rect.top > window.innerHeight - 120) continue; // Not in control bar
       if (el.closest('[role="main"]')) continue; // Never inside main video stage
-      if (el.querySelector('video')) continue; // Panels do not contain video elements
+      if (el.querySelector("video")) continue; // Panels do not contain video elements
 
       const aria = (el.getAttribute("aria-label") || "").toLowerCase();
       // Exclude chat, activities, details, host controls panels
-      if (/chat|nachrichten|messages|aktivitäten|activities|details zur|besprechungsdetails|steuerelemente/i.test(aria)) continue;
+      if (/chat|nachrichten|messages|aktivitäten|activities|details zur|besprechungsdetails|steuerelemente/i.test(aria))
+        continue;
       if (el.querySelector('textarea, [contenteditable="true"]')) continue; // Chat message input
 
       const text = (el.textContent || "").slice(0, 500).toLowerCase();
-      const hasPeople = el.querySelector('div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Person" i], [aria-label*="In call" i], [aria-label*="Im Anruf" i], [aria-label*="Ebenfalls eingeladen" i], [aria-label*="Also invited" i]');
+      const hasPeople = el.querySelector(
+        'div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Person" i], [aria-label*="In call" i], [aria-label*="Im Anruf" i], [aria-label*="Ebenfalls eingeladen" i], [aria-label*="Also invited" i]'
+      );
 
-      if (hasPeople || PEOPLE_LABEL_RE.test(aria) || PEOPLE_LABEL_RE.test(text) || /in call|im anruf|also invited|ebenfalls eingeladen/i.test(text)) {
+      if (
+        hasPeople ||
+        PEOPLE_LABEL_RE.test(aria) ||
+        PEOPLE_LABEL_RE.test(text) ||
+        /in call|im anruf|also invited|ebenfalls eingeladen/i.test(text)
+      ) {
         return el;
       }
     }
 
     // 2. Fallback: check if participant list container itself is visible on right edge
-    const directList = document.querySelector('div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Person" i], [aria-label="In call" i], [aria-label="Im Anruf" i]');
+    const directList = document.querySelector(
+      'div[role="list"][aria-label*="Participant" i], div[role="list"][aria-label*="Teilnehmer" i], div[role="list"][aria-label*="People" i], div[role="list"][aria-label*="Person" i], [aria-label="In call" i], [aria-label="Im Anruf" i]'
+    );
     if (directList && directList.offsetParent !== null) {
       const style = window.getComputedStyle(directList);
       if (style.visibility !== "hidden" && style.display !== "none") {
         const rect = directList.getBoundingClientRect();
-        if (rect.left > window.innerWidth * 0.4 && rect.left < window.innerWidth - 50 &&
-            rect.right >= window.innerWidth - 35 && rect.right <= window.innerWidth + 35) {
-          return directList.closest('aside, section, div[role="region"], div[role="tabpanel"]') || directList.parentElement;
+        if (
+          rect.left > window.innerWidth * 0.4 &&
+          rect.left < window.innerWidth - 50 &&
+          rect.right >= window.innerWidth - 35 &&
+          rect.right <= window.innerWidth + 35
+        ) {
+          return (
+            directList.closest('aside, section, div[role="region"], div[role="tabpanel"]') || directList.parentElement
+          );
         }
       }
     }
@@ -602,7 +680,9 @@
       if (headerClose) return headerClose;
 
       // 2. Look anywhere inside panel
-      const inPanelClose = panel.querySelector('button[aria-label*="schließen" i], button[aria-label*="close" i], button[title*="schließen" i], button[title*="close" i], [role="button"][aria-label*="schließen" i], [role="button"][aria-label*="close" i]');
+      const inPanelClose = panel.querySelector(
+        'button[aria-label*="schließen" i], button[aria-label*="close" i], button[title*="schließen" i], button[title*="close" i], [role="button"][aria-label*="schließen" i], [role="button"][aria-label*="close" i]'
+      );
       if (inPanelClose) return inPanelClose;
     }
 
@@ -616,7 +696,8 @@
       if (rect.top > window.innerHeight - 100) return false;
 
       // Must not be inside chat panel
-      if (b.closest('aside[aria-label*="chat" i], div[aria-label*="chat" i], div[aria-label*="nachricht" i]')) return false;
+      if (b.closest('aside[aria-label*="chat" i], div[aria-label*="chat" i], div[aria-label*="nachricht" i]'))
+        return false;
 
       const aria = (b.getAttribute("aria-label") || "").toLowerCase();
       const title = (b.getAttribute("title") || "").toLowerCase();
@@ -627,10 +708,16 @@
       // Must not be leave call button
       if (/anruf|call|verlassen|leave/.test(aria + " " + title)) return false;
 
-      return aria === "schließen" || aria === "close" ||
-             aria.includes("schließen") || aria.includes("close") ||
-             title === "schließen" || title === "close" ||
-             txt === "close" || iconTxt === "close";
+      return (
+        aria === "schließen" ||
+        aria === "close" ||
+        aria.includes("schließen") ||
+        aria.includes("close") ||
+        title === "schließen" ||
+        title === "close" ||
+        txt === "close" ||
+        iconTxt === "close"
+      );
     });
   }
 
@@ -643,7 +730,9 @@
     // 2. Active button in bottom control bar
     const btn = findPanelButton();
     if (btn && isButtonActive(btn)) {
-      const chatInput = document.querySelector('textarea[aria-label*="chat" i], textarea[aria-label*="nachricht" i], [contenteditable="true"][aria-label*="chat" i]');
+      const chatInput = document.querySelector(
+        'textarea[aria-label*="chat" i], textarea[aria-label*="nachricht" i], [contenteditable="true"][aria-label*="chat" i]'
+      );
       if (!chatInput || chatInput.offsetParent === null) {
         return true;
       }
@@ -674,13 +763,15 @@
 
   function isButtonActive(b) {
     if (!b) return false;
-    const target = b.matches('button, [role="button"]') ? b : (b.querySelector('button, [role="button"]') || b);
-    return target.getAttribute("aria-pressed") === "true" ||
-           target.getAttribute("aria-expanded") === "true" ||
-           target.getAttribute("aria-selected") === "true" ||
-           b.getAttribute("aria-pressed") === "true" ||
-           b.getAttribute("aria-expanded") === "true" ||
-           b.getAttribute("aria-selected") === "true";
+    const target = b.matches('button, [role="button"]') ? b : b.querySelector('button, [role="button"]') || b;
+    return (
+      target.getAttribute("aria-pressed") === "true" ||
+      target.getAttribute("aria-expanded") === "true" ||
+      target.getAttribute("aria-selected") === "true" ||
+      b.getAttribute("aria-pressed") === "true" ||
+      b.getAttribute("aria-expanded") === "true" ||
+      b.getAttribute("aria-selected") === "true"
+    );
   }
 
   function findChatButton() {
@@ -689,7 +780,8 @@
       const rect = b.getBoundingClientRect();
       if (rect.top <= window.innerHeight - 160 || rect.width === 0 || rect.height === 0) return false;
       if (b.getAttribute("data-panel-id") === "1") return true;
-      const label = `${b.getAttribute("aria-label") || ""} ${b.getAttribute("data-tooltip") || ""} ${b.getAttribute("title") || ""} ${b.textContent || ""}`.toLowerCase();
+      const label =
+        `${b.getAttribute("aria-label") || ""} ${b.getAttribute("data-tooltip") || ""} ${b.getAttribute("title") || ""} ${b.textContent || ""}`.toLowerCase();
       return CHAT_LABEL_RE.test(label);
     });
   }
@@ -702,12 +794,23 @@
       if (isPeopleButton(b)) return false;
 
       // Exclude non-panel controls: mic, cam, hand, captions, reactions, leave
-      const label = `${b.getAttribute("aria-label") || ""} ${b.getAttribute("data-tooltip") || ""} ${b.getAttribute("title") || ""} ${b.textContent || ""}`.toLowerCase();
-      if (/mikrofon|microphone|kamera|camera|verlassen|leave|hand|melden|reaktion|reaction|untertitel|caption|bildschirm|present|screen/i.test(label)) {
+      const label =
+        `${b.getAttribute("aria-label") || ""} ${b.getAttribute("data-tooltip") || ""} ${b.getAttribute("title") || ""} ${b.textContent || ""}`.toLowerCase();
+      if (
+        /mikrofon|microphone|kamera|camera|verlassen|leave|hand|melden|reaktion|reaction|untertitel|caption|bildschirm|present|screen/i.test(
+          label
+        )
+      ) {
         return false;
       }
 
-      if (CHAT_LABEL_RE.test(label) || ACTIVITIES_LABEL_RE.test(label) || DETAILS_LABEL_RE.test(label) || HOST_LABEL_RE.test(label) || b.hasAttribute("data-panel-id")) {
+      if (
+        CHAT_LABEL_RE.test(label) ||
+        ACTIVITIES_LABEL_RE.test(label) ||
+        DETAILS_LABEL_RE.test(label) ||
+        HOST_LABEL_RE.test(label) ||
+        b.hasAttribute("data-panel-id")
+      ) {
         return isButtonActive(b);
       }
       return false;
@@ -728,7 +831,9 @@
     }
 
     // 2. Is Chat input visible or Chat button active?
-    const chatInput = document.querySelector('textarea[aria-label*="chat" i], textarea[aria-label*="nachricht" i], [contenteditable="true"][aria-label*="chat" i]');
+    const chatInput = document.querySelector(
+      'textarea[aria-label*="chat" i], textarea[aria-label*="nachricht" i], [contenteditable="true"][aria-label*="chat" i]'
+    );
     const chatBtn = findChatButton();
     if ((chatInput && chatInput.offsetParent !== null) || (chatBtn && isButtonActive(chatBtn))) {
       initialSessionState = { type: "OTHER", button: chatBtn };
@@ -798,17 +903,22 @@
       const txt = (b.textContent || "").toLowerCase();
       const aria = (b.getAttribute("aria-label") || "").toLowerCase();
       if (/chat|nachricht|message/.test(txt + " " + aria)) return false;
-      return /view everyone|alle in diesem anruf|alle teilnehmer anzeigen|everyone in this call/i.test(txt + " " + aria);
+      return /view everyone|alle in diesem anruf|alle teilnehmer anzeigen|everyone in this call/i.test(
+        txt + " " + aria
+      );
     });
   }
 
-  const SECTION_EXPAND_RE = /\b(?:in (?:this |the )?call|im anruf|in (?:this |the )?meeting|in der besprechung|contributors|beitragende|also invited|ebenfalls eingeladen|not in (?:the )?call|nicht im anruf|andere eingeladene|weitere eingeladene|eingeladen|invited|waiting to join|warten auf beitritt|everyone in this call|alle in diesem anruf|alle teilnehmer)\b/i;
+  const SECTION_EXPAND_RE =
+    /\b(?:in (?:this |the )?call|im anruf|in (?:this |the )?meeting|in der besprechung|contributors|beitragende|also invited|ebenfalls eingeladen|not in (?:the )?call|nicht im anruf|andere eingeladene|weitere eingeladene|eingeladen|invited|waiting to join|warten auf beitritt|everyone in this call|alle in diesem anruf|alle teilnehmer)\b/i;
 
   function expandCollapsedSections() {
     const panel = findPeopleSidePanel();
     const searchRoot = panel || document;
 
-    const toggles = Array.from(searchRoot.querySelectorAll('div[role="button"][aria-expanded="false"], button[aria-expanded="false"]'));
+    const toggles = Array.from(
+      searchRoot.querySelectorAll('div[role="button"][aria-expanded="false"], button[aria-expanded="false"]')
+    );
     let clickedAny = false;
     for (const t of toggles) {
       const rect = t.getBoundingClientRect();
@@ -982,7 +1092,11 @@
   window.__murCleanup = () => {
     clearInterval(liveRosterInterval);
     window.removeEventListener("focus", onWindowFocus);
-    try { chrome.runtime.onMessage.removeListener(messageListener); } catch {}
-    try { chrome.runtime.onConnect.removeListener(onSessionConnect); } catch {}
+    try {
+      chrome.runtime.onMessage.removeListener(messageListener);
+    } catch {}
+    try {
+      chrome.runtime.onConnect.removeListener(onSessionConnect);
+    } catch {}
   };
 })();

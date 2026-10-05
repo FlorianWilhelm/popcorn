@@ -34,6 +34,8 @@ const uid = () => `m_${Date.now().toString(36)}_${Math.random().toString(36).sli
 const getAutoRefresh = () => (data.settings ? data.settings.autoRefresh !== false : true);
 const getRefreshInterval = () => (data.settings && Number(data.settings.refreshInterval)) || DEFAULT_REFRESH_INTERVAL;
 
+// Grouped by topic; keep the compact layout.
+// prettier-ignore
 const NOISE_WORDS = new Set([
   "mic", "mic_off", "videocam", "videocam_off", "more_vert", "more_horiz", "push_pin",
   "present_to_all", "devices", "person_add", "domain_disabled",
@@ -82,10 +84,13 @@ const NOISE_WORDS = new Set([
   "show everyone", "alle anzeigen", "show in-call messages", "in-call messages"
 ]);
 
-const NOISE_PATTERN = /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in the meeting|in der besprechung|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|waiting to join|warten auf beitritt|wartet auf teilnahme|waiting to pair with you|wartet auf kopplung|visitor badge|besucher-badge|visitor|besucher|more actions|weitere aktionen|back|zurück|keyboard_arrow_down|keyboard_arrow_up|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten|open\s+(?:the\s+)?people\s+panel|close\s+(?:the\s+)?people\s+panel|people\s+panel|chat\s+panel|show\s+everyone|alle\s+anzeigen)$/i;
+const NOISE_PATTERN =
+  /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in the meeting|in der besprechung|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|waiting to join|warten auf beitritt|wartet auf teilnahme|waiting to pair with you|wartet auf kopplung|visitor badge|besucher-badge|visitor|besucher|more actions|weitere aktionen|back|zurück|keyboard_arrow_down|keyboard_arrow_up|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten|open\s+(?:the\s+)?people\s+panel|close\s+(?:the\s+)?people\s+panel|people\s+panel|chat\s+panel|show\s+everyone|alle\s+anzeigen)$/i;
 
-const UI_PHRASE_RE = /^(?:open|close|öffnen|schließen|show|hide|view)\s+(?:the\s+)?(?:people|chat|activities|details|host controls?|teilnehmer|personen|chatten|nachrichten|everyone|alle)\s*(?:panel|leiste|fenster|list|liste)?$/i;
-const PANEL_RE = /^(?:people|chat|activities|details|host controls?|teilnehmer|personen)\s*(?:panel|leiste|fenster|list|liste)$/i;
+const UI_PHRASE_RE =
+  /^(?:open|close|öffnen|schließen|show|hide|view)\s+(?:the\s+)?(?:people|chat|activities|details|host controls?|teilnehmer|personen|chatten|nachrichten|everyone|alle)\s*(?:panel|leiste|fenster|list|liste)?$/i;
+const PANEL_RE =
+  /^(?:people|chat|activities|details|host controls?|teilnehmer|personen)\s*(?:panel|leiste|fenster|list|liste)$/i;
 
 const isNoiseOrIcon = (s) => {
   if (!s) return true;
@@ -99,9 +104,19 @@ const isNoiseOrIcon = (s) => {
 const isPresentationName = (s) => {
   if (!s) return false;
   const str = (s || "").replace(/\s+/g, " ").trim();
-  if (/^(?:dein\s+bildschirm|your\s+screen|deine\s+präsentation|your\s+presentation|bildschirmübertragung|screen\s*share)$/i.test(str)) return true;
+  if (
+    /^(?:dein\s+bildschirm|your\s+screen|deine\s+präsentation|your\s+presentation|bildschirmübertragung|screen\s*share)$/i.test(
+      str
+    )
+  )
+    return true;
   if (/^(?:presentation|präsentation|praesentation)(?:\s+(?:von|of|by)\s+.*)?$/i.test(str)) return true;
-  if (/(?:\x27s|’s|s|\x27|’)\s*(?:presentation|präsentation|praesentation|screen|bildschirm|bildschirmfreigabe|bildschirmübertragung)$/i.test(str)) return true;
+  if (
+    /(?:\x27s|’s|s|\x27|’)\s*(?:presentation|präsentation|praesentation|screen|bildschirm|bildschirmfreigabe|bildschirmübertragung)$/i.test(
+      str
+    )
+  )
+    return true;
   if (/\((?:präsentation|presentation|bildschirm|screen|dein bildschirm|your presentation)\)/i.test(str)) return true;
   return false;
 };
@@ -115,7 +130,10 @@ const cleanPersonName = (raw) => {
   s = s.replace(/\s*·\s*\d+\s*$/g, "");
 
   // Action prefixes and suffixes from Meet UI / accessibility labels
-  s = s.replace(/^(?:you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von)\s+(.+?)(?:(?:\x27s|s)?\s+microphone|\s+nicht\s+stummschalten)?$/i, "$1");
+  s = s.replace(
+    /^(?:you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von)\s+(.+?)(?:(?:\x27s|s)?\s+microphone|\s+nicht\s+stummschalten)?$/i,
+    "$1"
+  );
   s = s.replace(/^pin\s+(.+?)\s+to\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
   s = s.replace(/^unpin\s+(.+?)\s+from\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
   s = s.replace(/^pin\s+(.+?)\s+to\s+screen$/i, "$1");
@@ -123,7 +141,10 @@ const cleanPersonName = (raw) => {
   s = s.replace(/^(.+?)\s+an\s+(?:den\s+)?(?:hauptbildschirm|bildschirm)\s+anpinnen$/i, "$1");
   s = s.replace(/^(.+?)\s+vom\s+(?:hauptbildschirm|bildschirm)\s+(?:lösen|entfernen|entpinnen)$/i, "$1");
   s = s.replace(/^(.+?)\s+(?:nicht\s+mehr\s+anpinnen|anpinnen|anheften)$/i, "$1");
-  s = s.replace(/^(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für)\s+(.+)$/i, "$1");
+  s = s.replace(
+    /^(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für)\s+(.+)$/i,
+    "$1"
+  );
   s = s.replace(/^(?:send\s+a\s+message\s+to|nachricht\s+an)\s+(.+?)(?:\s+senden)?$/i, "$1");
   s = s.replace(/^(?:chat\s+with|chatten\s+mit)\s+(.+)$/i, "$1");
   s = s.replace(/^(?:mute|unmute|stummschalten\s+für)\s+(.+)$/i, "$1");
@@ -132,7 +153,10 @@ const cleanPersonName = (raw) => {
   s = s.replace(/^(.+?)'s\s+video$/i, "$1");
 
   // Remove parenthetical qualifiers: (Du), (You), (Host), (Presentation), (Visitor), (abwesend), etc.
-  s = s.replace(/\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal|contributor|beitragende|beitragender|abwesend|absent|visitor|besucher)\)/gi, "");
+  s = s.replace(
+    /\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal|contributor|beitragende|beitragender|abwesend|absent|visitor|besucher)\)/gi,
+    ""
+  );
   s = s.replace(/[·•]/g, " ");
 
   return s.replace(/\s+/g, " ").trim();
@@ -145,7 +169,7 @@ function sanitizeMeetingData(m) {
   const keyMap = new Map();
 
   for (const [oldKey, p] of Object.entries(m.people)) {
-    const rawName = (p && p.name) ? p.name : oldKey;
+    const rawName = p && p.name ? p.name : oldKey;
     if (isPresentationName(rawName) || isPresentationName(oldKey) || isNoiseOrIcon(rawName) || isNoiseOrIcon(oldKey)) {
       changed = true;
       continue;
@@ -241,7 +265,10 @@ async function load() {
     loadedData.settings = { autoRefresh: true, refreshInterval: DEFAULT_REFRESH_INTERVAL };
   } else {
     loadedData.settings.autoRefresh = loadedData.settings.autoRefresh !== false;
-    loadedData.settings.refreshInterval = Math.max(1, Math.min(60, Number(loadedData.settings.refreshInterval) || DEFAULT_REFRESH_INTERVAL));
+    loadedData.settings.refreshInterval = Math.max(
+      1,
+      Math.min(60, Number(loadedData.settings.refreshInterval) || DEFAULT_REFRESH_INTERVAL)
+    );
   }
 
   let needsSave = false;
@@ -313,11 +340,12 @@ async function readMeet(withPeople, opts = {}) {
     return { ok: false, reason: "nomeet" };
   }
   ensureSessionPort(tab.id);
-  const send = () => chrome.tabs.sendMessage(tab.id, {
-    type: "MUR_SCRAPE",
-    withPeople: !!withPeople,
-    openIfClosed: !!opts.openIfClosed
-  });
+  const send = () =>
+    chrome.tabs.sendMessage(tab.id, {
+      type: "MUR_SCRAPE",
+      withPeople: !!withPeople,
+      openIfClosed: !!opts.openIfClosed
+    });
   try {
     return await send();
   } catch {
@@ -400,8 +428,7 @@ function syncMeetingOrder(m, forceReorder = false) {
   // Compare pending participants by priority:
   // 1. Longest since update first (ascending last; 0/never comes first)
   // 2. Alphabetical tie-break by name
-  const comparePriority = (a, b) =>
-    (a.last || 0) - (b.last || 0) || a.name.localeCompare(b.name, "en");
+  const comparePriority = (a, b) => (a.last || 0) - (b.last || 0) || a.name.localeCompare(b.name, "en");
 
   if (!forceReorder && fresh && m.round && Array.isArray(m.round.keys)) {
     // 1. Retain fixed order for candidates who have already given their update in this round
@@ -795,9 +822,7 @@ function render() {
         .map(([k, v]) => ({ key: k, ...v }));
 
       if (sortAlphabetical) {
-        secondaryPeople.sort((a, b) =>
-          (a.name || "").localeCompare(b.name || "", "en", { sensitivity: "base" })
-        );
+        secondaryPeople.sort((a, b) => (a.name || "").localeCompare(b.name || "", "en", { sensitivity: "base" }));
       } else {
         secondaryPeople.sort((a, b) => {
           if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
@@ -817,9 +842,7 @@ function render() {
   if ($("btnToggleAbsent")) {
     const isAbsentShown = m ? !!m.includeAbsent : false;
     $("btnToggleAbsent").classList.toggle("active", isAbsentShown);
-    $("btnToggleAbsent").title = isAbsentShown
-      ? "Hide absent or ignored"
-      : "Show absent or ignored";
+    $("btnToggleAbsent").title = isAbsentShown ? "Hide absent or ignored" : "Show absent or ignored";
     $("btnToggleAbsent").setAttribute("aria-label", $("btnToggleAbsent").title);
     $("btnToggleAbsent").disabled = !m;
   }
@@ -861,9 +884,10 @@ async function refresh(newRound = false, options = {}) {
 
   // Phase 1: read title and code only, leave roster untouched
   const probe = await readMeet(false);
-  current = probe && probe.ok
-    ? { inMeet: true, code: probe.code, title: probe.title, people: [] }
-    : { inMeet: false, code: null, title: null, people: [] };
+  current =
+    probe && probe.ok
+      ? { inMeet: true, code: probe.code, title: probe.title, people: [] }
+      : { inMeet: false, code: null, title: null, people: [] };
 
   currentId = null;
   presentKeys = new Set();
@@ -1139,7 +1163,14 @@ function parseMarkdownMeeting(mdText) {
       if (cols.length >= 3) {
         const col1 = cols[1];
         const col2 = cols[2];
-        if (!col1 || /^[-:\s]+$/.test(col1) || /^person$/i.test(col1) || /^last update$/i.test(col2) || /^letztes update$/i.test(col2)) continue;
+        if (
+          !col1 ||
+          /^[-:\s]+$/.test(col1) ||
+          /^person$/i.test(col1) ||
+          /^last update$/i.test(col2) ||
+          /^letztes update$/i.test(col2)
+        )
+          continue;
         const cleanName = cleanPersonName(col1);
         if (!cleanName || isPresentationName(cleanName) || isNoiseOrIcon(cleanName)) continue;
         const isIgnored = /\b(ignored|ignoriert)\b/i.test(col2);
@@ -1151,8 +1182,6 @@ function parseMarkdownMeeting(mdText) {
   }
   return { meetingName, people };
 }
-
-
 
 async function importMarkdownText(text, sourceLabel = "clipboard") {
   if (!text || typeof text !== "string") {
@@ -1211,7 +1240,7 @@ function updateModalSaveButton() {
   }
   if (editingMeetingId) {
     // Enabled only when content differs from original markdown
-    saveBtn.disabled = (val === initialMarkdownText.trim());
+    saveBtn.disabled = val === initialMarkdownText.trim();
   } else {
     // New meeting / import: enabled when non-empty
     saveBtn.disabled = false;
@@ -1465,7 +1494,6 @@ $("btnActivate").addEventListener("click", async () => {
   view = "people";
   await refresh(true);
 });
-
 
 if ($("btnRefresh")) {
   $("btnRefresh").addEventListener("click", async () => {

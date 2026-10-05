@@ -17,7 +17,7 @@ const CHROME_PATHS = [
   "/Applications/Chromium.app/Contents/MacOS/Chromium"
 ];
 
-const chromePath = CHROME_PATHS.find(p => fs.existsSync(p));
+const chromePath = CHROME_PATHS.find((p) => fs.existsSync(p));
 
 if (!chromePath) {
   console.error("❌ Google Chrome not found at standard macOS location.");
@@ -106,7 +106,9 @@ function renderAsset(asset) {
   }
 
   // Convert to high-quality JPEG using native macOS sips (clean RGB, 92 quality, no graphical filters)
-  execSync(`/usr/bin/sips -s format jpeg -s formatOptions 92 "${tempPng}" --out "${asset.output}"`, { stdio: "ignore" });
+  execSync(`/usr/bin/sips -s format jpeg -s formatOptions 92 "${tempPng}" --out "${asset.output}"`, {
+    stdio: "ignore"
+  });
 
   // Clean up temp PNG
   fs.unlinkSync(tempPng);

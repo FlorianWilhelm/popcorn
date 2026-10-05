@@ -12,7 +12,7 @@ const popupHtmlPath = path.join(srcDir, "popup.html");
 function parseVersion(v) {
   if (!v || typeof v !== "string") return null;
   const cleaned = v.trim().replace(/^v/, "");
-  const parts = cleaned.split(".").map(n => parseInt(n, 10));
+  const parts = cleaned.split(".").map((n) => parseInt(n, 10));
   if (parts.some(isNaN)) return null;
   return {
     raw: cleaned,
@@ -51,7 +51,9 @@ if (releaseVersionArg) {
 // Validate package.json vs manifest.json
 if (!areVersionsCompatible(pkgVersion, manifestVersion)) {
   console.error(`\n❌ VERSION MISMATCH ERROR:`);
-  console.error(`   package.json version (${pkgVersion}) and src/manifest.json version (${manifestVersion}) do not match!`);
+  console.error(
+    `   package.json version (${pkgVersion}) and src/manifest.json version (${manifestVersion}) do not match!`
+  );
   console.error(`   Run "npm run bump -- <version>" to synchronize versions across all files.`);
   process.exit(1);
 }
@@ -63,8 +65,10 @@ if (releaseVersionArg && releaseVersionArg.trim()) {
     console.error(`\n❌ RELEASE VERSION MISMATCH ERROR:`);
     console.error(`   Git tag / release version (${tagVersion}) does not match project version (${manifestVersion})!`);
     console.error(`   package.json has "${pkgVersion}" and src/manifest.json has "${manifestVersion}".`);
-    console.error(`   Please update versions in package.json and src/manifest.json before creating tag "${tagVersion}".`);
-    console.error(`   Tip: Run "npm run bump -- ${tagVersion.replace(/^v/, '')}" before tagging.`);
+    console.error(
+      `   Please update versions in package.json and src/manifest.json before creating tag "${tagVersion}".`
+    );
+    console.error(`   Tip: Run "npm run bump -- ${tagVersion.replace(/^v/, "")}" before tagging.`);
     process.exit(1);
   }
 }
@@ -122,7 +126,7 @@ for (const file of bundleFiles) {
 
 // 4. Create ZIP using native zip command
 console.log(`Packaging POPCORN v${version} from src/ into ${zipFileName}...`);
-const zipCmd = `zip -q -9 "${zipFilePath}" ${bundleFiles.map(f => `"${f}"`).join(" ")}`;
+const zipCmd = `zip -q -9 "${zipFilePath}" ${bundleFiles.map((f) => `"${f}"`).join(" ")}`;
 cp.execSync(zipCmd, { cwd: srcDir });
 
 const stats = fs.statSync(zipFilePath);

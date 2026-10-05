@@ -40,7 +40,7 @@ if (!target) {
 // Read current version from package.json or manifest.json
 const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
 const currentRaw = (pkg.version || "0.0.0").trim().replace(/^v/, "");
-const currentParts = currentRaw.split(".").map(n => parseInt(n, 10));
+const currentParts = currentRaw.split(".").map((n) => parseInt(n, 10));
 
 let curMacro = currentParts[0] ?? 0;
 let curMeso = currentParts[1] ?? 0;
@@ -67,7 +67,7 @@ if (mode === "micro" || mode === "patch") {
 } else {
   // Explicit version
   const cleaned = target.trim().replace(/^v/, "");
-  const parts = cleaned.split(".").map(n => parseInt(n, 10));
+  const parts = cleaned.split(".").map((n) => parseInt(n, 10));
   if (parts.length < 2 || parts.some(isNaN)) {
     console.error(`ERROR: Invalid version or keyword "${target}".`);
     printUsage();
@@ -142,10 +142,7 @@ if (fs.existsSync(changelogPath)) {
     const newTag = `v${newVersion}`;
     const newReleaseLink = `[${newVersion}]: ${repoUrl}/compare/${prevTag}...${newTag}`;
 
-    changelog = changelog.replace(
-      /\[Unreleased\]: [^\n]+/,
-      `${unreleasedLink}\n${newReleaseLink}`
-    );
+    changelog = changelog.replace(/\[Unreleased\]: [^\n]+/, `${unreleasedLink}\n${newReleaseLink}`);
 
     fs.writeFileSync(changelogPath, changelog, "utf8");
     console.log(`  ✓ CHANGELOG.md:          promoted [Unreleased] to [${newVersion}] - ${today}`);

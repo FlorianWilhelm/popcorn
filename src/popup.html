@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -12,7 +12,15 @@
       </div>
       <div class="bar-side">
         <span class="badge off" id="badge" title="No active Google Meet call">off</span>
-        <img class="header-logo" id="headerLogo" src="icons/icon48.png" alt="POPCORN" title="POPCORN v0.31.0" width="32" height="32" />
+        <img
+          class="header-logo"
+          id="headerLogo"
+          src="icons/icon48.png"
+          alt="POPCORN"
+          title="POPCORN v0.31.0"
+          width="32"
+          height="32"
+        />
       </div>
     </header>
 
@@ -20,9 +28,20 @@
       <button data-view="meetings" class="tab">Meetings</button>
       <button data-view="people" class="tab">People</button>
       <button data-view="settings" class="tab icon-tab" title="Settings" aria-label="Settings">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <circle cx="12" cy="12" r="3"></circle>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0 2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0 2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+          ></path>
         </svg>
       </button>
     </nav>
@@ -33,7 +52,10 @@
       <div id="untrackedCard" class="untracked-card hidden">
         <div class="untracked-header">
           <span class="untracked-badge">Untracked Meet</span>
-          <p class="hint">Tracking is not enabled for this meeting. Enable it here so POPCORN remembers participants and tracks updates.</p>
+          <p class="hint">
+            Tracking is not enabled for this meeting. Enable it here so POPCORN remembers participants and tracks
+            updates.
+          </p>
         </div>
         <label class="field">
           <span>Meeting Name</span>
@@ -46,8 +68,22 @@
 
       <div class="row section-toolbar">
         <span class="toolbar-title">Tracked Meetings</span>
-        <button id="btnNewMeeting" class="ghost icon-btn mini" title="New meeting or import Markdown" aria-label="New meeting">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <button
+          id="btnNewMeeting"
+          class="ghost icon-btn mini"
+          title="New meeting or import Markdown"
+          aria-label="New meeting"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
@@ -57,8 +93,8 @@
       <div id="meetingsScrollArea" class="meetings-scroll-area">
         <ul id="meetingList" class="list"></ul>
         <p id="meetingsEmpty" class="hint hidden">
-          No meetings tracked yet. Open a meeting in Google Meet and
-          enable tracking there, or create a meeting using the + button.
+          No meetings tracked yet. Open a meeting in Google Meet and enable tracking there, or create a meeting using
+          the + button.
         </p>
       </div>
       <input type="file" id="fileInput" accept=".md,.txt,text/markdown" hidden />
@@ -69,41 +105,106 @@
       <!-- First line: Presence status + actions (+ for add, trash for delete mode) -->
       <div class="people-toolbar">
         <div class="people-status-wrap">
-          <button id="btnRefresh" class="ghost icon-btn mini" title="Refresh attendance and participants" aria-label="Refresh attendance">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-              <path d="M21 3v5h-5"/>
-              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-              <path d="M3 21v-5h5"/>
+          <button
+            id="btnRefresh"
+            class="ghost icon-btn mini"
+            title="Refresh attendance and participants"
+            aria-label="Refresh attendance"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M3 21v-5h5" />
             </svg>
           </button>
           <span id="peoplePresence" class="people-presence">No meeting active</span>
         </div>
         <div class="toolbar-actions">
-          <button id="btnToggleAbsent" class="ghost icon-btn mini" title="Show absent or ignored" aria-label="Show absent or ignored">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 10h.01"/>
-              <path d="M15 10h.01"/>
-              <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/>
+          <button
+            id="btnToggleAbsent"
+            class="ghost icon-btn mini"
+            title="Show absent or ignored"
+            aria-label="Show absent or ignored"
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M9 10h.01" />
+              <path d="M15 10h.01" />
+              <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
             </svg>
           </button>
-          <button id="btnToggleSort" class="ghost icon-btn mini" title="Sort alphabetically by name (preserves priority numbers)" aria-label="Sort alphabetically">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m3 16 4 4 4-4"/>
-              <path d="M7 20V4"/>
-              <path d="M20 8h-5"/>
-              <path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10"/>
-              <path d="M15 14h5l-5 6h5"/>
+          <button
+            id="btnToggleSort"
+            class="ghost icon-btn mini"
+            title="Sort alphabetically by name (preserves priority numbers)"
+            aria-label="Sort alphabetically"
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m3 16 4 4 4-4" />
+              <path d="M7 20V4" />
+              <path d="M20 8h-5" />
+              <path d="M15 10V6.5a2.5 2.5 0 0 1 5 0V10" />
+              <path d="M15 14h5l-5 6h5" />
             </svg>
           </button>
           <button id="btnToggleAdd" class="ghost icon-btn mini" title="Add participant" aria-label="Add participant">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
           </button>
-          <button id="btnToggleDeleteMode" class="ghost icon-btn mini" title="Toggle delete mode" aria-label="Toggle delete mode">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <button
+            id="btnToggleDeleteMode"
+            class="ghost icon-btn mini"
+            title="Toggle delete mode"
+            aria-label="Toggle delete mode"
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <path d="M3 6h18"></path>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
@@ -114,8 +215,17 @@
       <!-- Expandable Add Person Row -->
       <div id="addPersonRow" class="row add-person-row hidden">
         <input id="newName" type="text" placeholder="Add participant name" />
-        <button id="btnAdd" class="primary btn-with-icon" style="flex: 0 0 auto;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <button id="btnAdd" class="primary btn-with-icon" style="flex: 0 0 auto">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
@@ -127,7 +237,9 @@
       <div id="peopleScrollArea" class="people-scroll-area">
         <!-- Active rotation list (numbered 01, 02...) -->
         <ol id="activeList" class="list"></ol>
-        <p id="peopleEmpty" class="hint hidden">No participants present. Open the people list in Meet, or add names using +.</p>
+        <p id="peopleEmpty" class="hint hidden">
+          No participants present. Open the people list in Meet, or add names using +.
+        </p>
 
         <!-- Secondary list for absent or ignored people (unranked) -->
         <ul id="secondaryList" class="list secondary-list hidden"></ul>
@@ -148,8 +260,6 @@
       </label>
       <p class="hint" id="hintRefreshInterval">Interval for automatic refreshing (default: 2 seconds).</p>
 
-
-
       <div class="version-info">
         <span>🍿 POPCORN v<span id="appVersion">0.31.0</span></span>
         <span class="acronym-hint">Participant Order Picker for Candid On-call Reporting &amp; Notes</span>
@@ -164,32 +274,88 @@
         </div>
         <p id="modalHint" class="modal-hint">View, edit, or copy the Markdown table of this meeting:</p>
         <div id="modalError" class="modal-error hidden">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           <span id="modalErrorText"></span>
         </div>
-        <textarea id="markdownTextarea" rows="8" wrap="off" placeholder="# Meeting Name&#10;&#10;| Person | Last Update |&#10;| --- | --- |&#10;| Name | 24.08.2026, 10:00:00 |"></textarea>
+        <textarea
+          id="markdownTextarea"
+          rows="8"
+          wrap="off"
+          placeholder="# Meeting Name&#10;&#10;| Person | Last Update |&#10;| --- | --- |&#10;| Name | 24.08.2026, 10:00:00 |"
+        ></textarea>
         <div class="modal-footer">
           <div class="modal-footer-left">
-            <button id="btnModalUpload" class="mini ghost icon-btn" title="Load Markdown file from disk" aria-label="Load file">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button
+              id="btnModalUpload"
+              class="mini ghost icon-btn"
+              title="Load Markdown file from disk"
+              aria-label="Load file"
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
               </svg>
             </button>
-            <button id="btnModalDownload" class="mini ghost icon-btn" title="Export Markdown as file (.md)" aria-label="Download Markdown">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button
+              id="btnModalDownload"
+              class="mini ghost icon-btn"
+              title="Export Markdown as file (.md)"
+              aria-label="Download Markdown"
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
             </button>
-            <button id="btnModalCopy" class="mini ghost icon-btn" title="Copy Markdown to clipboard" aria-label="Copy Markdown">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button
+              id="btnModalCopy"
+              class="mini ghost icon-btn"
+              title="Copy Markdown to clipboard"
+              aria-label="Copy Markdown"
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
