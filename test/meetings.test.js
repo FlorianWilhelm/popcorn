@@ -8,6 +8,9 @@ const {
   clampRefreshInterval,
   sanitizeMeeting,
   migrateStoredData,
+  isMeetUrl,
+  isInSplitView,
+  pickMeetTab,
   matchMeeting,
   rememberMeetIdentity,
   normalizeScrapedPeople,
@@ -104,6 +107,50 @@ test("sanitizeMeeting cleans names, merges duplicates, and drops noise", () => {
 test("sanitizeMeeting reports no change for clean data", () => {
   const m = { people: { anna: person("Anna") }, round: { keys: ["anna"], createdAt: NOW } };
   assert.equal(sanitizeMeeting(m), false);
+});
+
+test("isMeetUrl only accepts Google Meet pages", () => {
+  assert.equal(isMeetUrl("https://meet.google.com/abc-defg-hij"), true);
+  assert.equal(isMeetUrl("https://meet.google.com/"), true);
+  assert.equal(isMeetUrl("http://meet.google.com/abc-defg-hij"), false);
+  assert.equal(isMeetUrl("https://meet.google.com.evil.example/abc-defg-hij"), false);
+  assert.equal(isMeetUrl("https://calendar.google.com/"), false);
+  assert.equal(isMeetUrl(undefined), false);
+});
+
+const MEET = "https://meet.google.com/abc-defg-hij";
+const DOCS = "https://docs.google.com/document/d/1";
+const tab = (id, url, splitViewId = -1) => ({ id, url, active: false, splitViewId });
+
+test("isInSplitView detects Split View panes and tolerates Chrome before 140", () => {
+  assert.equal(isInSplitView(tab(1, MEET, 7)), true);
+  assert.equal(isInSplitView(tab(1, MEET)), false);
+  assert.equal(isInSplitView({ id: 1, url: MEET }), false);
+  assert.equal(isInSplitView(undefined), false);
+});
+
+test("pickMeetTab uses the active tab when it is a Meet tab", () => {
+  const active = tab(2, MEET);
+  assert.equal(pickMeetTab(active), active);
+  assert.equal(pickMeetTab(active, [tab(3, MEET, 7)]), active);
+});
+
+test("pickMeetTab finds Meet in the unfocused pane of a split view", () => {
+  const active = tab(3, DOCS, 7);
+  assert.equal(pickMeetTab(active, [tab(2, MEET, 7), active]).id, 2);
+});
+
+test("pickMeetTab prefers the focused pane when both panes show Meet", () => {
+  const active = tab(2, "https://meet.google.com/xyz-abcd-efg", 7);
+  assert.equal(pickMeetTab(active, [tab(1, MEET, 7), active]), active);
+});
+
+test("pickMeetTab ignores Meet tabs outside the active tab's split view", () => {
+  assert.equal(pickMeetTab(tab(2, DOCS), [tab(1, MEET)]), null);
+  assert.equal(pickMeetTab(tab(3, DOCS, 9), [tab(1, MEET, 7), tab(4, DOCS, 9)]), null);
+  // Chrome before 140 has no splitViewId
+  assert.equal(pickMeetTab({ id: 2, url: DOCS }, [{ id: 1, url: MEET }]), null);
+  assert.equal(pickMeetTab(undefined), null);
 });
 
 test("matchMeeting prefers title and alias over Meet code", () => {

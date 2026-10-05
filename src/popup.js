@@ -11,6 +11,8 @@ const {
   clampRefreshInterval,
   sanitizeMeeting,
   migrateStoredData,
+  isInSplitView,
+  pickMeetTab,
   matchMeeting,
   addAlias,
   rememberMeetIdentity,
@@ -68,10 +70,10 @@ async function save() {
 
 let sessionPort = null;
 
-let lastActiveTabId = null;
+let meetTabId = null; // the Meet tab being read; in Split View it can be the unfocused pane
 
 function ensureSessionPort(tabId, force = false) {
-  lastActiveTabId = tabId;
+  meetTabId = tabId;
   if (sessionPort && !force) return;
   if (sessionPort && force) {
     try {
@@ -88,9 +90,9 @@ function ensureSessionPort(tabId, force = false) {
 }
 
 function disconnectSession() {
-  if (lastActiveTabId) {
+  if (meetTabId) {
     try {
-      chrome.tabs.sendMessage(lastActiveTabId, { type: "POPCORN_POPUP_CLOSING" }).catch(() => {});
+      chrome.tabs.sendMessage(meetTabId, { type: "POPCORN_POPUP_CLOSING" }).catch(() => {});
     } catch {}
   }
   if (sessionPort) {
@@ -110,9 +112,18 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
+async function findMeetTab() {
+  const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+  // In Split View only the focused pane is active; the Meet call may be in the other pane
+  const splitTabs = isInSplitView(active)
+    ? await chrome.tabs.query({ windowId: active.windowId, splitViewId: active.splitViewId })
+    : [];
+  return pickMeetTab(active, splitTabs);
+}
+
 async function readMeet(withPeople, opts = {}) {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab || !/^https:\/\/meet\.google\.com\//.test(tab.url || "")) {
+  const tab = await findMeetTab();
+  if (!tab) {
     return { ok: false, reason: "nomeet" };
   }
   ensureSessionPort(tab.id);

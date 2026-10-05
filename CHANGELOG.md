@@ -14,6 +14,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - **Consistent name cleaning**: The popup now strips `(invited)` / `(eingeladen)` qualifiers from names just like the Meet scraper does, and treats whitespace-only names as invalid.
 
 ### Fixed
+- **Chrome Split View**: With Google Meet in one pane of a split view and the focus in the other pane, the popup showed "No meeting open", because only the focused pane counts as the active tab. The popup now also finds the Meet call in the other pane of the split.
 - **Lost check-offs during refresh**: Checking off a participant while an attendance refresh was running (every 2 seconds by default) could be undone immediately, because each refresh replaced the in-memory data the click had just changed. The popup now loads its data once and keeps it in memory.
 - Absent participants no longer flash into the rotation while attendance is being refreshed.
 - Automatic refreshes no longer overlap when scraping Meet takes longer than the refresh interval.

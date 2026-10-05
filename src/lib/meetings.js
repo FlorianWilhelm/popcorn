@@ -1,5 +1,5 @@
 /* POPCORN - Participant Order Picker for Candid On-call Reporting & Notes
- * Meeting data model: storage migration, meeting matching, roster sync, and speaker rotation.
+ * Meeting data model: storage migration, Meet tab selection, meeting matching, roster sync, and speaker rotation.
  *
  * Loaded as a classic script in the popup (exposes globalThis.PopcornMeetings) and via require() in tests.
  */
@@ -155,6 +155,26 @@
     return { data, changed };
   }
 
+  const MEET_URL_RE = /^https:\/\/meet\.google\.com\//;
+  const SPLIT_VIEW_ID_NONE = -1; // chrome.tabs.SPLIT_VIEW_ID_NONE
+
+  const isMeetUrl = (url) => MEET_URL_RE.test(url || "");
+
+  /** True if the tab is one pane of a Chrome Split View. Chrome before 140 has no splitViewId. */
+  const isInSplitView = (tab) => !!tab && tab.splitViewId !== undefined && tab.splitViewId !== SPLIT_VIEW_ID_NONE;
+
+  /**
+   * Picks the Meet tab the popup should read. Usually that is the active tab. In Chrome's Split View
+   * only the focused pane is active, so a Meet tab in the other pane of the same split counts as well.
+   * splitTabs are the tabs of the active tab's split view (empty outside Split View).
+   */
+  function pickMeetTab(activeTab, splitTabs = []) {
+    if (!activeTab) return null;
+    if (isMeetUrl(activeTab.url)) return activeTab;
+    if (!isInSplitView(activeTab)) return null;
+    return splitTabs.find((t) => t.splitViewId === activeTab.splitViewId && isMeetUrl(t.url)) || null;
+  }
+
   /** Finds the tracked meeting for a Meet tab, by title/alias first and Meet code second. */
   function matchMeeting(meetings, title, code) {
     const t = normalizeKey(title);
@@ -289,6 +309,9 @@
     clampRefreshInterval,
     sanitizeMeeting,
     migrateStoredData,
+    isMeetUrl,
+    isInSplitView,
+    pickMeetTab,
     matchMeeting,
     addAlias,
     rememberMeetIdentity,
