@@ -131,7 +131,7 @@ To facilitate fair popcorn-style speaker rotation and track update turns for att
 ---
 
 ## 📦 4. Building New Releases
-Whenever you update the version in `manifest.json`:
+After bumping the version with `npm run bump -- <macro|meso|micro>`:
 ```bash
 npm run package
 ```

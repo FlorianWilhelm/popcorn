@@ -1,6 +1,7 @@
 # 🍿 POPCORN – Participant Order Picker for Candid On-call Reporting & Notes
 
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-POPCORN-blue?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/popcorn-%E2%80%93-google-meet-sta/ohfgelbmjoepoocbcmmlhlfcholfogmb)
+[![CI](https://github.com/FlorianWilhelm/popcorn/actions/workflows/ci.yml/badge.svg)](https://github.com/FlorianWilhelm/popcorn/actions/workflows/ci.yml)
 [![EffVer Versioning](https://img.shields.io/badge/version_scheme-EffVer-0097a7)](https://jacobtomlinson.dev/effver)
 [![Keep a Changelog](https://img.shields.io/badge/changelog-Keep%20a%20Changelog-orange)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -124,6 +125,21 @@ POPCORN treats Markdown as a first-class citizen. Click the **Edit Markdown** bu
 Click the **⚙️ Settings** icon in the tab bar to customize your setup:
 - **Automatic Attendance Refresh:** Toggle automatic re-syncing of active attendees during Google Meet calls.
 - **Refresh Interval:** Set the automatic polling frequency in seconds (default: 2 seconds).
+
+---
+
+## 🧑‍💻 Development
+
+POPCORN is plain JavaScript without a build step: `src/` is loaded into Chrome as-is (see Option 3 above). Node.js 22+ is only needed for the tooling:
+
+```bash
+npm install        # dev dependencies only (ESLint, Prettier)
+npm run check      # lint, format check, and unit tests (also runs in CI)
+npm run format     # auto-format with Prettier
+npm run package    # build dist/popcorn-v<version>.zip
+```
+
+The pure logic (name filtering, rotation, Markdown import/export) lives in `src/lib/` and is unit-tested in `test/` with Node's built-in test runner. See [CLAUDE.md](CLAUDE.md) for architecture notes and project conventions.
 
 ---
 
