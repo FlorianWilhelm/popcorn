@@ -216,7 +216,9 @@
     if (isNoiseOrIcon(s)) return false;
     if (isPresentation(s)) return false;
     if (/^[a-z0-9]+(_[a-z0-9]+)+$/i.test(s)) return false;
-    if (!/[a-zA-ZÀ-ÿ]/.test(s)) return false;
+    // At least one letter in any script, so names like "김민준" or "Иван Петров" pass, but digits,
+    // emoji, and symbols do not.
+    if (!/\p{L}/u.test(s)) return false;
     if (/^\d+$/.test(s)) return false;
     if (/^(pin|unpin)\s+.*to\s+.*screen$/i.test(s)) return false;
     return true;

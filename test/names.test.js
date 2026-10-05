@@ -157,3 +157,43 @@ test("looksLikeName rejects scraping artifacts", () => {
   assert.equal(looksLikeName("Your presentation"), false, "presentation");
   assert.equal(looksLikeName("Participants"), false, "panel label");
 });
+
+test("looksLikeName accepts names in non-Latin scripts", () => {
+  for (const s of [
+    "김민준",
+    "张伟",
+    "山田 太郎",
+    "Иван Петров",
+    "Γιώργος",
+    "محمد",
+    "שרה כהן",
+    "प्रिया शर्मा",
+    "สมชาย ใจดี",
+    "Anna 김"
+  ]) {
+    assert.equal(looksLikeName(s), true, s);
+  }
+  assert.equal(looksLikeName(cleanPersonName("김민준 (You)")), true);
+});
+
+test("looksLikeName still rejects noise without letters, in any script", () => {
+  const cases = {
+    "١٢٣": "Arabic-Indic digits",
+    "１２３": "full-width digits",
+    "👍": "emoji",
+    "❤️": "emoji with variation selector",
+    "✋ 2": "raised hand with queue position",
+    "• · …": "separators",
+    "→→": "arrows",
+    "××": "multiplication signs",
+    王: "too short",
+    mic_off: "icon ligature",
+    PRESENT_TO_ALL: "icon ligature",
+    "In call": "status label",
+    "Im Anruf": "status label",
+    "Your presentation": "presentation"
+  };
+  for (const [s, reason] of Object.entries(cases)) {
+    assert.equal(looksLikeName(s), false, `${s} (${reason})`);
+  }
+});
