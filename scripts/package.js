@@ -102,24 +102,19 @@ const version = manifestVersion;
 const zipFileName = `popcorn-v${version}.zip`;
 const zipFilePath = path.join(distDir, zipFileName);
 
-// 3. Files to include in the extension bundle
-const bundleFiles = [
-  "manifest.json",
-  "popup.html",
-  "popup.css",
-  "popup.js",
-  "content.js",
-  "icons/icon16.png",
-  "icons/icon48.png",
-  "icons/icon128.png",
-  "icons/icon.svg"
-];
+// 3. Bundle everything in src/ except hidden files such as .DS_Store
+const bundleFiles = fs
+  .readdirSync(srcDir, { recursive: true })
+  .filter((rel) => !rel.split(path.sep).some((part) => part.startsWith(".")))
+  .filter((rel) => fs.statSync(path.join(srcDir, rel)).isFile())
+  .map((rel) => rel.split(path.sep).join("/"))
+  .sort();
 
-// Validate all files exist
-for (const file of bundleFiles) {
-  const fullPath = path.join(srcDir, file);
-  if (!fs.existsSync(fullPath)) {
-    console.error(`ERROR: Missing required bundle file: ${file}`);
+// Every script the manifest references must be part of the bundle
+const referencedFiles = [manifest.action.default_popup, ...manifest.content_scripts.flatMap((cs) => cs.js)];
+for (const file of referencedFiles) {
+  if (!bundleFiles.includes(file)) {
+    console.error(`ERROR: File referenced in manifest.json is missing: src/${file}`);
     process.exit(1);
   }
 }

@@ -8,7 +8,9 @@
     "screenshots": "node scripts/render_screenshots_chrome.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test": "node --test \"test/**/*.test.js\"",
+    "check": "npm run lint && npm run format:check && npm test"
   },
   "keywords": [
     "chrome-extension",

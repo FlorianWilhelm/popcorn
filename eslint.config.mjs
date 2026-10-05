@@ -20,8 +20,19 @@ export default [
       sourceType: "script",
       globals: {
         ...globals.browser,
-        ...globals.webextensions
+        ...globals.webextensions,
+        // Exposed by the shared modules in src/lib/
+        PopcornNames: "readonly",
+        PopcornMeetings: "readonly",
+        PopcornMarkdown: "readonly"
       }
+    }
+  },
+  {
+    // Shared modules also export themselves via CommonJS for the unit tests.
+    files: ["src/lib/**/*.js"],
+    languageOptions: {
+      globals: { module: "readonly", require: "readonly" }
     }
   },
   {

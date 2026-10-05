@@ -1,21 +1,32 @@
 /* POPCORN - Participant Order Picker for Candid On-call Reporting & Notes
- * Popup logic, state management, candidate rotation, and UI rendering.
+ * Popup: state, communication with the Meet content script, rendering, and event handling.
+ * Pure logic lives in lib/names.js, lib/meetings.js, and lib/markdown.js.
  */
 
+const { normalizeKey, cleanPersonName, isPresentation, isNoiseOrIcon } = PopcornNames;
+const {
+  DAY_MS,
+  DEFAULT_REFRESH_INTERVAL,
+  createDefaultData,
+  createMeeting,
+  clampRefreshInterval,
+  sanitizeMeeting,
+  migrateStoredData,
+  matchMeeting,
+  addAlias,
+  rememberMeetIdentity,
+  normalizeScrapedPeople,
+  syncRoster,
+  isDoneRecently,
+  syncMeetingOrder
+} = PopcornMeetings;
+const { meetingToMarkdown, parseMeetingMarkdown, markdownFileName } = PopcornMarkdown;
+
 const STORE_KEY = "mur_v1"; // Legacy key from "Meet Update Rotator"; keep it, renaming would wipe user data
-const ROUND_TTL = 6 * 60 * 60 * 1000;
-const DEFAULT_REFRESH_INTERVAL = 2;
 
 const $ = (id) => document.getElementById(id);
 
-let data = {
-  version: 2,
-  meetings: {},
-  settings: {
-    autoRefresh: true,
-    refreshInterval: DEFAULT_REFRESH_INTERVAL
-  }
-};
+let data = createDefaultData();
 let current = null; // { inMeet, code, title, people }
 let currentId = null; // tracked meeting that is currently running in Meet
 let selectedId = null; // meeting opened manually from the meeting list
@@ -27,203 +38,11 @@ let deleteMode = false;
 let showAddRow = false;
 let sortAlphabetical = false;
 
-const norm = (s) => (s || "").normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
-const keyOf = (name) => norm(name);
-const uid = () => `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-
 const getAutoRefresh = () => (data.settings ? data.settings.autoRefresh !== false : true);
 const getRefreshInterval = () => (data.settings && Number(data.settings.refreshInterval)) || DEFAULT_REFRESH_INTERVAL;
 
-// Grouped by topic; keep the compact layout.
-// prettier-ignore
-const NOISE_WORDS = new Set([
-  "mic", "mic_off", "videocam", "videocam_off", "more_vert", "more_horiz", "push_pin",
-  "present_to_all", "devices", "person_add", "domain_disabled",
-  "keep", "keep_off", "visual_effects", "raise_hand", "front_hand",
-  "arrow_drop_down", "close", "search", "check", "star", "block",
-  "reframe", "framing", "auto_framing", "auto_awesome", "crop_free", "fit_screen",
-  "fullscreen", "fullscreen_exit", "settings", "tune", "volume_up", "volume_off",
-  "closed_caption", "closed_caption_off", "chat", "chat_bubble", "info", "info_outline",
-  "pan_tool", "call_end", "expand_more", "expand_less", "chevron_right", "chevron_left",
-  "drag_indicator", "grid_view", "screen_search_desktop",
-  "keyboard_arrow_down", "keyboard_arrow_up",
-  "accepted", "zugesagt", "angenommen",
-  "declined", "abgelehnt", "abgesagt",
-  "maybe", "vielleicht", "mit vorbehalt", "tentative",
-  "awaiting", "awaiting response", "no response", "ausstehend", "antwort ausstehend",
-  "noch keine antwort", "keine antwort", "unbeantwortet", "needs action",
-  "invited", "eingeladen", "also invited", "ebenfalls eingeladen",
-  "in call", "in the call", "in this call", "not in call", "not in the call",
-  "im anruf", "nicht im anruf", "in dieser besprechung", "in diesem anruf",
-  "in meeting", "im meeting", "in the meeting", "in der besprechung", "not in meeting", "nicht im meeting",
-  "waiting to join", "warten auf beitritt", "wartet auf teilnahme",
-  "waiting to pair with you", "wartet auf kopplung",
-  "visitor badge", "besucher-badge", "visitor", "besucher",
-  "contributors", "beitragende", "everyone in this call", "alle in diesem anruf",
-  "everyone", "alle", "all", "people", "personen", "teilnehmer", "participants",
-  "backgrounds and effects", "backgrounds & effects", "backgrounds", "effects",
-  "hintergründe und effekte", "hintergründe & effekte", "hintergrund und effekte", "hintergründe", "effekte",
-  "apply visual effects", "visuelle effekte anwenden", "visuelle effekte", "visual effects",
-  "virtual background", "virtueller hintergrund",
-  "add people", "personen hinzufügen", "teilnehmer hinzufügen", "invite people",
-  "jemanden einladen", "invite someone", "share joining info", "teilnahmeinformationen teilen",
-  "besprechungslink kopieren", "copy joining info",
-  "host controls", "steuerelemente für den host", "host-steuerelemente",
-  "meeting safety", "besprechungssicherheit",
-  "activities", "aktivitäten", "chat", "chatnachrichten", "messages", "in-call messages",
-  "nachrichten im anruf", "details", "meeting details", "besprechungsdetails",
-  "polls", "umfragen", "q&a", "fragen und antworten", "whiteboard", "breakout rooms",
-  "gruppensitzungen", "recording", "aufzeichnung", "transcripts", "transkripte",
-  "captions", "untertitel", "search for people", "nach personen suchen",
-  "search people", "teilnehmer suchen", "personen suchen", "suchen", "search",
-  "mute all", "alle stummschalten", "turn off all mics", "alle mikrofone deaktivieren",
-  "pinned", "angepinnt", "stummgeschaltet", "muted", "hand raised", "hand gehoben",
-  "joined", "beigetreten", "left", "verlassen", "calling", "ringing",
-  "more actions", "weitere aktionen", "back", "zurück",
-  "open the people panel", "close the people panel", "people panel", "chat panel",
-  "show everyone", "alle anzeigen", "show in-call messages", "in-call messages"
-]);
-
-const NOISE_PATTERN =
-  /^(du|you|sie|ich|me|host|moderator|gastgeber|meeting-host|besprechungsleiter|praesentation|präsentation|presentation|stummgeschaltet|muted|angepinnt|pinned|beitreten|joining|joined|verlassen|left|eingeladen|invited|ebenfalls eingeladen|also invited|im meeting|in meeting|in the meeting|in der besprechung|in call|im anruf|in this call|in this meeting|in dieser besprechung|not in call|nicht im anruf|not in meeting|nicht im meeting|waiting to join|warten auf beitritt|wartet auf teilnahme|waiting to pair with you|wartet auf kopplung|visitor badge|besucher-badge|visitor|besucher|more actions|weitere aktionen|back|zurück|keyboard_arrow_down|keyboard_arrow_up|accepted|zugesagt|angenommen|declined|abgelehnt|abgesagt|maybe|vielleicht|mit vorbehalt|tentative|awaiting|awaiting response|ausstehend|antwort ausstehend|noch keine antwort|keine antwort|unbeantwortet|needs action|contributors|beitragende|weitere optionen|more options|teilnehmer|participants|personen|people|everyone|alle|suchen|search|search for people|nach personen suchen|teilnehmer suchen|personen suchen|reframe|framing|auto-framing|auto framing|ausschnitt|ausschnitt anpassen|kamera|camera|mikrofon|microphone|video|audio|backgrounds?(\s+(and|&)\s+effects?)?|hintergründe?(\s+(und|&)\s+effekte?)?|effects?|effekte?|apply visual effects|visuelle effekte(\s+anwenden)?|virtual background|virtueller hintergrund|add people|personen hinzufügen|teilnehmer hinzufügen|invite(\s+people|\s+someone)?|jemanden einladen|share joining info|teilnahmeinformationen teilen|host controls|steuerelemente für den host|host-steuerelemente|meeting safety|besprechungssicherheit|activities|aktivitäten|details|meeting details|besprechungsdetails|mute all|alle stummschalten|open\s+(?:the\s+)?people\s+panel|close\s+(?:the\s+)?people\s+panel|people\s+panel|chat\s+panel|show\s+everyone|alle\s+anzeigen)$/i;
-
-const UI_PHRASE_RE =
-  /^(?:open|close|öffnen|schließen|show|hide|view)\s+(?:the\s+)?(?:people|chat|activities|details|host controls?|teilnehmer|personen|chatten|nachrichten|everyone|alle)\s*(?:panel|leiste|fenster|list|liste)?$/i;
-const PANEL_RE =
-  /^(?:people|chat|activities|details|host controls?|teilnehmer|personen)\s*(?:panel|leiste|fenster|list|liste)$/i;
-
-const isNoiseOrIcon = (s) => {
-  if (!s) return true;
-  const lower = (s || "").toLowerCase().trim();
-  if (NOISE_WORDS.has(lower)) return true;
-  if (NOISE_PATTERN.test(lower)) return true;
-  if (UI_PHRASE_RE.test(lower) || PANEL_RE.test(lower)) return true;
-  return false;
-};
-
-const isPresentationName = (s) => {
-  if (!s) return false;
-  const str = (s || "").replace(/\s+/g, " ").trim();
-  if (
-    /^(?:dein\s+bildschirm|your\s+screen|deine\s+präsentation|your\s+presentation|bildschirmübertragung|screen\s*share)$/i.test(
-      str
-    )
-  )
-    return true;
-  if (/^(?:presentation|präsentation|praesentation)(?:\s+(?:von|of|by)\s+.*)?$/i.test(str)) return true;
-  if (
-    /(?:\x27s|’s|s|\x27|’)\s*(?:presentation|präsentation|praesentation|screen|bildschirm|bildschirmfreigabe|bildschirmübertragung)$/i.test(
-      str
-    )
-  )
-    return true;
-  if (/\((?:präsentation|presentation|bildschirm|screen|dein bildschirm|your presentation)\)/i.test(str)) return true;
-  return false;
-};
-
-const cleanPersonName = (raw) => {
-  let s = (raw || "").replace(/\s+/g, " ").trim();
-  if (!s) return "";
-
-  // Remove count suffixes e.g. (12) or · 12
-  s = s.replace(/\s*\(\d+\)\s*$/g, "");
-  s = s.replace(/\s*·\s*\d+\s*$/g, "");
-
-  // Action prefixes and suffixes from Meet UI / accessibility labels
-  s = s.replace(
-    /^(?:you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von)\s+(.+?)(?:(?:\x27s|s)?\s+microphone|\s+nicht\s+stummschalten)?$/i,
-    "$1"
-  );
-  s = s.replace(/^pin\s+(.+?)\s+to\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
-  s = s.replace(/^unpin\s+(.+?)\s+from\s+(?:your\s+|the\s+)?(?:main\s+)?screen$/i, "$1");
-  s = s.replace(/^pin\s+(.+?)\s+to\s+screen$/i, "$1");
-  s = s.replace(/^unpin\s+(.+?)\s+from\s+screen$/i, "$1");
-  s = s.replace(/^(.+?)\s+an\s+(?:den\s+)?(?:hauptbildschirm|bildschirm)\s+anpinnen$/i, "$1");
-  s = s.replace(/^(.+?)\s+vom\s+(?:hauptbildschirm|bildschirm)\s+(?:lösen|entfernen|entpinnen)$/i, "$1");
-  s = s.replace(/^(.+?)\s+(?:nicht\s+mehr\s+anpinnen|anpinnen|anheften)$/i, "$1");
-  s = s.replace(
-    /^(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für)\s+(.+)$/i,
-    "$1"
-  );
-  s = s.replace(/^(?:send\s+a\s+message\s+to|nachricht\s+an)\s+(.+?)(?:\s+senden)?$/i, "$1");
-  s = s.replace(/^(?:chat\s+with|chatten\s+mit)\s+(.+)$/i, "$1");
-  s = s.replace(/^(?:mute|unmute|stummschalten\s+für)\s+(.+)$/i, "$1");
-  s = s.replace(/^(.+?)\s+stummschalten$/i, "$1");
-  s = s.replace(/^(?:video\s+von\s+|video\s+of\s+)(.+)$/i, "$1");
-  s = s.replace(/^(.+?)'s\s+video$/i, "$1");
-
-  // Remove parenthetical qualifiers: (Du), (You), (Host), (Presentation), (Visitor), (abwesend), etc.
-  s = s.replace(
-    /\((du|you|sie|ich|me|dein bildschirm|your presentation|präsentation|presentation|gastgeber|host|meeting host|besprechungsleiter|moderator|extern|external|intern|internal|contributor|beitragende|beitragender|abwesend|absent|visitor|besucher)\)/gi,
-    ""
-  );
-  s = s.replace(/[·•]/g, " ");
-
-  return s.replace(/\s+/g, " ").trim();
-};
-
-function sanitizeMeetingData(m) {
-  if (!m || !m.people) return false;
-  let changed = false;
-  const newPeople = {};
-  const keyMap = new Map();
-
-  for (const [oldKey, p] of Object.entries(m.people)) {
-    const rawName = p && p.name ? p.name : oldKey;
-    if (isPresentationName(rawName) || isPresentationName(oldKey) || isNoiseOrIcon(rawName) || isNoiseOrIcon(oldKey)) {
-      changed = true;
-      continue;
-    }
-    const clean = cleanPersonName(rawName) || rawName;
-    if (isPresentationName(clean) || isNoiseOrIcon(clean)) {
-      changed = true;
-      continue;
-    }
-    const newKey = keyOf(clean);
-
-    if (newKey !== oldKey || (p && p.name !== clean)) {
-      changed = true;
-    }
-
-    if (!newPeople[newKey]) {
-      newPeople[newKey] = {
-        name: clean,
-        last: (p && p.last) || 0,
-        prev: p && p.prev != null ? p.prev : null,
-        ignored: !!(p && p.ignored)
-      };
-    } else {
-      newPeople[newKey].last = Math.max(newPeople[newKey].last || 0, (p && p.last) || 0);
-      if (p && p.prev != null && newPeople[newKey].prev == null) {
-        newPeople[newKey].prev = p.prev;
-      }
-      if (p && p.ignored) {
-        newPeople[newKey].ignored = true;
-      }
-    }
-    keyMap.set(oldKey, newKey);
-  }
-
-  m.people = newPeople;
-
-  if (m.round && Array.isArray(m.round.keys)) {
-    const updatedRoundKeys = [];
-    const seenRound = new Set();
-    for (const k of m.round.keys) {
-      const mappedKey = keyMap.get(k);
-      if (mappedKey && m.people[mappedKey] && !m.people[mappedKey].ignored && !seenRound.has(mappedKey)) {
-        seenRound.add(mappedKey);
-        updatedRoundKeys.push(mappedKey);
-      }
-    }
-    if (updatedRoundKeys.length !== m.round.keys.length || updatedRoundKeys.some((k, i) => k !== m.round.keys[i])) {
-      changed = true;
-    }
-    m.round.keys = updatedRoundKeys;
-  }
-
-  return changed;
-}
+/** Orders a meeting's rotation based on who is currently present in Meet. */
+const orderRound = (m, forceReorder = false) => syncMeetingOrder(m, { presentKeys, forceReorder });
 
 const activeId = () => selectedId || currentId;
 const meeting = () => (activeId() ? data.meetings[activeId()] : null);
@@ -232,56 +51,11 @@ const meeting = () => (activeId() ? data.meetings[activeId()] : null);
 
 async function load() {
   const res = await chrome.storage.local.get(STORE_KEY);
-  const raw = res[STORE_KEY];
-  let loadedData = {
-    version: 2,
-    meetings: {},
-    settings: {
-      autoRefresh: true,
-      refreshInterval: DEFAULT_REFRESH_INTERVAL
-    }
-  };
-
-  if (raw && raw.meetings) {
-    loadedData = raw;
-  } else if (raw && raw.groups) {
-    // Migration from v1: groups were keyed by Meet code
-    for (const [gid, g] of Object.entries(raw.groups || {})) {
-      const id = uid();
-      loadedData.meetings[id] = {
-        id,
-        name: g.name || gid,
-        aliases: [norm(g.name || gid)],
-        codes: g.codes || (gid ? [gid] : []),
-        people: g.people || {},
-        round: g.round || null,
-        includeAbsent: !!g.includeAbsent,
-        createdAt: Date.now()
-      };
-    }
+  const { data: loaded, changed } = migrateStoredData(res[STORE_KEY]);
+  if (changed) {
+    await chrome.storage.local.set({ [STORE_KEY]: loaded });
   }
-
-  if (!loadedData.settings) {
-    loadedData.settings = { autoRefresh: true, refreshInterval: DEFAULT_REFRESH_INTERVAL };
-  } else {
-    loadedData.settings.autoRefresh = loadedData.settings.autoRefresh !== false;
-    loadedData.settings.refreshInterval = Math.max(
-      1,
-      Math.min(60, Number(loadedData.settings.refreshInterval) || DEFAULT_REFRESH_INTERVAL)
-    );
-  }
-
-  let needsSave = false;
-  for (const m of Object.values(loadedData.meetings || {})) {
-    if (sanitizeMeetingData(m)) {
-      needsSave = true;
-    }
-  }
-  if (needsSave) {
-    await chrome.storage.local.set({ [STORE_KEY]: loadedData });
-  }
-
-  return loadedData;
+  return loaded;
 }
 
 async function save() {
@@ -350,7 +124,7 @@ async function readMeet(withPeople, opts = {}) {
     return await send();
   } catch {
     try {
-      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["lib/names.js", "content.js"] });
       ensureSessionPort(tab.id, true);
       return await send();
     } catch {
@@ -359,124 +133,11 @@ async function readMeet(withPeople, opts = {}) {
   }
 }
 
-/* ---------- Matching by meeting name ---------- */
-
-function matchMeeting(title, code) {
-  const t = norm(title);
-  if (t) {
-    for (const m of Object.values(data.meetings)) {
-      if ((m.aliases || []).includes(t) || norm(m.name) === t) return { m, via: "name" };
-    }
-  }
-  if (code) {
-    for (const m of Object.values(data.meetings)) {
-      if ((m.codes || []).includes(code)) return { m, via: "code" };
-    }
-  }
-  return null;
-}
-
-function addAlias(m, value) {
-  const v = norm(value);
-  if (!v) return;
-  m.aliases = m.aliases || [];
-  if (!m.aliases.includes(v)) m.aliases.push(v);
-}
-
-/* ---------- People and rounds ---------- */
-
-function syncRoster(m, people) {
-  let added = 0;
-  for (const p of people) {
-    if (isPresentationName(p.name) || isNoiseOrIcon(p.name)) continue;
-    const clean = cleanPersonName(p.name);
-    if (!clean || isPresentationName(clean) || isNoiseOrIcon(clean)) continue;
-    const k = keyOf(clean);
-    if (!m.people[k]) {
-      m.people[k] = { name: clean, last: 0, prev: null, ignored: false };
-      added++;
-    } else {
-      m.people[k].name = clean;
-    }
-  }
-  return added;
-}
-
-function syncMeetingOrder(m, forceReorder = false) {
-  if (!m) return [];
-  const fresh = m.round && Array.isArray(m.round.keys) && Date.now() - m.round.createdAt < ROUND_TTL;
-
-  // Active pool: present participants who are not ignored
-  // (If outside Meet, all non-ignored participants are active candidates)
-  const isEligible = (k) => {
-    const p = m.people[k];
-    if (!p || p.ignored) return false;
-    if (presentKeys.size > 0 && !presentKeys.has(k)) return false;
-    return true;
-  };
-
-  const pool = Object.entries(m.people)
-    .filter(([k]) => isEligible(k))
-    .map(([k, v]) => ({ key: k, ...v }));
-
-  // Helper: check if a person was recently checked off (done today)
-  const isDone = (k) => {
-    const p = m.people[k];
-    return !!(p && p.last && Date.now() - p.last < 86400000);
-  };
-
-  // Compare pending participants by priority:
-  // 1. Longest since update first (ascending last; 0/never comes first)
-  // 2. Alphabetical tie-break by name
-  const comparePriority = (a, b) => (a.last || 0) - (b.last || 0) || a.name.localeCompare(b.name, "en");
-
-  if (!forceReorder && fresh && m.round && Array.isArray(m.round.keys)) {
-    // 1. Retain fixed order for candidates who have already given their update in this round
-    const existingDone = m.round.keys.filter((k) => isEligible(k) && isDone(k));
-    const doneKeys = [...existingDone];
-    for (const p of pool) {
-      if (isDone(p.key) && !doneKeys.includes(p.key)) {
-        doneKeys.push(p.key);
-      }
-    }
-
-    // 2. Pending participants (not yet checked off):
-    // Dynamically order by priority so late joiners (with never or older updates)
-    // are slotted in ahead of people who updated more recently.
-    const pending = pool.filter((p) => !isDone(p.key));
-    pending.sort(comparePriority);
-
-    const orderedKeys = [...doneKeys, ...pending.map((p) => p.key)];
-    m.round.keys = orderedKeys;
-    return orderedKeys;
-  }
-
-  // Fresh session order:
-  // Any participants already marked done stay at the top in their existing order,
-  // followed by all pending participants sorted by priority.
-  const donePool = [];
-  if (m.round && Array.isArray(m.round.keys)) {
-    for (const k of m.round.keys) {
-      if (isEligible(k) && isDone(k)) donePool.push(k);
-    }
-  }
-  for (const p of pool) {
-    if (isDone(p.key) && !donePool.includes(p.key)) donePool.push(p.key);
-  }
-
-  const pendingPool = pool.filter((p) => !isDone(p.key));
-  pendingPool.sort(comparePriority);
-
-  const newKeys = [...donePool, ...pendingPool.map((p) => p.key)];
-  m.round = { keys: newKeys, createdAt: Date.now() };
-  return newKeys;
-}
-
 /* ---------- UI building blocks ---------- */
 
 function waitedText(last) {
   if (!last) return "never";
-  const days = Math.floor((Date.now() - last) / 86400000);
+  const days = Math.floor((Date.now() - last) / DAY_MS);
   const date = new Date(last).toLocaleDateString(undefined, { day: "2-digit", month: "2-digit", year: "2-digit" });
   if (days <= 0) return `today · ${date}`;
   return `${days}d ago · ${date}`;
@@ -485,7 +146,7 @@ function waitedText(last) {
 function buildPersonItem(m, person, index) {
   const li = document.createElement("li");
   li.className = "item";
-  const doneToday = person.last && Date.now() - person.last < 86400000;
+  const doneToday = isDoneRecently(person);
   if (doneToday) li.classList.add("done");
   if (presentKeys.size && !presentKeys.has(person.key)) li.classList.add("absent");
   if (person.ignored) li.classList.add("ignored");
@@ -654,7 +315,7 @@ function buildMeetingItem(m) {
   dlBtn.setAttribute("aria-label", "Export as Markdown file");
   dlBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
   dlBtn.addEventListener("click", () => {
-    downloadMeetingMarkdown(m);
+    downloadMarkdown(m.name, meetingToMarkdown(m));
   });
 
   const del = document.createElement("button");
@@ -780,7 +441,7 @@ function render() {
     if ($("btnToggleAdd")) $("btnToggleAdd").classList.toggle("active", showAddRow);
 
     // Active rotation list
-    const activeKeys = syncMeetingOrder(m, false);
+    const activeKeys = orderRound(m);
     const activeList = $("activeList");
     activeList.innerHTML = "";
 
@@ -896,7 +557,7 @@ async function refresh(newRound = false, options = {}) {
     return;
   }
 
-  const hit = matchMeeting(current.title, current.code);
+  const hit = matchMeeting(data.meetings, current.title, current.code);
   if (!hit) {
     if (!initialViewResolved && !options.background) {
       initialViewResolved = true;
@@ -906,7 +567,7 @@ async function refresh(newRound = false, options = {}) {
     return;
   }
 
-  const m = hit.m;
+  const m = hit.meeting;
   currentId = m.id;
   selectedId = null;
 
@@ -915,24 +576,15 @@ async function refresh(newRound = false, options = {}) {
     view = "people";
   }
 
-  if (hit.via === "code" && current.title && norm(current.title) !== norm(m.name)) {
-    addAlias(m, current.title);
-  }
-  if (current.code && !(m.codes || []).includes(current.code)) {
-    m.codes = m.codes || [];
-    m.codes.push(current.code);
-  }
+  rememberMeetIdentity(m, current);
 
   // Phase 2: now read people list
   const full = await readMeet(true, { openIfClosed: !options.background });
   if (full && full.ok) {
-    current.people = (full.people || [])
-      .filter((p) => !isPresentationName(p.name) && !isNoiseOrIcon(p.name))
-      .map((p) => ({ ...p, name: cleanPersonName(p.name) }))
-      .filter((p) => !!p.name && !isPresentationName(p.name) && !isNoiseOrIcon(p.name));
-    presentKeys = new Set(current.people.filter((p) => p.present).map((p) => keyOf(p.name)));
+    current.people = normalizeScrapedPeople(full.people);
+    presentKeys = new Set(current.people.filter((p) => p.present).map((p) => normalizeKey(p.name)));
     const added = syncRoster(m, current.people);
-    syncMeetingOrder(m, newRound);
+    orderRound(m, newRound);
     await save();
     render();
 
@@ -945,7 +597,7 @@ async function refresh(newRound = false, options = {}) {
       presEl.textContent = parts.join(" · ");
     }
   } else {
-    syncMeetingOrder(m, newRound);
+    orderRound(m, newRound);
     await save();
     render();
   }
@@ -973,231 +625,35 @@ function setupAutoRefresh() {
 
 /* ---------- Markdown import and export ---------- */
 
-function meetingToMarkdown(m) {
-  const rows = Object.values(m.people || {})
-    .sort((a, b) => {
-      if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
-      return (b.last || 0) - (a.last || 0) || a.name.localeCompare(b.name);
-    })
-    .map((p) => {
-      const timeStr = p.last ? new Date(p.last).toLocaleString() : "";
-      let val = timeStr;
-      if (p.ignored) {
-        val = timeStr ? `${timeStr} (ignored)` : "ignored";
-      }
-      return `| ${p.name} | ${val} |`;
-    });
-  return `# ${m.name}\n\n| Person | Last Update |\n| --- | --- |\n${rows.join("\n")}\n`;
-}
-
-function downloadMeetingMarkdown(m) {
-  const md = meetingToMarkdown(m);
-  const slug = (m.name || "meeting")
-    .toLowerCase()
-    .replace(/[^a-z0-9äöüß]+/gi, "-")
-    .replace(/^-+|-+$/g, "");
+function downloadMarkdown(meetingName, md) {
   const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `${slug || "meeting"}.md`;
+  a.download = markdownFileName(meetingName);
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
-function parseDateTimeString(str) {
-  if (!str) return 0;
-  const s = str.trim().toLowerCase();
-  if (!s || s === "noch nie" || s === "never" || s === "-" || s === "–" || s === "0") return 0;
-
-  // Format DD.MM.YYYY or DD/MM/YYYY[ ,][HH:mm[:ss]]
-  const deMatch = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
-  if (deMatch) {
-    const [, d, m, y, h, min, sec] = deMatch;
-    const date = new Date(Number(y), Number(m) - 1, Number(d), Number(h || 0), Number(min || 0), Number(sec || 0));
-    if (!isNaN(date.getTime())) return date.getTime();
-  }
-
-  const parsed = Date.parse(str);
-  if (!isNaN(parsed)) return parsed;
-
-  return 0;
-}
-
-function validateAndParseMarkdownMeeting(mdText) {
-  if (!mdText || !mdText.trim()) {
-    return { ok: false, error: "The editor is empty. Please enter a Markdown table." };
-  }
-
-  const lines = mdText.split(/\r?\n/);
-  let meetingName = "";
-  const people = {};
-
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i];
-    const line = rawLine.trim();
-    const lineNum = i + 1;
-
-    // Ignore empty lines
-    if (!line) continue;
-
-    // Meeting title (# Meeting Name)
-    if (line.startsWith("#")) {
-      if (!meetingName) {
-        meetingName = line.replace(/^#+\s*/, "").trim();
-      }
-      continue;
-    }
-
-    // Every other non-empty line MUST be a table row starting with '|'
-    if (!line.startsWith("|")) {
-      return {
-        ok: false,
-        lineIndex: i,
-        lineNum,
-        error: `Line ${lineNum}: Expected a table row starting with "|"`
-      };
-    }
-
-    const cols = line.split("|").map((c) => c.trim());
-    if (cols.length < 3) {
-      return {
-        ok: false,
-        lineIndex: i,
-        lineNum,
-        error: `Line ${lineNum}: Table row must contain at least 2 columns (| Name | Last Update |)`
-      };
-    }
-
-    const col1 = cols[1];
-    const col2 = cols[2];
-
-    // Check table header
-    if (/^person$/i.test(col1) || /^last update$/i.test(col2) || /^letztes update$/i.test(col2)) {
-      continue;
-    }
-
-    // Check separator row like | --- | --- | or |:---|:---|
-    if (/^[-:\s]+$/.test(col1) && (!col2 || /^[-:\s]+$/.test(col2))) {
-      continue;
-    }
-
-    // Regular data row: validate Person name
-    const cleanName = cleanPersonName(col1);
-    if (!cleanName || isPresentationName(cleanName) || isNoiseOrIcon(cleanName)) {
-      return {
-        ok: false,
-        lineIndex: i,
-        lineNum,
-        error: `Line ${lineNum}: Person name cannot be empty or invalid`
-      };
-    }
-
-    // Validate Column 2 (Last Update)
-    const isIgnored = /\b(ignored|ignoriert)\b/i.test(col2);
-    const datePart = col2.replace(/\s*[([]?\b(ignored|ignoriert)\b[)\]]?/gi, "").trim();
-    let last = 0;
-    if (datePart) {
-      last = parseDateTimeString(datePart);
-      if (last === 0) {
-        const s = datePart.toLowerCase();
-        const isPermittedZero = !s || s === "noch nie" || s === "never" || s === "-" || s === "–" || s === "0";
-        if (!isPermittedZero) {
-          return {
-            ok: false,
-            lineIndex: i,
-            lineNum,
-            error: `Line ${lineNum}: Invalid date format in "Last Update" (${datePart})`
-          };
-        }
-      }
-    }
-
-    people[keyOf(cleanName)] = { name: cleanName, last, prev: null, ignored: isIgnored };
-  }
-
-  const peopleCount = Object.keys(people).length;
-  if (peopleCount === 0) {
-    return {
-      ok: false,
-      error: "No participants found in the Markdown table."
-    };
-  }
-
-  return { ok: true, meetingName, people };
-}
-
-function parseMarkdownMeeting(mdText) {
-  const lines = mdText.split(/\r?\n/);
-  let meetingName = "";
-  const people = {};
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!meetingName && line.startsWith("#")) {
-      meetingName = line.replace(/^#+\s*/, "").trim();
-      continue;
-    }
-    if (line.startsWith("|")) {
-      const cols = line.split("|").map((c) => c.trim());
-      if (cols.length >= 3) {
-        const col1 = cols[1];
-        const col2 = cols[2];
-        if (
-          !col1 ||
-          /^[-:\s]+$/.test(col1) ||
-          /^person$/i.test(col1) ||
-          /^last update$/i.test(col2) ||
-          /^letztes update$/i.test(col2)
-        )
-          continue;
-        const cleanName = cleanPersonName(col1);
-        if (!cleanName || isPresentationName(cleanName) || isNoiseOrIcon(cleanName)) continue;
-        const isIgnored = /\b(ignored|ignoriert)\b/i.test(col2);
-        const datePart = col2.replace(/\s*[([]?\b(ignored|ignoriert)\b[)\]]?/gi, "").trim();
-        const last = parseDateTimeString(datePart);
-        people[keyOf(cleanName)] = { name: cleanName, last, prev: null, ignored: isIgnored };
-      }
-    }
-  }
-  return { meetingName, people };
-}
-
-async function importMarkdownText(text, sourceLabel = "clipboard") {
-  if (!text || typeof text !== "string") {
-    return false;
-  }
-  const md = parseMarkdownMeeting(text);
-  const peopleCount = Object.keys(md.people).length;
-  if (peopleCount === 0) {
-    return false;
-  }
-
-  const meetingName = md.meetingName || "Imported Meeting";
+/** Stores a parsed roster as a new meeting, or overwrites the meeting with the same name after confirmation. */
+async function importParsedMeeting({ meetingName, people }) {
+  const name = meetingName || "Imported Meeting";
+  const key = normalizeKey(name);
   const existing = Object.values(data.meetings).find(
-    (x) => norm(x.name) === norm(meetingName) || (x.aliases || []).includes(norm(meetingName))
+    (m) => normalizeKey(m.name) === key || (m.aliases || []).includes(key)
   );
 
   if (existing) {
     const overwrite = confirm(
-      `The meeting "${existing.name}" already exists.\n\nDo you want to overwrite it with data from ${sourceLabel}?`
+      `The meeting "${existing.name}" already exists.\n\nDo you want to overwrite it with data from the editor?`
     );
     if (!overwrite) return false;
-    existing.people = md.people;
+    existing.people = people;
     existing.round = null;
-    sanitizeMeetingData(existing);
+    sanitizeMeeting(existing);
   } else {
-    const id = uid();
-    data.meetings[id] = {
-      id,
-      name: meetingName,
-      aliases: [norm(meetingName)],
-      codes: [],
-      people: md.people,
-      round: null,
-      includeAbsent: false,
-      createdAt: Date.now()
-    };
-    sanitizeMeetingData(data.meetings[id]);
+    const m = createMeeting({ name, people });
+    sanitizeMeeting(m);
+    data.meetings[m.id] = m;
   }
 
   await save();
@@ -1362,17 +818,7 @@ function downloadModalMarkdown() {
     }
   }
 
-  const slug = (rawName || "meeting")
-    .toLowerCase()
-    .replace(/[^a-z0-9äöüß]+/gi, "-")
-    .replace(/^-+|-+$/g, "");
-
-  const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `${slug || "meeting"}.md`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  downloadMarkdown(rawName, md);
 }
 
 async function saveMarkdownModal() {
@@ -1384,7 +830,7 @@ async function saveMarkdownModal() {
     return;
   }
 
-  const validation = validateAndParseMarkdownMeeting(textarea.value);
+  const validation = parseMeetingMarkdown(textarea.value);
   if (!validation.ok) {
     showModalError(validation.error, validation.lineIndex);
     return;
@@ -1401,7 +847,7 @@ async function saveMarkdownModal() {
     }
     m.people = people;
     m.round = null;
-    sanitizeMeetingData(m);
+    sanitizeMeeting(m);
     await save();
     await refresh();
     closeMarkdownModal();
@@ -1409,31 +855,17 @@ async function saveMarkdownModal() {
   }
 
   // New meeting / import
-  const success = await importMarkdownText(textarea.value, "editor");
+  const success = await importParsedMeeting(validation);
   if (success) {
     closeMarkdownModal();
   }
 }
 
-async function importFile(file) {
-  const text = await file.text();
-
-  // If the Markdown modal is open, load content directly into the editor
-  const modal = $("markdownModal");
-  if (modal && !modal.classList.contains("hidden")) {
-    const textarea = $("markdownTextarea");
-    if (textarea) {
-      textarea.value = text;
-      clearModalError();
-      updateModalSaveButton();
-      return;
-    }
-  }
-
-  // Import as Markdown meeting
-  if (text.includes("|") && text.includes("#")) {
-    await importMarkdownText(text, `"${file.name}"`);
-  }
+/** The file input is only reachable from the editor's Upload button, so files always load into the editor. */
+async function loadFileIntoEditor(file) {
+  $("markdownTextarea").value = await file.text();
+  clearModalError();
+  updateModalSaveButton();
 }
 
 /* ---------- Events ---------- */
@@ -1455,19 +887,10 @@ $("btnActivate").addEventListener("click", async () => {
   if (!name) {
     return;
   }
-  const id = uid();
-  data.meetings[id] = {
-    id,
-    name,
-    aliases: [norm(name)],
-    codes: current && current.code ? [current.code] : [],
-    people: {},
-    round: null,
-    includeAbsent: false,
-    createdAt: Date.now()
-  };
-  if (current && current.title) addAlias(data.meetings[id], current.title);
-  currentId = id;
+  const m = createMeeting({ name });
+  if (current) rememberMeetIdentity(m, current);
+  data.meetings[m.id] = m;
+  currentId = m.id;
   selectedId = null;
   await save();
   view = "people";
@@ -1516,12 +939,12 @@ if ($("btnToggleAbsent")) {
 $("btnAdd").addEventListener("click", async () => {
   const m = meeting();
   const raw = $("newName").value.trim();
-  if (isPresentationName(raw) || isNoiseOrIcon(raw)) {
+  if (isPresentation(raw) || isNoiseOrIcon(raw)) {
     return;
   }
   const name = cleanPersonName(raw);
-  if (!name || !m || isPresentationName(name) || isNoiseOrIcon(name)) return;
-  const k = keyOf(name);
+  if (!name || !m || isPresentation(name) || isNoiseOrIcon(name)) return;
+  const k = normalizeKey(name);
   if (!m.people[k]) {
     m.people[k] = { name, last: 0, prev: null, ignored: false };
     if (m.round && Array.isArray(m.round.keys)) {
@@ -1551,7 +974,7 @@ $("settingAutoRefresh").addEventListener("change", async (e) => {
 });
 
 $("settingRefreshInterval").addEventListener("change", async (e) => {
-  const val = Math.max(1, Math.min(60, parseInt(e.target.value, 10) || DEFAULT_REFRESH_INTERVAL));
+  const val = clampRefreshInterval(parseInt(e.target.value, 10));
   data.settings = data.settings || {};
   data.settings.refreshInterval = val;
   $("settingRefreshInterval").value = val;
@@ -1569,7 +992,7 @@ if ($("btnNewMeeting")) $("btnNewMeeting").addEventListener("click", () => openM
 if ($("fileInput")) {
   $("fileInput").addEventListener("change", (e) => {
     const f = e.target.files[0];
-    if (f) importFile(f);
+    if (f) loadFileIntoEditor(f);
     e.target.value = "";
   });
 }

@@ -7,6 +7,14 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 
 ## [Unreleased]
 
+### Changed
+- **Locale-independent Markdown export**: Exported rosters now use `YYYY-MM-DD HH:mm` (local time) instead of the browser's locale format. Older exports in German, British, or US formats can still be imported.
+- **Consistent name cleaning**: The popup now strips `(invited)` / `(eingeladen)` qualifiers from names just like the Meet scraper does, and treats whitespace-only names as invalid.
+
+### Fixed
+- Dates with impossible values (e.g. month 13 or day 32) are rejected on import instead of silently rolling over into another date.
+- A v1 → v2 storage migration is now saved immediately instead of being repeated on every popup open until the next edit.
+
 ### Documentation
 - Added `CLAUDE.md` with architecture notes, conventions, and release rules for AI coding agents.
 - Translated `GEMINI.md` and `.agents/rules/git-tags.md` to English.
@@ -16,6 +24,9 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - Added ESLint and Prettier (`npm run lint`, `npm run format`, `npm run format:check`) and formatted the codebase once. The formatting commit is listed in `.git-blame-ignore-revs`.
 - Removed dead code: unused helpers (`setStatus`, `copyMeetingMarkdown`, `stripQualifier`), unused parameters and scrape response fields, and unused CSS rules.
 - Fixed the `.gitignore` entry for the screenshot renderer's temp directory (`.chrome-temp/`).
+- Moved pure logic into shared modules in `src/lib/` (`names.js`, `meetings.js`, `markdown.js`). The content script and the popup no longer keep diverging copies of the name filters, and the two Markdown parsers were merged into one.
+- Added unit tests with Node's built-in test runner (`npm test`) and an `npm run check` script that runs lint, format check, and tests.
+- `npm run package` now bundles every non-hidden file in `src/` and verifies that all files referenced by `manifest.json` are present.
 
 ---
 
