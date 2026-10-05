@@ -33,6 +33,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - Restructured `popup.js`: icons are defined once, icon buttons share a helper, `render()` is split into per-view functions, person and roster edits go through tested helpers in `lib/meetings.js`, and dead code such as the handler for a non-existent modal close button is gone.
 - Added unit tests with Node's built-in test runner (`npm test`) and an `npm run check` script that runs lint, format check, and tests.
 - Added a CI workflow (`.github/workflows/ci.yml`) that runs lint, format check, unit tests, and packaging on every push and pull request. The release workflow runs the same checks before packaging.
+- Moved the unused 487 KB `icon.svg` source artwork from `src/icons/` to `assets/`, shrinking the release ZIP from about 430 KB to about 70 KB.
 - `npm run package` now bundles every non-hidden file in `src/` and verifies that all files referenced by `manifest.json` are present.
 
 ---

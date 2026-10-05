@@ -17,13 +17,14 @@ src/                     The extension itself, loaded as-is via "Load unpacked"
     names.js             Name cleaning and Meet UI noise filters (popup + content script)
     meetings.js          Data model: storage migration, meeting matching, roster, rotation
     markdown.js          Markdown roster export and parsing
-  icons/                 Extension icons (PNG + SVG source)
+  icons/                 Extension icons (PNG)
 test/                    Unit tests for src/lib/ (node:test)
 scripts/
   package.js             Verifies versions and builds dist/popcorn-vX.Y.Z.zip
   bump_version.js        EffVer bump across all files that contain the version
   build_store_pages.js   Generates HTML mockups for Chrome Web Store assets
   render_screenshots_chrome.js  Renders store assets with local Chrome (macOS only)
+assets/                  Source artwork that is not shipped (icon.svg)
 store_assets/            Generated store screenshots and promo tiles
 .github/workflows/       release.yml: builds the ZIP and creates a GitHub Release on tags
 ```
