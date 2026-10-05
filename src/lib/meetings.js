@@ -270,14 +270,20 @@
   // Pending people: longest since last update first (never-updated first), then alphabetically.
   const comparePriority = (a, b) => (a.last || 0) - (b.last || 0) || a.name.localeCompare(b.name, "en");
 
+  // People outside the rotation: absent before ignored, each group by priority.
+  const compareOutsideRotation = (a, b) => {
+    if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
+    return comparePriority(a, b);
+  };
+
   /**
-   * Computes the speaker order for a meeting and stores it in m.round.keys.
+   * Computes the speaker order for a meeting without changing it.
    * People who are done keep their previous position at the top, in the order they were checked off,
    * so late joiners never push them around. Everyone else follows, sorted by priority.
    * presentKeys holds the keys of people currently in the call; when it is empty (outside Meet),
    * every non-ignored person is eligible.
    */
-  function syncMeetingOrder(m, { presentKeys = new Set(), now = Date.now() } = {}) {
+  function computeMeetingOrder(m, { presentKeys = new Set(), now = Date.now() } = {}) {
     if (!m) return [];
 
     const isEligible = (k) => {
@@ -296,9 +302,33 @@
       .filter((k) => !isDone(k))
       .sort((a, b) => comparePriority(m.people[a], m.people[b]));
 
-    const keys = [...doneKeys, ...pendingKeys];
+    return [...doneKeys, ...pendingKeys];
+  }
+
+  /** Computes the speaker order (see computeMeetingOrder) and stores it in m.round.keys. */
+  function syncMeetingOrder(m, options) {
+    if (!m) return [];
+    const keys = computeMeetingOrder(m, options);
     m.round = { keys };
     return keys;
+  }
+
+  /** Keys of everyone not in rotationKeys (absent or ignored people): absent before ignored, each by priority. */
+  function keysOutsideRotation(m, rotationKeys) {
+    const inRotation = new Set(rotationKeys);
+    return Object.keys(m.people)
+      .filter((k) => !inRotation.has(k))
+      .sort((a, b) => compareOutsideRotation(m.people[a], m.people[b]));
+  }
+
+  /**
+   * All keys of a meeting in the order the People tab lists them: the speaker order first,
+   * then absent and ignored people. Does not change the meeting.
+   */
+  function computeRosterOrder(m, options) {
+    if (!m) return [];
+    const rotationKeys = computeMeetingOrder(m, options);
+    return [...rotationKeys, ...keysOutsideRotation(m, rotationKeys)];
   }
 
   return {
@@ -321,6 +351,9 @@
     replaceRoster,
     setUpdateGiven,
     isDoneRecently,
-    syncMeetingOrder
+    computeMeetingOrder,
+    syncMeetingOrder,
+    keysOutsideRotation,
+    computeRosterOrder
   };
 });

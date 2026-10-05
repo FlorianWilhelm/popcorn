@@ -112,7 +112,7 @@ POPCORN treats Markdown as a first-class citizen. Click the **Edit Markdown** bu
   <img src="store_assets/screenshot3_markdown_1280x800.jpeg" alt="POPCORN In-App Markdown Roster Editor" width="100%" />
 </p>
 
-- **Live Markdown Table:** View and edit meeting attendance and update timestamps in clean GFM (GitHub Flavored Markdown) table format.
+- **Live Markdown Table:** View and edit meeting attendance and update timestamps in clean GFM (GitHub Flavored Markdown) table format. The table lists people in the same order as the People tab, and an **Ignored** column (`yes` or empty) marks people who are left out of the rotation without hiding their last update. Tables from older versions without this column can still be imported.
 - 📤 **Upload:** Load and import an existing Markdown roster file directly from your disk into the editor.
 - 📥 **Download:** Export the meeting roster and history as a `.md` file directly from the editor toolbar.
 - 📋 **Copy:** Instantly copy the table to your clipboard for pasting into daily meeting notes, Notion, Obsidian, GitHub issues, or Slack.

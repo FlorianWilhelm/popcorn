@@ -1029,16 +1029,16 @@ const s3Popup = `
       <p class="modal-hint">View, edit, or copy the Markdown table of this meeting:</p>
       <textarea rows="13" wrap="off" spellcheck="false" style="outline: 2px solid var(--accent); outline-offset: 1px; flex: 1 1 auto;"># Daily Standup · Product Team
 
-| Person | Last Update |
-| --- | --- |
-| Alice Martin | 2026-09-07 10:15 |
-| Sarah Connor | 2026-09-06 10:15 |
-| David Chen | 2026-09-06 10:11 |
-| Florian Wilhelm | 2026-09-04 10:12 |
-| Elena Rostova | 2026-09-03 10:09 |
-| Liam Vance | 2026-09-02 10:15 |
-| Marcus Brody | 2026-08-25 10:05 |
-| Thomas Clark | ignored |</textarea>
+| Person | Last Update | Ignored |
+| --- | --- | --- |
+| Alice Martin | 2026-09-07 10:15 |  |
+| Marcus Brody | 2026-08-25 10:05 |  |
+| Liam Vance | 2026-09-02 10:15 |  |
+| Elena Rostova | 2026-09-03 10:09 |  |
+| Florian Wilhelm | 2026-09-04 10:12 |  |
+| David Chen | 2026-09-06 10:11 |  |
+| Sarah Connor | 2026-09-06 10:15 |  |
+| Thomas Clark | 2026-08-14 10:02 | yes |</textarea>
       <div class="modal-footer">
         <div class="modal-footer-left">
           <button class="mini ghost icon-btn" title="Load Markdown file from disk" aria-label="Load file">

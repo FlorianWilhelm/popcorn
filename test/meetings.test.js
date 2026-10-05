@@ -19,7 +19,10 @@ const {
   replaceRoster,
   setUpdateGiven,
   isDoneRecently,
-  syncMeetingOrder
+  computeMeetingOrder,
+  syncMeetingOrder,
+  keysOutsideRotation,
+  computeRosterOrder
 } = require("../src/lib/meetings.js");
 
 const HOUR = 60 * 60 * 1000;
@@ -284,4 +287,57 @@ test("syncMeetingOrder drops people from the round who left, were ignored, or we
 
 test("syncMeetingOrder handles a missing meeting", () => {
   assert.deepEqual(syncMeetingOrder(null), []);
+});
+
+test("computeMeetingOrder returns the speaker order without storing it", () => {
+  const round = { keys: ["ben", "anna"] };
+  const m = meetingWith([person("Anna", NOW - 2 * HOUR), person("Ben", NOW - HOUR), person("Carla")], round);
+  assert.deepEqual(computeMeetingOrder(m, { now: NOW }), ["ben", "anna", "carla"]);
+  assert.equal(m.round, round);
+  assert.deepEqual(m.round, { keys: ["ben", "anna"] });
+  assert.deepEqual(computeMeetingOrder(null), []);
+});
+
+test("keysOutsideRotation lists absent people before ignored people, each by longest wait", () => {
+  const m = meetingWith([
+    person("Anna"),
+    person("Ben", NOW - DAY_MS),
+    person("Carla", NOW - 3 * DAY_MS),
+    person("Dana", NOW - 2 * DAY_MS, { ignored: true }),
+    person("Emil", 0, { ignored: true }),
+    person("Finn")
+  ]);
+  assert.deepEqual(keysOutsideRotation(m, ["anna"]), ["finn", "carla", "ben", "emil", "dana"]);
+});
+
+test("computeRosterOrder lists the rotation first, then absent and ignored people", () => {
+  const m = meetingWith(
+    [
+      person("Anna", NOW - HOUR),
+      person("Ben", NOW - 2 * HOUR),
+      person("Carla", NOW - 3 * DAY_MS),
+      person("Dana"),
+      person("Emil", NOW - 5 * DAY_MS),
+      person("Finn", NOW - 4 * DAY_MS, { ignored: true }),
+      person("Gina", 0, { ignored: true })
+    ],
+    { keys: ["anna", "ben"] }
+  );
+  const presentKeys = new Set(["anna", "ben", "carla", "dana", "finn"]);
+  assert.deepEqual(computeRosterOrder(m, { presentKeys, now: NOW }), [
+    "anna",
+    "ben",
+    "dana",
+    "carla",
+    "emil",
+    "gina",
+    "finn"
+  ]);
+  assert.deepEqual(
+    computeRosterOrder(m, { now: NOW }),
+    ["anna", "ben", "dana", "emil", "carla", "gina", "finn"],
+    "outside Meet everyone who is not ignored is in the rotation"
+  );
+  assert.deepEqual(m.round, { keys: ["anna", "ben"] }, "does not change the stored round");
+  assert.deepEqual(computeRosterOrder(null), []);
 });

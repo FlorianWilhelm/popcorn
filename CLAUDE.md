@@ -35,7 +35,7 @@ store_assets/            Generated store screenshots and promo tiles
 - There is no background service worker. All logic lives in the popup and the content script.
 - [scripts/package.js](scripts/package.js) bundles every non-hidden file in `src/`, so keep only shippable files there.
 - **Shared modules** in `src/lib/` use a small UMD wrapper: in the browser they assign `globalThis.PopcornNames`, `PopcornMeetings`, and `PopcornMarkdown`; in Node they use `module.exports` and `require()`. They must not touch the DOM or `chrome.*`, and they take time (`now`) and presence (`presentKeys`) as parameters so they stay testable.
-- **Load order**: `lib/names.js` must load before `content.js` (see `content_scripts` in the manifest and the `executeScript` fallback in `popup.js`). `popup.html` loads `names.js`, `meetings.js`, and `markdown.js` before `popup.js`.
+- **Load order**: `lib/names.js` must load before `content.js` (see `content_scripts` in the manifest and the `executeScript` fallback in `popup.js`). `popup.html` loads `names.js`, `meetings.js`, and `markdown.js` (which uses both) before `popup.js`.
 
 ## Architecture
 
@@ -46,7 +46,7 @@ store_assets/            Generated store screenshots and promo tiles
 - **Storage**: All data lives in `chrome.storage.local` under the key `mur_v1`. The `mur` prefix is a leftover from the project's original name ("Meet Update Rotator"). Do not rename the key without a migration, because that would wipe users' data.
 - **Meeting matching**: A Meet tab is mapped to a tracked meeting by normalized title/aliases first, then by Meet code. New titles and codes are learned automatically.
 - **Rotation**: `syncMeetingOrder` in `lib/meetings.js` keeps people checked off within the last 24 hours fixed at the top (in the order they were checked off) and sorts everyone else by `last` ascending (never-updated first), with name as a tie-breaker.
-- **Markdown format**: Exports write `YYYY-MM-DD HH:mm` in local time. The parser still accepts older locale-formatted exports (`10.9.2026, 10:15:00`, `9/10/2026, 10:15:00 AM`).
+- **Markdown format**: Exports write `| Person | Last Update | Ignored |`, with `YYYY-MM-DD HH:mm` in local time and `yes` (or nothing) for ignored, in the order of the People tab (`computeRosterOrder`). The parser must keep accepting older exports: two columns with an `(ignored)`/`ignoriert` marker in the date cell, and locale-formatted dates (`10.9.2026, 10:15:00`, `9/10/2026, 10:15:00 AM`). Users have such files, so keep the tests for them.
 
 ## Google Meet DOM Scraping
 
@@ -77,3 +77,4 @@ The Meet DOM is undocumented, obfuscated, and changes without notice. The scrapi
 - Pushed tags are immutable. If changes are needed after a tag has been pushed, create a new release tag with the appropriate EffVer bump (for example, a micro bump to `v0.28.1`).
 - Overwriting or force-pushing tags is allowed only with the user's explicit permission.
 - Pushing a tag matching `v*` triggers [release.yml](.github/workflows/release.yml), which publishes a GitHub Release with the ZIP bundle.
+- The `/release` command ([.claude/skills/release/SKILL.md](.claude/skills/release/SKILL.md)) runs the whole release: preflight checks, `npm run check`, version bump, commit, tag, push, and watching the release build.

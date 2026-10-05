@@ -8,6 +8,8 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 ## [Unreleased]
 
 ### Changed
+- **Separate "Ignored" column in Markdown**: Rosters now have a third column, `| Person | Last Update | Ignored |`, with `yes` for ignored people. Before, the "Last Update" cell held both pieces of information (`2026-09-01 09:00 (ignored)`, or just `ignored` if the person never gave an update), which was easy to break when editing by hand. Older two-column exports, including the `(ignored)` / `ignoriert` markers, can still be imported.
+- **Markdown export in rotation order**: Exported rosters list people in the same order as the People tab: the current speaker order first, then absent people, then ignored people. Before, they were sorted by most recent update.
 - **Locale-independent Markdown export**: Exported rosters now use `YYYY-MM-DD HH:mm` (local time) instead of the browser's locale format. Older exports in German, British, or US formats can still be imported.
 - **No background scanning**: The content script used to scan the whole Meet page every second in every Meet tab, even in untracked meetings and with the popup closed. It now tracks attendance only while the POPCORN popup is open.
 - **Hidden-people toggle icon**: The toolbar button that shows absent or ignored people now uses a crossed-out eye instead of a ghost, matching the per-person ignore icon. It stays the same icon and is highlighted while active, like the other toolbar toggles.
@@ -36,6 +38,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - Fixed the `.gitignore` entry for the screenshot renderer's temp directory (`.chrome-temp/`).
 - Moved pure logic into shared modules in `src/lib/` (`names.js`, `meetings.js`, `markdown.js`). The content script and the popup no longer keep diverging copies of the name filters, and the two Markdown parsers were merged into one.
 - Simplified the rotation logic: the 6-hour round expiry and the forced-reorder flag were removed because both code paths produced the same order.
+- Added a `/release` Claude Code command (`.claude/skills/release/`) that checks, bumps, tags, and pushes a release.
 - Restructured `popup.js`: icons are defined once, icon buttons share a helper, `render()` is split into per-view functions, person and roster edits go through tested helpers in `lib/meetings.js`, and dead code such as the handler for a non-existent modal close button is gone.
 - Added unit tests with Node's built-in test runner (`npm test`) and an `npm run check` script that runs lint, format check, and tests.
 - Added a CI workflow (`.github/workflows/ci.yml`) that runs lint, format check, unit tests, and packaging on every push and pull request. The release workflow runs the same checks before packaging.

@@ -4,26 +4,34 @@
  * Format:
  *   # Meeting Name
  *
- *   | Person | Last Update |
- *   | --- | --- |
- *   | Anna Schmidt | 2026-09-10 10:15 |
- *   | Guest User | ignored |
+ *   | Person | Last Update | Ignored |
+ *   | --- | --- | --- |
+ *   | Anna Schmidt | 2026-09-10 10:15 |  |
+ *   | Guest User | 2026-08-14 10:02 | yes |
+ *
+ * Older exports have no "Ignored" column and mark ignored people in the "Last Update" cell instead,
+ * e.g. "2026-08-14 10:02 (ignored)" or just "ignored". The importer still reads them.
  *
  * Loaded as a classic script in the popup (exposes globalThis.PopcornMarkdown) and via require() in tests.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./names.js"));
+    module.exports = factory(require("./names.js"), require("./meetings.js"));
   } else {
-    root.PopcornMarkdown = factory(root.PopcornNames);
+    root.PopcornMarkdown = factory(root.PopcornNames, root.PopcornMeetings);
   }
-})(globalThis, function (names) {
+})(globalThis, function (names, meetings) {
   "use strict";
 
   const { normalizeKey, cleanPersonName, isPresentation, isNoiseOrIcon } = names;
+  const { computeRosterOrder } = meetings;
 
   // Cell values meaning "never gave an update". German variants are kept for older exports.
   const NEVER_MARKERS = new Set(["", "never", "noch nie", "-", "–", "0"]);
+  // Values of the "Ignored" column. An empty cell (or a missing column in older exports) means not ignored.
+  const IGNORED_YES = new Set(["yes", "true", "x", "ignored"]);
+  const IGNORED_NO = new Set(["", "no", "false", "-"]);
+  // Marker in the "Last Update" cell of older exports. German variant is kept for older exports.
   const IGNORED_RE = /\b(ignored|ignoriert)\b/i;
   const IGNORED_STRIP_RE = /\s*[([]?\b(ignored|ignoriert)\b[)\]]?/gi;
   const ISO_RE = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ t](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/;
@@ -71,19 +79,24 @@
     return Number.isNaN(parsed) ? NaN : parsed;
   }
 
-  function meetingToMarkdown(m) {
-    const rows = Object.values(m.people || {})
-      .sort((a, b) => {
-        if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
-        return (b.last || 0) - (a.last || 0) || a.name.localeCompare(b.name, "en");
-      })
-      .map((p) => {
-        const timeStr = p.last ? formatTimestamp(p.last) : "";
-        let val = timeStr;
-        if (p.ignored) val = timeStr ? `${timeStr} (ignored)` : "ignored";
-        return `| ${p.name} | ${val} |`;
-      });
-    return `# ${m.name}\n\n| Person | Last Update |\n| --- | --- |\n${rows.join("\n")}\n`;
+  /** Parses an "Ignored" cell. Returns true or false, or null for values that are neither. */
+  function parseIgnored(str) {
+    const s = (str || "").trim().toLowerCase();
+    if (IGNORED_YES.has(s)) return true;
+    if (IGNORED_NO.has(s)) return false;
+    return null;
+  }
+
+  /**
+   * Writes a meeting as a Markdown table, in the order the People tab lists it: the speaker order first,
+   * then absent and ignored people. presentKeys and now are passed on to computeRosterOrder.
+   */
+  function meetingToMarkdown(m, { presentKeys = new Set(), now = Date.now() } = {}) {
+    const rows = computeRosterOrder({ ...m, people: m.people || {} }, { presentKeys, now }).map((key) => {
+      const p = m.people[key];
+      return `| ${p.name} | ${p.last ? formatTimestamp(p.last) : ""} | ${p.ignored ? "yes" : ""} |`;
+    });
+    return `# ${m.name}\n\n| Person | Last Update | Ignored |\n| --- | --- | --- |\n${rows.join("\n")}\n`;
   }
 
   const isHeaderRow = (nameCell, updateCell) =>
@@ -115,7 +128,7 @@
       const cols = line.split("|").map((c) => c.trim());
       if (cols.length < 3) return fail(i, "Table row must contain at least 2 columns (| Name | Last Update |)");
 
-      const [, nameCell, updateCell] = cols;
+      const [, nameCell, updateCell, ignoredCell = ""] = cols;
       if (isHeaderRow(nameCell, updateCell) || isSeparatorRow(nameCell)) continue;
 
       const name = cleanPersonName(nameCell);
@@ -126,7 +139,11 @@
       const last = parseTimestamp(datePart);
       if (Number.isNaN(last)) return fail(i, `Invalid date format in "Last Update" (${datePart})`);
 
-      people[normalizeKey(name)] = { name, last, prev: null, ignored: IGNORED_RE.test(updateCell) };
+      const ignored = parseIgnored(ignoredCell);
+      if (ignored === null) return fail(i, `Invalid value in "Ignored" (${ignoredCell}), use "yes" or leave it empty`);
+
+      // Older exports have no "Ignored" column and mark ignored people in the "Last Update" cell.
+      people[normalizeKey(name)] = { name, last, prev: null, ignored: ignored || IGNORED_RE.test(updateCell) };
     }
 
     if (Object.keys(people).length === 0) {
@@ -147,6 +164,7 @@
   return {
     formatTimestamp,
     parseTimestamp,
+    parseIgnored,
     meetingToMarkdown,
     parseMeetingMarkdown,
     markdownFileName

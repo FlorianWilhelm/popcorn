@@ -22,7 +22,8 @@ const {
   replaceRoster,
   setUpdateGiven,
   isDoneRecently,
-  syncMeetingOrder
+  syncMeetingOrder,
+  keysOutsideRotation
 } = PopcornMeetings;
 const { meetingToMarkdown, parseMeetingMarkdown, markdownFileName } = PopcornMarkdown;
 
@@ -47,6 +48,9 @@ const getRefreshInterval = () => clampRefreshInterval(data.settings.refreshInter
 
 /** Orders a meeting's rotation based on who is currently present in Meet. */
 const orderRound = (m) => syncMeetingOrder(m, { presentKeys });
+
+/** Exports a meeting as Markdown in the order of the People tab. Presence only applies to the meeting open in Meet. */
+const exportMarkdown = (m) => meetingToMarkdown(m, { presentKeys: m.id === currentId ? presentKeys : new Set() });
 
 const activeId = () => selectedId || currentId;
 const meeting = () => (activeId() ? data.meetings[activeId()] : null);
@@ -191,12 +195,6 @@ async function applyChange(mutate) {
 }
 
 const compareByName = (a, b) => (a.name || "").localeCompare(b.name || "", "en", { sensitivity: "base" });
-
-// Absent or ignored people: present-but-ignored last, otherwise longest wait first
-const compareInactive = (a, b) => {
-  if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
-  return (a.last || 0) - (b.last || 0) || a.name.localeCompare(b.name, "en");
-};
 
 function waitedText(last) {
   if (!last) return "never";
@@ -349,7 +347,7 @@ function buildMeetingItem(m) {
       title: "Export as Markdown file (.md)",
       label: "Export as Markdown file",
       iconName: "download",
-      onClick: () => downloadMarkdown(m.name, meetingToMarkdown(m))
+      onClick: () => downloadMarkdown(m.name, exportMarkdown(m))
     }),
     createIconButton({
       className: "mini ghost icon-btn danger",
@@ -454,13 +452,8 @@ function renderPeopleView(m, inMeet) {
   emptyHint.classList.toggle("hidden", activeKeys.length > 0);
 
   // Absent or ignored people, unranked
-  const activeSet = new Set(activeKeys);
-  const inactive = m.includeAbsent
-    ? Object.entries(m.people)
-        .filter(([key]) => !activeSet.has(key))
-        .map(([key, p]) => ({ key, ...p }))
-    : [];
-  inactive.sort(sortAlphabetical ? compareByName : compareInactive);
+  const inactive = m.includeAbsent ? keysOutsideRotation(m, activeKeys).map((key) => ({ key, ...m.people[key] })) : [];
+  if (sortAlphabetical) inactive.sort(compareByName);
   const secondaryList = $("secondaryList");
   secondaryList.replaceChildren(...inactive.map((p) => buildPersonItem(m, p, null)));
   secondaryList.classList.toggle("hidden", inactive.length === 0);
@@ -660,7 +653,7 @@ function showModalError(message, lineIndex) {
 function openMarkdownModal(meetingId = null) {
   const m = meetingId ? data.meetings[meetingId] : null;
   editingMeetingId = m ? m.id : null;
-  initialMarkdownText = m ? meetingToMarkdown(m) : "";
+  initialMarkdownText = m ? exportMarkdown(m) : "";
 
   $("modalTitle").textContent = m ? `Edit "${m.name}"` : "New Meeting / Import";
   $("modalHint").textContent = m
