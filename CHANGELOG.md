@@ -11,6 +11,9 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - Added `CLAUDE.md` with architecture notes, conventions, and release rules for AI coding agents.
 - Translated `GEMINI.md` and `.agents/rules/git-tags.md` to English.
 
+### Chore
+- Translated remaining German code comments to English.
+
 ---
 
 ## [0.31.0] - 2026-09-10

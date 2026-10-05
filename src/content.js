@@ -197,9 +197,9 @@
     return m ? m[1] : location.pathname.replace(/^\//, "").split("/")[0] || null;
   }
 
-  /* Meeting-Name: Meet setzt bei Kalenderterminen den Titel in document.title.
-   * Ohne Kalendertermin steht dort nur der Code. Dann liefern wir null und der
-   * Nutzer traegt den Namen beim Aktivieren selbst ein. */
+  /* Meeting name: for calendar events, Meet puts the event title into
+   * document.title. Without a calendar event only the meeting code is there.
+   * In that case we return null and the user enters a name when enabling tracking. */
   function meetingTitle() {
     const candidates = [];
 
@@ -851,9 +851,9 @@
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  /* withPeople false heisst: nur Meeting-Name lesen, Personenliste nicht
-   * antasten. So oeffnet die Erweiterung in nicht getrackten Meetings kein
-   * Panel und bleibt vollstaendig passiv. */
+  /* withPeople === false means: read only the meeting name and leave the
+   * people list untouched. This way the extension never opens a panel in
+   * untracked meetings and stays completely passive. */
   async function scrape(withPeople, openIfClosed = false) {
     let people = [];
     let openedPanel = false;

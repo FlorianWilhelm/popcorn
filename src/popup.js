@@ -2,7 +2,7 @@
  * Popup logic, state management, candidate rotation, and UI rendering.
  */
 
-const STORE_KEY = "mur_v1"; // Key remains unchanged, migration happens in code
+const STORE_KEY = "mur_v1"; // Legacy key from "Meet Update Rotator"; keep it, renaming would wipe user data
 const ROUND_TTL = 6 * 60 * 60 * 1000;
 const DEFAULT_REFRESH_INTERVAL = 2;
 
@@ -17,8 +17,8 @@ let data = {
   }
 };
 let current = null; // { inMeet, code, title, people }
-let currentId = null; // getracktes Meeting, das gerade laeuft
-let selectedId = null; // manuell aus der Meetingliste geoeffnet
+let currentId = null; // tracked meeting that is currently running in Meet
+let selectedId = null; // meeting opened manually from the meeting list
 let presentKeys = new Set();
 let view = "meetings";
 let initialViewResolved = false;
@@ -204,7 +204,7 @@ function sanitizeMeetingData(m) {
 const activeId = () => selectedId || currentId;
 const meeting = () => (activeId() ? data.meetings[activeId()] : null);
 
-/* ---------- Speicher ---------- */
+/* ---------- Storage ---------- */
 
 async function load() {
   const res = await chrome.storage.local.get(STORE_KEY);
@@ -221,7 +221,7 @@ async function load() {
   if (raw && raw.meetings) {
     loadedData = raw;
   } else if (raw && raw.groups) {
-    // Migration v1: Gruppen hingen am Meeting-Code
+    // Migration from v1: groups were keyed by Meet code
     for (const [gid, g] of Object.entries(raw.groups || {})) {
       const id = uid();
       loadedData.meetings[id] = {
@@ -261,7 +261,7 @@ async function save() {
   await chrome.storage.local.set({ [STORE_KEY]: data });
 }
 
-/* ---------- Meet auslesen ---------- */
+/* ---------- Reading Meet ---------- */
 
 let sessionPort = null;
 
@@ -331,7 +331,7 @@ async function readMeet(withPeople, opts = {}) {
   }
 }
 
-/* ---------- Zuordnung ueber den Meeting-Namen ---------- */
+/* ---------- Matching by meeting name ---------- */
 
 function matchMeeting(title, code) {
   const t = norm(title);
@@ -355,7 +355,7 @@ function addAlias(m, value) {
   if (!m.aliases.includes(v)) m.aliases.push(v);
 }
 
-/* ---------- Personen und Runden ---------- */
+/* ---------- People and rounds ---------- */
 
 function syncRoster(m, people) {
   let added = 0;
@@ -445,7 +445,7 @@ function syncMeetingOrder(m, forceReorder = false) {
   return newKeys;
 }
 
-/* ---------- Bausteine ---------- */
+/* ---------- UI building blocks ---------- */
 
 function waitedText(last) {
   if (!last) return "never";
@@ -649,7 +649,7 @@ function buildMeetingItem(m) {
   return li;
 }
 
-/* ---------- Rendern ---------- */
+/* ---------- Rendering ---------- */
 
 function setStatus(_text) {
   // Global status banner has been completely removed.
@@ -952,7 +952,7 @@ function setupAutoRefresh() {
   }
 }
 
-/* ---------- Import und Export (Markdown) ---------- */
+/* ---------- Markdown import and export ---------- */
 
 function meetingToMarkdown(m) {
   const rows = Object.values(m.people || {})
