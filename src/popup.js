@@ -42,7 +42,7 @@ const getAutoRefresh = () => (data.settings ? data.settings.autoRefresh !== fals
 const getRefreshInterval = () => (data.settings && Number(data.settings.refreshInterval)) || DEFAULT_REFRESH_INTERVAL;
 
 /** Orders a meeting's rotation based on who is currently present in Meet. */
-const orderRound = (m, forceReorder = false) => syncMeetingOrder(m, { presentKeys, forceReorder });
+const orderRound = (m) => syncMeetingOrder(m, { presentKeys });
 
 const activeId = () => selectedId || currentId;
 const meeting = () => (activeId() ? data.meetings[activeId()] : null);
@@ -535,7 +535,7 @@ function render() {
 
 /* ---------- Workflow ---------- */
 
-async function refresh(newRound = false, options = {}) {
+async function refresh(options = {}) {
   data = await load();
 
   // Phase 1: read title and code only, leave roster untouched
@@ -584,7 +584,7 @@ async function refresh(newRound = false, options = {}) {
     current.people = normalizeScrapedPeople(full.people);
     presentKeys = new Set(current.people.filter((p) => p.present).map((p) => normalizeKey(p.name)));
     const added = syncRoster(m, current.people);
-    orderRound(m, newRound);
+    orderRound(m);
     await save();
     render();
 
@@ -597,7 +597,7 @@ async function refresh(newRound = false, options = {}) {
       presEl.textContent = parts.join(" · ");
     }
   } else {
-    orderRound(m, newRound);
+    orderRound(m);
     await save();
     render();
   }
@@ -618,7 +618,7 @@ function setupAutoRefresh() {
       const activeEl = document.activeElement;
       const isEditingText = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
       if (isEditingText && view !== "people") return;
-      await refresh(false, { background: true });
+      await refresh({ background: true });
     }, sec * 1000);
   }
 }
@@ -877,7 +877,7 @@ for (const t of document.querySelectorAll(".tab")) {
     showAddRow = false;
     render();
     if (view === "people" && current && current.inMeet) {
-      refresh(false);
+      refresh();
     }
   });
 }
@@ -894,7 +894,7 @@ $("btnActivate").addEventListener("click", async () => {
   selectedId = null;
   await save();
   view = "people";
-  await refresh(true);
+  await refresh();
 });
 
 if ($("btnRefresh")) {
@@ -902,7 +902,7 @@ if ($("btnRefresh")) {
     const btn = $("btnRefresh");
     btn.classList.add("spinning");
     try {
-      await refresh(false);
+      await refresh();
     } finally {
       setTimeout(() => btn.classList.remove("spinning"), 400);
     }
@@ -1035,6 +1035,6 @@ try {
   if ($("headerLogo")) $("headerLogo").title = `POPCORN v${v}`;
 } catch {}
 
-refresh(false).then(() => {
+refresh().then(() => {
   setupAutoRefresh();
 });

@@ -15,7 +15,6 @@
   const { normalizeKey, cleanPersonName, isPresentation, isNoiseOrIcon } = names;
 
   const DAY_MS = 24 * 60 * 60 * 1000;
-  const ROUND_TTL = 6 * 60 * 60 * 1000;
   const DEFAULT_REFRESH_INTERVAL = 2;
   const MIN_REFRESH_INTERVAL = 1;
   const MAX_REFRESH_INTERVAL = 60;
@@ -216,75 +215,38 @@
     return !!(person && person.last && now - person.last < DAY_MS);
   }
 
+  // Pending people: longest since last update first (never-updated first), then alphabetically.
+  const comparePriority = (a, b) => (a.last || 0) - (b.last || 0) || a.name.localeCompare(b.name, "en");
+
   /**
-   * Computes the speaker order for a meeting and stores it in m.round.
-   * presentKeys holds the keys of people currently in the call; when empty (outside Meet),
+   * Computes the speaker order for a meeting and stores it in m.round.keys.
+   * People who are done keep their previous position at the top, in the order they were checked off,
+   * so late joiners never push them around. Everyone else follows, sorted by priority.
+   * presentKeys holds the keys of people currently in the call; when it is empty (outside Meet),
    * every non-ignored person is eligible.
    */
-  function syncMeetingOrder(m, { presentKeys = new Set(), forceReorder = false, now = Date.now() } = {}) {
+  function syncMeetingOrder(m, { presentKeys = new Set(), now = Date.now() } = {}) {
     if (!m) return [];
-    const fresh = m.round && Array.isArray(m.round.keys) && now - m.round.createdAt < ROUND_TTL;
 
-    // Active pool: present participants who are not ignored
-    // (If outside Meet, all non-ignored participants are active candidates)
     const isEligible = (k) => {
       const p = m.people[k];
-      if (!p || p.ignored) return false;
-      if (presentKeys.size > 0 && !presentKeys.has(k)) return false;
-      return true;
+      return !!p && !p.ignored && (presentKeys.size === 0 || presentKeys.has(k));
     };
-
-    const pool = Object.entries(m.people)
-      .filter(([k]) => isEligible(k))
-      .map(([k, v]) => ({ key: k, ...v }));
-
     const isDone = (k) => isDoneRecently(m.people[k], now);
 
-    // Compare pending participants by priority:
-    // 1. Longest since update first (ascending last; 0/never comes first)
-    // 2. Alphabetical tie-break by name
-    const comparePriority = (a, b) => (a.last || 0) - (b.last || 0) || a.name.localeCompare(b.name, "en");
+    const eligibleKeys = Object.keys(m.people).filter(isEligible);
+    const previousKeys = m.round && Array.isArray(m.round.keys) ? m.round.keys : [];
 
-    if (!forceReorder && fresh && m.round && Array.isArray(m.round.keys)) {
-      // 1. Retain fixed order for candidates who have already given their update in this round
-      const existingDone = m.round.keys.filter((k) => isEligible(k) && isDone(k));
-      const doneKeys = [...existingDone];
-      for (const p of pool) {
-        if (isDone(p.key) && !doneKeys.includes(p.key)) {
-          doneKeys.push(p.key);
-        }
-      }
+    const doneKeys = [
+      ...new Set([...previousKeys.filter((k) => isEligible(k) && isDone(k)), ...eligibleKeys.filter(isDone)])
+    ];
+    const pendingKeys = eligibleKeys
+      .filter((k) => !isDone(k))
+      .sort((a, b) => comparePriority(m.people[a], m.people[b]));
 
-      // 2. Pending participants (not yet checked off):
-      // Dynamically order by priority so late joiners (with never or older updates)
-      // are slotted in ahead of people who updated more recently.
-      const pending = pool.filter((p) => !isDone(p.key));
-      pending.sort(comparePriority);
-
-      const orderedKeys = [...doneKeys, ...pending.map((p) => p.key)];
-      m.round.keys = orderedKeys;
-      return orderedKeys;
-    }
-
-    // Fresh session order:
-    // Any participants already marked done stay at the top in their existing order,
-    // followed by all pending participants sorted by priority.
-    const donePool = [];
-    if (m.round && Array.isArray(m.round.keys)) {
-      for (const k of m.round.keys) {
-        if (isEligible(k) && isDone(k)) donePool.push(k);
-      }
-    }
-    for (const p of pool) {
-      if (isDone(p.key) && !donePool.includes(p.key)) donePool.push(p.key);
-    }
-
-    const pendingPool = pool.filter((p) => !isDone(p.key));
-    pendingPool.sort(comparePriority);
-
-    const newKeys = [...donePool, ...pendingPool.map((p) => p.key)];
-    m.round = { keys: newKeys, createdAt: now };
-    return newKeys;
+    const keys = [...doneKeys, ...pendingKeys];
+    m.round = { keys };
+    return keys;
   }
 
   return {

@@ -25,6 +25,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - Removed dead code: unused helpers (`setStatus`, `copyMeetingMarkdown`, `stripQualifier`), unused parameters and scrape response fields, and unused CSS rules.
 - Fixed the `.gitignore` entry for the screenshot renderer's temp directory (`.chrome-temp/`).
 - Moved pure logic into shared modules in `src/lib/` (`names.js`, `meetings.js`, `markdown.js`). The content script and the popup no longer keep diverging copies of the name filters, and the two Markdown parsers were merged into one.
+- Simplified the rotation logic: the 6-hour round expiry and the forced-reorder flag were removed because both code paths produced the same order.
 - Added unit tests with Node's built-in test runner (`npm test`) and an `npm run check` script that runs lint, format check, and tests.
 - `npm run package` now bundles every non-hidden file in `src/` and verifies that all files referenced by `manifest.json` are present.
 

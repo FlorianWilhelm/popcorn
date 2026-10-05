@@ -190,17 +190,16 @@ test("syncMeetingOrder only includes present, non-ignored people", () => {
   assert.deepEqual(syncMeetingOrder(m, { presentKeys: new Set(), now: NOW }), ["anna", "ben"], "no presence info");
 });
 
-test("syncMeetingOrder order does not depend on round age or forced reordering", () => {
-  const people = () => [person("Anna", NOW - HOUR), person("Ben", NOW - 2 * HOUR), person("Carla"), person("Dana")];
-  const round = (createdAt) => ({ keys: ["anna", "ben", "dana", "carla"], createdAt });
-
-  const fresh = syncMeetingOrder(meetingWith(people(), round(NOW - HOUR)), { now: NOW });
-  const expired = syncMeetingOrder(meetingWith(people(), round(NOW - 7 * HOUR)), { now: NOW });
-  const forced = syncMeetingOrder(meetingWith(people(), round(NOW - HOUR)), { forceReorder: true, now: NOW });
-
-  assert.deepEqual(fresh, ["anna", "ben", "carla", "dana"]);
-  assert.deepEqual(expired, fresh);
-  assert.deepEqual(forced, fresh);
+test("syncMeetingOrder drops people from the round who left, were ignored, or were deleted", () => {
+  const m = meetingWith(
+    [person("Anna", NOW - HOUR), person("Ben", NOW - 2 * HOUR), person("Carla", 0, { ignored: true })],
+    {
+      keys: ["ben", "gone", "carla", "anna"],
+      createdAt: NOW - 7 * HOUR
+    }
+  );
+  assert.deepEqual(syncMeetingOrder(m, { presentKeys: new Set(["anna", "carla"]), now: NOW }), ["anna"]);
+  assert.deepEqual(m.round, { keys: ["anna"] });
 });
 
 test("syncMeetingOrder handles a missing meeting", () => {
