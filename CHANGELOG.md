@@ -15,6 +15,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - **Lost check-offs during refresh**: Checking off a participant while an attendance refresh was running (every 2 seconds by default) could be undone immediately, because each refresh replaced the in-memory data the click had just changed. The popup now loads its data once and keeps it in memory.
 - Absent participants no longer flash into the rotation while attendance is being refreshed.
 - Automatic refreshes no longer overlap when scraping Meet takes longer than the refresh interval.
+- **Icons**: The settings gear had a bent tooth caused by a typo in its SVG path, and the pupil of the "include/ignore" eye icon sat at the top edge instead of the center.
 - Dates with impossible values (e.g. month 13 or day 32) are rejected on import instead of silently rolling over into another date.
 - A v1 → v2 storage migration is now saved immediately instead of being repeated on every popup open until the next edit.
 
