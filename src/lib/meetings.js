@@ -210,6 +210,38 @@
     return added;
   }
 
+  /** Adds a manually entered person. Returns the person's key, or null if the name is not a valid person name. */
+  function addPerson(m, rawName) {
+    if (!isValidName(rawName)) return null;
+    const name = cleanPersonName(rawName);
+    if (!isValidName(name)) return null;
+    const key = normalizeKey(name);
+    if (!m.people[key]) m.people[key] = { name, last: 0, prev: null, ignored: false };
+    return key;
+  }
+
+  /** Replaces a meeting's roster, e.g. with the result of a Markdown import, and resets the rotation. */
+  function replaceRoster(m, people) {
+    m.people = people;
+    m.round = null;
+    sanitizeMeeting(m);
+  }
+
+  /**
+   * Checks a person off (given = true) or undoes the check-off (given = false).
+   * The previous timestamp is kept in `prev` so that unchecking restores it.
+   */
+  function setUpdateGiven(person, given, now = Date.now()) {
+    if (!person) return;
+    if (given) {
+      person.prev = person.last;
+      person.last = now;
+    } else {
+      person.last = person.prev != null ? person.prev : 0;
+      person.prev = null;
+    }
+  }
+
   /** A person counts as done if they were checked off within the last 24 hours. */
   function isDoneRecently(person, now = Date.now()) {
     return !!(person && person.last && now - person.last < DAY_MS);
@@ -262,6 +294,9 @@
     rememberMeetIdentity,
     normalizeScrapedPeople,
     syncRoster,
+    addPerson,
+    replaceRoster,
+    setUpdateGiven,
     isDoneRecently,
     syncMeetingOrder
   };

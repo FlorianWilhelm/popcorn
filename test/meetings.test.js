@@ -12,6 +12,9 @@ const {
   rememberMeetIdentity,
   normalizeScrapedPeople,
   syncRoster,
+  addPerson,
+  replaceRoster,
+  setUpdateGiven,
   isDoneRecently,
   syncMeetingOrder
 } = require("../src/lib/meetings.js");
@@ -146,6 +149,36 @@ test("syncRoster adds new people and refreshes display names", () => {
   assert.equal(added, 1);
   assert.deepEqual(m.people.anna, person("Anna", 100));
   assert.deepEqual(m.people.ben, person("Ben"));
+});
+
+test("addPerson validates and cleans manually entered names", () => {
+  const m = meetingWith([person("Anna", 100)]);
+  assert.equal(addPerson(m, "  Ben Müller (You) "), "ben müller");
+  assert.deepEqual(m.people["ben müller"], person("Ben Müller"));
+  assert.equal(addPerson(m, "anna"), "anna", "existing people are kept as they are");
+  assert.equal(m.people.anna.last, 100);
+  assert.equal(addPerson(m, "mic_off"), null);
+  assert.equal(addPerson(m, "Your presentation"), null);
+  assert.equal(addPerson(m, "   "), null);
+  assert.equal(Object.keys(m.people).length, 2);
+});
+
+test("replaceRoster swaps people, resets the round, and sanitizes", () => {
+  const m = meetingWith([person("Anna")], { keys: ["anna"] });
+  replaceRoster(m, { "ben (you)": person("Ben (You)", 5), mic_off: person("mic_off") });
+  assert.deepEqual(m.people, { ben: person("Ben", 5) });
+  assert.equal(m.round, null);
+});
+
+test("setUpdateGiven checks people off and restores the previous timestamp on undo", () => {
+  const p = person("Anna", 100);
+  setUpdateGiven(p, true, 500);
+  assert.deepEqual(p, person("Anna", 500, { prev: 100 }));
+  setUpdateGiven(p, false, 600);
+  assert.deepEqual(p, person("Anna", 100));
+  setUpdateGiven(p, false, 700);
+  assert.deepEqual(p, person("Anna", 0), "undo without a previous timestamp falls back to never");
+  setUpdateGiven(undefined, true);
 });
 
 test("isDoneRecently uses a rolling 24 hour window", () => {

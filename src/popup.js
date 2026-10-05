@@ -3,10 +3,9 @@
  * Pure logic lives in lib/names.js, lib/meetings.js, and lib/markdown.js.
  */
 
-const { normalizeKey, cleanPersonName, isPresentation, isNoiseOrIcon } = PopcornNames;
+const { normalizeKey } = PopcornNames;
 const {
   DAY_MS,
-  DEFAULT_REFRESH_INTERVAL,
   createDefaultData,
   createMeeting,
   clampRefreshInterval,
@@ -17,6 +16,9 @@ const {
   rememberMeetIdentity,
   normalizeScrapedPeople,
   syncRoster,
+  addPerson,
+  replaceRoster,
+  setUpdateGiven,
   isDoneRecently,
   syncMeetingOrder
 } = PopcornMeetings;
@@ -38,8 +40,8 @@ let deleteMode = false;
 let showAddRow = false;
 let sortAlphabetical = false;
 
-const getAutoRefresh = () => (data.settings ? data.settings.autoRefresh !== false : true);
-const getRefreshInterval = () => (data.settings && Number(data.settings.refreshInterval)) || DEFAULT_REFRESH_INTERVAL;
+const getAutoRefresh = () => data.settings.autoRefresh !== false;
+const getRefreshInterval = () => clampRefreshInterval(data.settings.refreshInterval);
 
 /** Orders a meeting's rotation based on who is currently present in Meet. */
 const orderRound = (m) => syncMeetingOrder(m, { presentKeys });
@@ -133,7 +135,57 @@ async function readMeet(withPeople, opts = {}) {
   }
 }
 
+/* ---------- Icons ---------- */
+
+// Feather icons (https://feathericons.com) on a 24x24 grid.
+const ICON_PATHS = {
+  trash:
+    '<path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="7" r="3"></circle>',
+  eyeOff:
+    '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>',
+  user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>',
+  open: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>',
+  edit: '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>',
+  download:
+    '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>',
+  check: '<polyline points="20 6 9 17 4 12"></polyline>'
+};
+
+function icon(name, { size = 13, strokeWidth = 2 } = {}) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name]}</svg>`;
+}
+
+function createIconButton({ className = "mini ghost icon-btn", title, label, iconName, size, onClick }) {
+  const btn = document.createElement("button");
+  btn.className = className;
+  btn.title = title;
+  btn.setAttribute("aria-label", label);
+  btn.innerHTML = icon(iconName, { size });
+  btn.addEventListener("click", onClick);
+  return btn;
+}
+
 /* ---------- UI building blocks ---------- */
+
+/** Re-renders, which also recomputes the rotation, and then persists the in-memory data. */
+async function commit() {
+  render();
+  await save();
+}
+
+async function applyChange(mutate) {
+  mutate();
+  await commit();
+}
+
+const compareByName = (a, b) => (a.name || "").localeCompare(b.name || "", "en", { sensitivity: "base" });
+
+// Absent or ignored people: present-but-ignored last, otherwise longest wait first
+const compareInactive = (a, b) => {
+  if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
+  return (a.last || 0) - (b.last || 0) || a.name.localeCompare(b.name, "en");
+};
 
 function waitedText(last) {
   if (!last) return "never";
@@ -143,111 +195,79 @@ function waitedText(last) {
   return `${days}d ago · ${date}`;
 }
 
+/** One row in the People tab. `index` is the rotation position, or null for absent/ignored people. */
 function buildPersonItem(m, person, index) {
   const li = document.createElement("li");
   li.className = "item";
   const doneToday = isDoneRecently(person);
-  if (doneToday) li.classList.add("done");
-  if (presentKeys.size && !presentKeys.has(person.key)) li.classList.add("absent");
-  if (person.ignored) li.classList.add("ignored");
+  li.classList.toggle("done", doneToday);
+  li.classList.toggle("absent", presentKeys.size > 0 && !presentKeys.has(person.key));
+  li.classList.toggle("ignored", !!person.ignored);
 
-  // Position indicator for Active rotation list
-  if (index !== null && index !== undefined) {
+  if (index !== null) {
     const pos = document.createElement("div");
     pos.className = "pos";
     pos.textContent = String(index + 1).padStart(2, "0");
     li.appendChild(pos);
   }
 
-  // Checkbox or Delete button on the left
+  // Checkbox, or delete button in delete mode
   if (deleteMode) {
-    const del = document.createElement("button");
-    del.className = "mini ghost icon-btn danger";
-    del.title = `Delete "${person.name}"`;
-    del.setAttribute("aria-label", "Delete person");
-    del.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-    del.addEventListener("click", async () => {
-      delete m.people[person.key];
-      if (m.round && Array.isArray(m.round.keys)) {
-        m.round.keys = m.round.keys.filter((k) => k !== person.key);
-      }
-      await save();
-      render();
-    });
-    li.appendChild(del);
+    li.appendChild(
+      createIconButton({
+        className: "mini ghost icon-btn danger",
+        title: `Delete "${person.name}"`,
+        label: "Delete person",
+        iconName: "trash",
+        onClick: () => applyChange(() => delete m.people[person.key])
+      })
+    );
   } else {
     const checkLabel = document.createElement("label");
     checkLabel.className = "check-item";
     checkLabel.title = "Gave update";
     const input = document.createElement("input");
     input.type = "checkbox";
-    input.checked = !!doneToday;
-
-    input.addEventListener("change", async () => {
-      const p = m.people[person.key];
-      if (!p) return;
-      if (input.checked) {
-        p.prev = p.last;
-        p.last = Date.now();
-      } else {
-        p.last = p.prev != null ? p.prev : 0;
-        p.prev = null;
-      }
-      await save();
-      render();
-    });
-
+    input.checked = doneToday;
+    input.addEventListener("change", () => applyChange(() => setUpdateGiven(m.people[person.key], input.checked)));
     checkLabel.appendChild(input);
     li.appendChild(checkLabel);
   }
 
-  // Name wrap with inline ignore eye icon
   const nameWrap = document.createElement("div");
   nameWrap.className = "name-wrap";
 
   const name = document.createElement("span");
   name.className = "name";
   name.textContent = person.name;
-  nameWrap.appendChild(name);
 
-  const ignoreBtn = document.createElement("button");
-  ignoreBtn.className = "mini ghost icon-btn ignore-btn" + (person.ignored ? " ignored" : "");
-  ignoreBtn.title = person.ignored ? "Ignored (click to include in updates)" : "Include in updates (click to ignore)";
-  ignoreBtn.setAttribute("aria-label", person.ignored ? "Unignore person" : "Ignore person");
-
-  if (person.ignored) {
-    ignoreBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
-  } else {
-    ignoreBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="7" r="3"></circle></svg>`;
-  }
-
-  ignoreBtn.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    const p = m.people[person.key];
-    if (!p) return;
-    p.ignored = !p.ignored;
-    if (p.ignored && m.round && Array.isArray(m.round.keys)) {
-      m.round.keys = m.round.keys.filter((k) => k !== person.key);
+  const ignoreBtn = createIconButton({
+    className: "mini ghost icon-btn ignore-btn" + (person.ignored ? " ignored" : ""),
+    title: person.ignored ? "Ignored (click to include in updates)" : "Include in updates (click to ignore)",
+    label: person.ignored ? "Unignore person" : "Ignore person",
+    iconName: person.ignored ? "eyeOff" : "eye",
+    onClick: (e) => {
+      e.stopPropagation();
+      applyChange(() => {
+        const p = m.people[person.key];
+        if (p) p.ignored = !p.ignored;
+      });
     }
-    await save();
-    render();
   });
 
-  nameWrap.appendChild(ignoreBtn);
+  nameWrap.append(name, ignoreBtn);
   li.appendChild(nameWrap);
 
-  // Date on the far right
   const dateSpan = document.createElement("span");
   dateSpan.className = "date";
   dateSpan.textContent = person.ignored ? "ignored" : waitedText(person.last);
-  if (person.last) {
-    dateSpan.title = new Date(person.last).toLocaleString();
-  }
+  if (person.last) dateSpan.title = new Date(person.last).toLocaleString();
   li.appendChild(dateSpan);
 
   return li;
 }
 
+/** One row in the Meetings tab. */
 function buildMeetingItem(m) {
   const li = document.createElement("li");
   li.className = "meeting" + (m.id === currentId ? " current" : "");
@@ -260,16 +280,16 @@ function buildMeetingItem(m) {
   input.className = "meeting-name-input";
   input.value = m.name;
   input.title = "Edit name";
-  input.addEventListener("change", async () => {
+  input.addEventListener("change", () => {
     const v = input.value.trim();
     if (!v) {
       input.value = m.name;
       return;
     }
-    m.name = v;
-    addAlias(m, v);
-    await save();
-    render();
+    applyChange(() => {
+      m.name = v;
+      addAlias(m, v);
+    });
   });
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") input.blur();
@@ -280,257 +300,185 @@ function buildMeetingItem(m) {
   countBadge.className = "meeting-count";
   const countText = `${count} ${count === 1 ? "person" : "people"}`;
   countBadge.title = m.id === currentId ? `${countText} (in progress)` : countText;
-  countBadge.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>${count}</span>`;
+  countBadge.innerHTML = `${icon("user", { size: 11 })}<span>${count}</span>`;
 
-  const openBtn = document.createElement("button");
-  openBtn.className = "meeting-open-btn";
-  openBtn.title = "Open people list for this meeting";
-  openBtn.setAttribute("aria-label", "Open meeting");
-  openBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
-  openBtn.addEventListener("click", () => {
-    selectedId = m.id;
-    view = "people";
-    deleteMode = false;
-    showAddRow = false;
-    render();
+  const openBtn = createIconButton({
+    className: "meeting-open-btn",
+    title: "Open people list for this meeting",
+    label: "Open meeting",
+    iconName: "open",
+    size: 12,
+    onClick: () => {
+      selectedId = m.id;
+      view = "people";
+      deleteMode = false;
+      showAddRow = false;
+      render();
+    }
   });
 
   box.append(input, countBadge, openBtn);
 
   const actions = document.createElement("div");
   actions.className = "actions";
+  actions.append(
+    createIconButton({
+      title: "View, edit, or copy Markdown",
+      label: "Edit Markdown",
+      iconName: "edit",
+      onClick: () => openMarkdownModal(m.id)
+    }),
+    createIconButton({
+      title: "Export as Markdown file (.md)",
+      label: "Export as Markdown file",
+      iconName: "download",
+      onClick: () => downloadMarkdown(m.name, meetingToMarkdown(m))
+    }),
+    createIconButton({
+      className: "mini ghost icon-btn danger",
+      title: "Stop tracking and delete history",
+      label: "Delete meeting",
+      iconName: "trash",
+      onClick: () => {
+        if (!confirm(`Stop tracking "${m.name}"? The saved history will be deleted.`)) return;
+        applyChange(() => {
+          delete data.meetings[m.id];
+          if (currentId === m.id) currentId = null;
+          if (selectedId === m.id) selectedId = null;
+        });
+      }
+    })
+  );
 
-  const editBtn = document.createElement("button");
-  editBtn.className = "mini ghost icon-btn";
-  editBtn.title = "View, edit, or copy Markdown";
-  editBtn.setAttribute("aria-label", "Edit Markdown");
-  editBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>`;
-  editBtn.addEventListener("click", () => {
-    openMarkdownModal(m.id);
-  });
-
-  const dlBtn = document.createElement("button");
-  dlBtn.className = "mini ghost icon-btn";
-  dlBtn.title = "Export as Markdown file (.md)";
-  dlBtn.setAttribute("aria-label", "Export as Markdown file");
-  dlBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
-  dlBtn.addEventListener("click", () => {
-    downloadMarkdown(m.name, meetingToMarkdown(m));
-  });
-
-  const del = document.createElement("button");
-  del.className = "mini ghost icon-btn danger";
-  del.title = "Stop tracking and delete history";
-  del.setAttribute("aria-label", "Delete meeting");
-  del.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-  del.addEventListener("click", async () => {
-    if (!confirm(`Stop tracking "${m.name}"? The saved history will be deleted.`)) return;
-    delete data.meetings[m.id];
-    if (currentId === m.id) currentId = null;
-    if (selectedId === m.id) selectedId = null;
-    await save();
-    render();
-  });
-
-  actions.append(editBtn, dlBtn, del);
   li.append(box, actions);
   return li;
 }
 
 /* ---------- Rendering ---------- */
 
-function show(id) {
-  for (const s of ["viewMeetings", "viewPeople", "viewSettings"]) {
-    const el = $(s);
-    if (el) el.classList.toggle("hidden", s !== id);
-  }
-}
-
 function render() {
   const m = meeting();
   const inMeet = !!(current && current.inMeet);
 
-  // Header
+  // The People tab needs a meeting; fall back to the meeting list otherwise
+  if (!m && !inMeet && view === "people") view = "meetings";
+
+  renderHeader(m, inMeet);
+  renderTabs(m);
+  renderMeetingsView(m, inMeet);
+  if (m) renderPeopleView(m, inMeet);
+  renderPeopleToolbar(m);
+  renderSettings();
+}
+
+function setHeader(eyebrow, name, tracking, badgeTitle) {
+  $("headEyebrow").textContent = eyebrow;
+  $("headName").textContent = name;
+  $("headName").title = name;
+  const badge = $("badge");
+  badge.textContent = tracking ? "on" : "off";
+  badge.className = `badge ${tracking ? "on" : "off"}`;
+  badge.title = badgeTitle;
+}
+
+function renderHeader(m, inMeet) {
   if (inMeet) {
-    $("headEyebrow").textContent = "Current Meeting";
-    const titleText = current.title || current.code || "Untitled Meeting";
-    $("headName").textContent = titleText;
-    $("headName").title = titleText;
-    if (currentId) {
-      $("badge").textContent = "on";
-      $("badge").className = "badge on";
-      $("badge").title = "Tracking active in Google Meet";
-    } else {
-      $("badge").textContent = "off";
-      $("badge").className = "badge off";
-      $("badge").title = "Meeting not tracked yet";
-    }
+    const title = current.title || current.code || "Untitled Meeting";
+    if (currentId) setHeader("Current Meeting", title, true, "Tracking active in Google Meet");
+    else setHeader("Current Meeting", title, false, "Meeting not tracked yet");
   } else if (m) {
-    $("headEyebrow").textContent = "Selected List";
-    $("headName").textContent = m.name;
-    $("headName").title = m.name;
-    $("badge").textContent = "off";
-    $("badge").className = "badge off";
-    $("badge").title = "No active Google Meet call (viewing saved list)";
+    setHeader("Selected List", m.name, false, "No active Google Meet call (viewing saved list)");
   } else {
-    $("headEyebrow").textContent = "Google Meet";
-    $("headName").textContent = "No meeting open";
-    $("headName").title = "No meeting open";
-    $("badge").textContent = "off";
-    $("badge").className = "badge off";
-    $("badge").title = "No active Google Meet call";
+    setHeader("Google Meet", "No meeting open", false, "No active Google Meet call");
+  }
+}
+
+function renderTabs(m) {
+  for (const tab of document.querySelectorAll(".tab[data-view]")) {
+    tab.classList.toggle("active", tab.dataset.view === view);
+    if (tab.dataset.view === "people") tab.disabled = !m;
+  }
+  $("viewMeetings").classList.toggle("hidden", view !== "meetings");
+  $("viewPeople").classList.toggle("hidden", view !== "people");
+  $("viewSettings").classList.toggle("hidden", view !== "settings");
+}
+
+function renderMeetingsView(m, inMeet) {
+  const showUntracked = !m && inMeet;
+  $("untrackedCard").classList.toggle("hidden", !showUntracked);
+  if (showUntracked && !$("activateName").value) {
+    $("activateName").value = current.title || (current.code ? `Meeting ${current.code}` : "");
   }
 
-  // Adjust view if outside Meet with no meeting active
-  if (!m && !inMeet && view !== "settings" && view !== "meetings") {
-    view = "meetings";
-  }
-
-  // Tabs
-  for (const t of document.querySelectorAll(".tab[data-view]")) {
-    const v = t.dataset.view;
-    t.classList.toggle("active", v === view);
-    if (v === "people") {
-      t.disabled = !m;
-    }
-  }
-
-  // Choose view
-  if (view === "settings") {
-    show("viewSettings");
-  } else if (view === "people") {
-    show("viewPeople");
-  } else {
-    show("viewMeetings");
-  }
-
-  // Meetings view
-  const untrackedCard = $("untrackedCard");
-  if (!m && inMeet) {
-    if (untrackedCard) {
-      untrackedCard.classList.remove("hidden");
-      if (!$("activateName").value) {
-        $("activateName").value = current.title || (current.code ? `Meeting ${current.code}` : "");
-      }
-    }
-  } else if (untrackedCard) {
-    untrackedCard.classList.add("hidden");
-  }
-
-  const ml = $("meetingList");
-  ml.innerHTML = "";
   const meetings = Object.values(data.meetings).sort((a, b) => a.name.localeCompare(b.name, "en"));
-  meetings.forEach((g) => ml.appendChild(buildMeetingItem(g)));
+  $("meetingList").replaceChildren(...meetings.map(buildMeetingItem));
   $("meetingsEmpty").classList.toggle("hidden", meetings.length > 0);
+}
 
-  // People view (merged standup updates & roster)
-  if (m) {
-    const total = Object.keys(m.people).length;
-    const presEl = $("peoplePresence");
-    if (presEl) {
-      if (inMeet) {
-        const presentCount = presentKeys ? presentKeys.size : 0;
-        presEl.textContent = `${presentCount} present of ${total}`;
-      } else {
-        presEl.textContent = `${total} ${total === 1 ? "participant" : "participants"}`;
-      }
-    }
+function renderPeopleView(m, inMeet) {
+  const total = Object.keys(m.people).length;
+  $("peoplePresence").textContent = inMeet
+    ? `${presentKeys.size} present of ${total}`
+    : `${total} ${total === 1 ? "participant" : "participants"}`;
 
-    // Add person row state
-    $("addPersonRow").classList.toggle("hidden", !showAddRow);
-    if ($("btnToggleAdd")) $("btnToggleAdd").classList.toggle("active", showAddRow);
+  $("addPersonRow").classList.toggle("hidden", !showAddRow);
+  $("btnToggleAdd").classList.toggle("active", showAddRow);
 
-    // Active rotation list
-    const activeKeys = orderRound(m);
-    const activeList = $("activeList");
-    activeList.innerHTML = "";
+  // Active rotation. The numbers always show the rotation position, also when sorted by name.
+  const activeKeys = orderRound(m);
+  const active = activeKeys.map((key, index) => ({ person: { key, ...m.people[key] }, index }));
+  if (sortAlphabetical) active.sort((a, b) => compareByName(a.person, b.person));
+  $("activeList").replaceChildren(...active.map(({ person, index }) => buildPersonItem(m, person, index)));
 
-    let displayItems = activeKeys
-      .map((k, i) => ({ key: k, person: m.people[k], priorityIndex: i }))
-      .filter((item) => !!item.person);
+  const emptyHint = $("peopleEmpty");
+  emptyHint.textContent = inMeet
+    ? "No present participants found. Open the people list in Meet, or add names using +."
+    : "No participants added yet. Add names using +.";
+  emptyHint.classList.toggle("hidden", activeKeys.length > 0);
 
-    if (sortAlphabetical) {
-      displayItems.sort((a, b) =>
-        (a.person.name || "").localeCompare(b.person.name || "", "en", { sensitivity: "base" })
-      );
-    }
+  // Absent or ignored people, unranked
+  const activeSet = new Set(activeKeys);
+  const inactive = m.includeAbsent
+    ? Object.entries(m.people)
+        .filter(([key]) => !activeSet.has(key))
+        .map(([key, p]) => ({ key, ...p }))
+    : [];
+  inactive.sort(sortAlphabetical ? compareByName : compareInactive);
+  const secondaryList = $("secondaryList");
+  secondaryList.replaceChildren(...inactive.map((p) => buildPersonItem(m, p, null)));
+  secondaryList.classList.toggle("hidden", inactive.length === 0);
+}
 
-    displayItems.forEach((item) => {
-      activeList.appendChild(buildPersonItem(m, { key: item.key, ...item.person }, item.priorityIndex));
-    });
+function renderPeopleToolbar(m) {
+  const absentShown = !!(m && m.includeAbsent);
+  const absentBtn = $("btnToggleAbsent");
+  absentBtn.classList.toggle("active", absentShown);
+  absentBtn.title = absentShown ? "Hide absent or ignored" : "Show absent or ignored";
+  absentBtn.setAttribute("aria-label", absentBtn.title);
+  absentBtn.disabled = !m;
 
-    const emptyHint = $("peopleEmpty");
-    if (emptyHint) {
-      emptyHint.textContent = inMeet
-        ? "No present participants found. Open the people list in Meet, or add names using +."
-        : "No participants added yet. Add names using +.";
-      emptyHint.classList.toggle("hidden", activeKeys.length > 0);
-    }
+  const sortBtn = $("btnToggleSort");
+  sortBtn.classList.toggle("active", sortAlphabetical);
+  sortBtn.title = sortAlphabetical
+    ? "Alphabetical order active (click to sort by priority)"
+    : "Sort alphabetically by name (preserves priority numbers)";
+  sortBtn.disabled = !m;
 
-    // Secondary list for absent or ignored people
-    const secondaryList = $("secondaryList");
-    secondaryList.innerHTML = "";
+  const deleteBtn = $("btnToggleDeleteMode");
+  deleteBtn.classList.toggle("active", deleteMode);
+  deleteBtn.title = deleteMode ? "Exit delete mode" : "Toggle delete mode";
 
-    if (m.includeAbsent) {
-      const activeSet = new Set(activeKeys);
-      let secondaryPeople = Object.entries(m.people)
-        .filter(([k]) => !activeSet.has(k))
-        .map(([k, v]) => ({ key: k, ...v }));
+  $("btnRefresh").disabled = !m;
+}
 
-      if (sortAlphabetical) {
-        secondaryPeople.sort((a, b) => (a.name || "").localeCompare(b.name || "", "en", { sensitivity: "base" }));
-      } else {
-        secondaryPeople.sort((a, b) => {
-          if (!!a.ignored !== !!b.ignored) return a.ignored ? 1 : -1;
-          return (a.last || 0) - (b.last || 0) || a.name.localeCompare(b.name, "en");
-        });
-      }
-
-      secondaryPeople.forEach((p) => {
-        secondaryList.appendChild(buildPersonItem(m, p, null));
-      });
-      secondaryList.classList.toggle("hidden", secondaryPeople.length === 0);
-    } else {
-      secondaryList.classList.add("hidden");
-    }
-  }
-
-  if ($("btnToggleAbsent")) {
-    const isAbsentShown = m ? !!m.includeAbsent : false;
-    $("btnToggleAbsent").classList.toggle("active", isAbsentShown);
-    $("btnToggleAbsent").title = isAbsentShown ? "Hide absent or ignored" : "Show absent or ignored";
-    $("btnToggleAbsent").setAttribute("aria-label", $("btnToggleAbsent").title);
-    $("btnToggleAbsent").disabled = !m;
-  }
-
-  if ($("btnToggleSort")) {
-    $("btnToggleSort").classList.toggle("active", sortAlphabetical);
-    $("btnToggleSort").title = sortAlphabetical
-      ? "Alphabetical order active (click to sort by priority)"
-      : "Sort alphabetically by name (preserves priority numbers)";
-    $("btnToggleSort").disabled = !m;
-  }
-
-  if ($("btnToggleDeleteMode")) {
-    $("btnToggleDeleteMode").classList.toggle("active", deleteMode);
-    $("btnToggleDeleteMode").title = deleteMode ? "Exit delete mode" : "Toggle delete mode";
-  }
-
-  if ($("btnRefresh")) {
-    $("btnRefresh").disabled = !m;
-  }
-
-  // Settings
-  if ($("settingAutoRefresh")) {
-    $("settingAutoRefresh").checked = getAutoRefresh();
-  }
-  if ($("settingRefreshInterval") && document.activeElement !== $("settingRefreshInterval")) {
+function renderSettings() {
+  const auto = getAutoRefresh();
+  $("settingAutoRefresh").checked = auto;
+  if (document.activeElement !== $("settingRefreshInterval")) {
     $("settingRefreshInterval").value = getRefreshInterval();
   }
-  if ($("fieldRefreshInterval")) {
-    $("fieldRefreshInterval").classList.toggle("hidden", !getAutoRefresh());
-    $("hintRefreshInterval").classList.toggle("hidden", !getAutoRefresh());
-  }
+  $("fieldRefreshInterval").classList.toggle("hidden", !auto);
+  $("hintRefreshInterval").classList.toggle("hidden", !auto);
 }
 
 /* ---------- Workflow ---------- */
@@ -613,8 +561,7 @@ function setupAutoRefresh() {
   if (auto && sec > 0) {
     refreshTimer = setInterval(async () => {
       if (document.hidden) return;
-      const modal = $("markdownModal");
-      if (modal && !modal.classList.contains("hidden")) return;
+      if (isModalOpen()) return;
       const activeEl = document.activeElement;
       const isEditingText = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
       if (isEditingText && view !== "people") return;
@@ -649,9 +596,7 @@ async function importParsedMeeting({ meetingName, people }) {
       `The meeting "${existing.name}" already exists.\n\nDo you want to overwrite it with data from the editor?`
     );
     if (!overwrite) return false;
-    existing.people = people;
-    existing.round = null;
-    sanitizeMeeting(existing);
+    replaceRoster(existing, people);
   } else {
     const m = createMeeting({ name, people });
     sanitizeMeeting(m);
@@ -667,198 +612,122 @@ let editingMeetingId = null;
 let initialMarkdownText = "";
 
 function updateModalSaveButton() {
-  const textarea = $("markdownTextarea");
-  const saveBtn = $("btnModalSave");
-  if (!textarea || !saveBtn) return;
-  const val = textarea.value.trim();
-  if (!val) {
-    saveBtn.disabled = true;
-    return;
-  }
-  if (editingMeetingId) {
-    // Enabled only when content differs from original markdown
-    saveBtn.disabled = val === initialMarkdownText.trim();
-  } else {
-    // New meeting / import: enabled when non-empty
-    saveBtn.disabled = false;
-  }
+  const value = $("markdownTextarea").value.trim();
+  // Editing an existing meeting needs an actual change; a new import only needs content
+  $("btnModalSave").disabled = !value || (!!editingMeetingId && value === initialMarkdownText.trim());
 }
 
 function clearModalError() {
-  const errEl = $("modalError");
-  if (errEl) errEl.classList.add("hidden");
-  const ta = $("markdownTextarea");
-  if (ta) ta.classList.remove("has-error");
+  $("modalError").classList.add("hidden");
+  $("markdownTextarea").classList.remove("has-error");
 }
 
+/** Shows a validation error and selects the offending line (0-based lineIndex) in the editor. */
 function showModalError(message, lineIndex) {
-  const errEl = $("modalError");
-  const errText = $("modalErrorText");
   const ta = $("markdownTextarea");
-  if (!ta) return;
-
-  if (errText) errText.textContent = message;
-  if (errEl) errEl.classList.remove("hidden");
+  $("modalErrorText").textContent = message;
+  $("modalError").classList.remove("hidden");
   ta.classList.add("has-error");
+  ta.focus();
 
-  if (typeof lineIndex === "number" && lineIndex >= 0) {
-    const text = ta.value;
-    let currentLine = 0;
-    let start = 0;
-    for (let i = 0; i < text.length; i++) {
-      if (currentLine === lineIndex) {
-        break;
-      }
-      if (text[i] === "\n") {
-        currentLine++;
-        start = i + 1;
-      }
-    }
-    let end = text.indexOf("\n", start);
-    if (end === -1) end = text.length;
-    if (end > start && text[end - 1] === "\r") {
-      end--;
-    }
+  if (typeof lineIndex !== "number" || lineIndex < 0) return;
+  const lines = ta.value.split("\n");
+  const start = lines.slice(0, lineIndex).reduce((pos, line) => pos + line.length + 1, 0);
+  const end = start + (lines[lineIndex] || "").replace(/\r$/, "").length;
+  ta.setSelectionRange(start, end);
 
-    ta.focus();
-    ta.setSelectionRange(start, end);
-
-    const linesBefore = text.slice(0, start).split("\n").length - 1;
-    const approxLineHeight = 18;
-    ta.scrollTop = Math.max(0, (linesBefore - 2) * approxLineHeight);
-  } else {
-    ta.focus();
-  }
+  const approxLineHeight = 18;
+  ta.scrollTop = Math.max(0, (lineIndex - 2) * approxLineHeight);
 }
 
 function openMarkdownModal(meetingId = null) {
-  document.body.classList.add("modal-open");
+  const m = meetingId ? data.meetings[meetingId] : null;
+  editingMeetingId = m ? m.id : null;
+  initialMarkdownText = m ? meetingToMarkdown(m) : "";
+
+  $("modalTitle").textContent = m ? `Edit "${m.name}"` : "New Meeting / Import";
+  $("modalHint").textContent = m
+    ? "View, edit, or copy the Markdown table of this meeting:"
+    : "Paste a Markdown table or load a file from disk:";
+  $("markdownTextarea").value = initialMarkdownText;
+  $("btnModalSave").textContent = m ? "Save" : "Import";
+  $("btnModalSave").disabled = true;
+
   clearModalError();
-  editingMeetingId = meetingId;
-  const modal = $("markdownModal");
-  const textarea = $("markdownTextarea");
-  const titleEl = $("modalTitle");
-  const hintEl = $("modalHint");
-  const saveBtn = $("btnModalSave");
-  if (!modal || !textarea) return;
-
-  if (meetingId && data.meetings[meetingId]) {
-    const m = data.meetings[meetingId];
-    if (titleEl) titleEl.textContent = `Edit "${m.name}"`;
-    if (hintEl) hintEl.textContent = "View, edit, or copy the Markdown table of this meeting:";
-    const md = meetingToMarkdown(m);
-    textarea.value = md;
-    initialMarkdownText = md;
-    if (saveBtn) {
-      saveBtn.textContent = "Save";
-      saveBtn.disabled = true;
-    }
-  } else {
-    editingMeetingId = null;
-    if (titleEl) titleEl.textContent = "New Meeting / Import";
-    if (hintEl) hintEl.textContent = "Paste a Markdown table or load a file from disk:";
-    textarea.value = "";
-    initialMarkdownText = "";
-    if (saveBtn) {
-      saveBtn.textContent = "Import";
-      saveBtn.disabled = true;
-    }
-  }
-
-  modal.classList.remove("hidden");
-  setTimeout(() => textarea.focus(), 50);
+  document.body.classList.add("modal-open");
+  $("markdownModal").classList.remove("hidden");
+  setTimeout(() => $("markdownTextarea").focus(), 50);
 }
 
 function closeMarkdownModal() {
   clearModalError();
-  const modal = $("markdownModal");
-  if (modal) modal.classList.add("hidden");
+  $("markdownModal").classList.add("hidden");
   document.body.classList.remove("modal-open");
   editingMeetingId = null;
   initialMarkdownText = "";
 }
 
+const isModalOpen = () => !$("markdownModal").classList.contains("hidden");
+
 async function copyModalText() {
   const textarea = $("markdownTextarea");
-  if (!textarea || !textarea.value.trim()) return;
-  const copyBtn = $("btnModalCopy");
+  if (!textarea.value.trim()) return;
   try {
     await navigator.clipboard.writeText(textarea.value);
   } catch {
     textarea.select();
     document.execCommand("copy");
   }
-  if (copyBtn) {
-    const origHtml = copyBtn.innerHTML;
-    const origTitle = copyBtn.title || "Copy Markdown to clipboard";
-    copyBtn.classList.add("copied");
-    copyBtn.title = "Copied!";
-    copyBtn.setAttribute("aria-label", "Copied!");
-    copyBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-    setTimeout(() => {
-      copyBtn.classList.remove("copied");
-      copyBtn.title = origTitle;
-      copyBtn.setAttribute("aria-label", origTitle);
-      copyBtn.innerHTML = origHtml;
-    }, 1500);
-  }
+
+  // Briefly swap the icon to a check mark as feedback
+  const copyBtn = $("btnModalCopy");
+  const origHtml = copyBtn.innerHTML;
+  const origTitle = copyBtn.title;
+  copyBtn.classList.add("copied");
+  copyBtn.title = "Copied!";
+  copyBtn.setAttribute("aria-label", "Copied!");
+  copyBtn.innerHTML = icon("check", { strokeWidth: 2.5 });
+  setTimeout(() => {
+    copyBtn.classList.remove("copied");
+    copyBtn.title = origTitle;
+    copyBtn.setAttribute("aria-label", origTitle);
+    copyBtn.innerHTML = origHtml;
+  }, 1500);
 }
 
 function downloadModalMarkdown() {
-  const textarea = $("markdownTextarea");
-  if (!textarea || !textarea.value.trim()) return;
-  const md = textarea.value;
-
-  let rawName = "";
-  if (editingMeetingId && data.meetings[editingMeetingId]) {
-    rawName = data.meetings[editingMeetingId].name || "";
-  }
-  if (!rawName) {
-    const titleMatch = md.match(/^#\s+(.+)$/m);
-    if (titleMatch && titleMatch[1]) {
-      rawName = titleMatch[1].trim();
-    }
-  }
-
-  downloadMarkdown(rawName, md);
+  const md = $("markdownTextarea").value;
+  if (!md.trim()) return;
+  const editing = editingMeetingId && data.meetings[editingMeetingId];
+  const titleMatch = md.match(/^#\s+(.+)$/m);
+  downloadMarkdown((editing && editing.name) || (titleMatch ? titleMatch[1].trim() : ""), md);
 }
 
 async function saveMarkdownModal() {
-  const textarea = $("markdownTextarea");
-  if (!textarea) return;
-  const text = textarea.value.trim();
-  if (!text) {
+  const text = $("markdownTextarea").value;
+  if (!text.trim()) {
     showModalError("Please enter or paste a Markdown table.");
     return;
   }
 
-  const validation = parseMeetingMarkdown(textarea.value);
-  if (!validation.ok) {
-    showModalError(validation.error, validation.lineIndex);
+  const parsed = parseMeetingMarkdown(text);
+  if (!parsed.ok) {
+    showModalError(parsed.error, parsed.lineIndex);
     return;
   }
-
   clearModalError();
-  const { meetingName, people } = validation;
 
-  if (editingMeetingId && data.meetings[editingMeetingId]) {
-    const m = data.meetings[editingMeetingId];
-    if (meetingName && meetingName !== m.name) {
-      m.name = meetingName;
-      addAlias(m, meetingName);
+  const m = editingMeetingId && data.meetings[editingMeetingId];
+  if (m) {
+    if (parsed.meetingName && parsed.meetingName !== m.name) {
+      m.name = parsed.meetingName;
+      addAlias(m, parsed.meetingName);
     }
-    m.people = people;
-    m.round = null;
-    sanitizeMeeting(m);
+    replaceRoster(m, parsed.people);
     await save();
     await refresh();
     closeMarkdownModal();
-    return;
-  }
-
-  // New meeting / import
-  const success = await importParsedMeeting(validation);
-  if (success) {
+  } else if (await importParsedMeeting(parsed)) {
     closeMarkdownModal();
   }
 }
@@ -872,23 +741,19 @@ async function loadFileIntoEditor(file) {
 
 /* ---------- Events ---------- */
 
-for (const t of document.querySelectorAll(".tab")) {
-  t.addEventListener("click", () => {
-    view = t.dataset.view;
+for (const tab of document.querySelectorAll(".tab")) {
+  tab.addEventListener("click", () => {
+    view = tab.dataset.view;
     deleteMode = false;
     showAddRow = false;
     render();
-    if (view === "people" && current && current.inMeet) {
-      refresh();
-    }
+    if (view === "people" && current && current.inMeet) refresh();
   });
 }
 
 $("btnActivate").addEventListener("click", async () => {
   const name = $("activateName").value.trim();
-  if (!name) {
-    return;
-  }
+  if (!name) return;
   const m = createMeeting({ name });
   if (current) rememberMeetIdentity(m, current);
   data.meetings[m.id] = m;
@@ -899,63 +764,45 @@ $("btnActivate").addEventListener("click", async () => {
   await refresh();
 });
 
-if ($("btnRefresh")) {
-  $("btnRefresh").addEventListener("click", async () => {
-    const btn = $("btnRefresh");
-    btn.classList.add("spinning");
-    try {
-      await refresh();
-    } finally {
-      setTimeout(() => btn.classList.remove("spinning"), 400);
-    }
-  });
-}
+$("btnRefresh").addEventListener("click", async () => {
+  const btn = $("btnRefresh");
+  btn.classList.add("spinning");
+  try {
+    await refresh();
+  } finally {
+    setTimeout(() => btn.classList.remove("spinning"), 400);
+  }
+});
 
-if ($("btnToggleSort")) {
-  $("btnToggleSort").addEventListener("click", () => {
-    sortAlphabetical = !sortAlphabetical;
-    render();
-  });
-}
+$("btnToggleSort").addEventListener("click", () => {
+  sortAlphabetical = !sortAlphabetical;
+  render();
+});
 
-if ($("btnToggleAdd")) {
-  $("btnToggleAdd").addEventListener("click", () => {
-    showAddRow = !showAddRow;
-    render();
-    if (showAddRow && $("newName")) {
-      $("newName").focus();
-    }
-  });
-}
+$("btnToggleAdd").addEventListener("click", () => {
+  showAddRow = !showAddRow;
+  render();
+  if (showAddRow) $("newName").focus();
+});
 
-if ($("btnToggleAbsent")) {
-  $("btnToggleAbsent").addEventListener("click", async () => {
-    const m = meeting();
-    if (!m) return;
+$("btnToggleAbsent").addEventListener("click", () => {
+  const m = meeting();
+  if (!m) return;
+  applyChange(() => {
     m.includeAbsent = !m.includeAbsent;
-    await save();
-    render();
   });
-}
+});
+
+$("btnToggleDeleteMode").addEventListener("click", () => {
+  deleteMode = !deleteMode;
+  render();
+});
 
 $("btnAdd").addEventListener("click", async () => {
   const m = meeting();
-  const raw = $("newName").value.trim();
-  if (isPresentation(raw) || isNoiseOrIcon(raw)) {
-    return;
-  }
-  const name = cleanPersonName(raw);
-  if (!name || !m || isPresentation(name) || isNoiseOrIcon(name)) return;
-  const k = normalizeKey(name);
-  if (!m.people[k]) {
-    m.people[k] = { name, last: 0, prev: null, ignored: false };
-    if (m.round && Array.isArray(m.round.keys)) {
-      m.round.keys.push(k);
-    }
-  }
+  if (!m || !addPerson(m, $("newName").value.trim())) return;
   $("newName").value = "";
-  await save();
-  render();
+  await commit();
 });
 
 $("newName").addEventListener("keydown", (e) => {
@@ -967,75 +814,52 @@ $("newName").addEventListener("keydown", (e) => {
 });
 
 $("settingAutoRefresh").addEventListener("change", async (e) => {
-  data.settings = data.settings || {};
   data.settings.autoRefresh = e.target.checked;
-  $("fieldRefreshInterval").classList.toggle("hidden", !e.target.checked);
-  $("hintRefreshInterval").classList.toggle("hidden", !e.target.checked);
+  renderSettings();
   await save();
   setupAutoRefresh();
 });
 
 $("settingRefreshInterval").addEventListener("change", async (e) => {
-  const val = clampRefreshInterval(parseInt(e.target.value, 10));
-  data.settings = data.settings || {};
-  data.settings.refreshInterval = val;
-  $("settingRefreshInterval").value = val;
+  data.settings.refreshInterval = clampRefreshInterval(parseInt(e.target.value, 10));
+  e.target.value = data.settings.refreshInterval;
   await save();
   setupAutoRefresh();
 });
 
-if ($("btnToggleDeleteMode")) {
-  $("btnToggleDeleteMode").addEventListener("click", () => {
-    deleteMode = !deleteMode;
-    render();
-  });
-}
-if ($("btnNewMeeting")) $("btnNewMeeting").addEventListener("click", () => openMarkdownModal(null));
-if ($("fileInput")) {
-  $("fileInput").addEventListener("change", (e) => {
-    const f = e.target.files[0];
-    if (f) loadFileIntoEditor(f);
-    e.target.value = "";
-  });
-}
+$("btnNewMeeting").addEventListener("click", () => openMarkdownModal(null));
 
-if ($("btnModalClose")) $("btnModalClose").addEventListener("click", closeMarkdownModal);
-if ($("btnModalCancel")) $("btnModalCancel").addEventListener("click", closeMarkdownModal);
-if ($("btnModalSave")) $("btnModalSave").addEventListener("click", saveMarkdownModal);
-if ($("btnModalUpload")) $("btnModalUpload").addEventListener("click", () => $("fileInput").click());
-if ($("btnModalDownload")) $("btnModalDownload").addEventListener("click", downloadModalMarkdown);
-if ($("btnModalCopy")) $("btnModalCopy").addEventListener("click", copyModalText);
+$("fileInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) loadFileIntoEditor(file);
+  e.target.value = "";
+});
+
+$("btnModalCancel").addEventListener("click", closeMarkdownModal);
+$("btnModalSave").addEventListener("click", saveMarkdownModal);
+$("btnModalUpload").addEventListener("click", () => $("fileInput").click());
+$("btnModalDownload").addEventListener("click", downloadModalMarkdown);
+$("btnModalCopy").addEventListener("click", copyModalText);
+
 const modalTextarea = $("markdownTextarea");
-if (modalTextarea) {
-  modalTextarea.addEventListener("input", () => {
-    clearModalError();
-    updateModalSaveButton();
-  });
-  modalTextarea.addEventListener("click", clearModalError);
-  modalTextarea.addEventListener("keyup", () => {
-    clearModalError();
-    updateModalSaveButton();
-  });
-}
-if ($("markdownModal")) {
-  $("markdownModal").addEventListener("click", (e) => {
-    if (e.target === $("markdownModal")) closeMarkdownModal();
-  });
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      const modal = $("markdownModal");
-      if (modal && !modal.classList.contains("hidden")) {
-        closeMarkdownModal();
-      }
-    }
-  });
-}
+modalTextarea.addEventListener("input", () => {
+  clearModalError();
+  updateModalSaveButton();
+});
+modalTextarea.addEventListener("click", clearModalError);
+modalTextarea.addEventListener("keyup", clearModalError);
 
-try {
-  const v = chrome.runtime.getManifest().version;
-  if ($("appVersion")) $("appVersion").textContent = v;
-  if ($("headerLogo")) $("headerLogo").title = `POPCORN v${v}`;
-} catch {}
+// Close the modal by clicking the backdrop or pressing Escape
+$("markdownModal").addEventListener("click", (e) => {
+  if (e.target === $("markdownModal")) closeMarkdownModal();
+});
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && isModalOpen()) closeMarkdownModal();
+});
+
+const version = chrome.runtime.getManifest().version;
+$("appVersion").textContent = version;
+$("headerLogo").title = `POPCORN v${version}`;
 
 async function init() {
   data = await load();

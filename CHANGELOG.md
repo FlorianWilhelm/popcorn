@@ -29,6 +29,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - Fixed the `.gitignore` entry for the screenshot renderer's temp directory (`.chrome-temp/`).
 - Moved pure logic into shared modules in `src/lib/` (`names.js`, `meetings.js`, `markdown.js`). The content script and the popup no longer keep diverging copies of the name filters, and the two Markdown parsers were merged into one.
 - Simplified the rotation logic: the 6-hour round expiry and the forced-reorder flag were removed because both code paths produced the same order.
+- Restructured `popup.js`: icons are defined once, icon buttons share a helper, `render()` is split into per-view functions, person and roster edits go through tested helpers in `lib/meetings.js`, and dead code such as the handler for a non-existent modal close button is gone.
 - Added unit tests with Node's built-in test runner (`npm test`) and an `npm run check` script that runs lint, format check, and tests.
 - Added a CI workflow (`.github/workflows/ci.yml`) that runs lint, format check, unit tests, and packaging on every push and pull request. The release workflow runs the same checks before packaging.
 - `npm run package` now bundles every non-hidden file in `src/` and verifies that all files referenced by `manifest.json` are present.
