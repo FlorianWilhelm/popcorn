@@ -7,6 +7,10 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 
 ## [Unreleased]
 
+---
+
+## [0.32.0] - 2026-10-05
+
 ### Changed
 - **Separate "Ignored" column in Markdown**: Rosters now have a third column, `| Person | Last Update | Ignored |`, with `yes` for ignored people. Before, the "Last Update" cell held both pieces of information (`2026-09-01 09:00 (ignored)`, or just `ignored` if the person never gave an update), which was easy to break when editing by hand. Older two-column exports, including the `(ignored)` / `ignoriert` markers, can still be imported.
 - **Markdown export in rotation order**: Exported rosters list people in the same order as the People tab: the current speaker order first, then absent people, then ignored people. Before, they were sorted by most recent update.
@@ -47,6 +51,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - Refactored `content.js`: shared selectors and DOM helpers instead of repeated inline copies, named timing constants, and internal message types renamed from `MUR_*` to `POPCORN_*`.
 - Moved the unused 487 KB `icon.svg` source artwork from `src/icons/` to `assets/`, shrinking the release ZIP from about 430 KB to about 70 KB.
 - `npm run package` now bundles every non-hidden file in `src/` and verifies that all files referenced by `manifest.json` are present.
+
 
 ---
 
@@ -334,7 +339,8 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 ### Added
 - Initial release of Meet Update Rotator.
 
-[Unreleased]: https://github.com/FlorianWilhelm/popcorn/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/FlorianWilhelm/popcorn/compare/v0.32.0...HEAD
+[0.32.0]: https://github.com/FlorianWilhelm/popcorn/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/FlorianWilhelm/popcorn/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/FlorianWilhelm/popcorn/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/FlorianWilhelm/popcorn/compare/v0.28.3...v0.29.0

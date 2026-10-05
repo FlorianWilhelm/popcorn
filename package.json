@@ -1,6 +1,6 @@
 {
   "name": "meet-popcorn",
-  "version": "0.31.0",
+  "version": "0.32.0",
   "description": "POPCORN – Google Meet Standup & Speaker Picker Chrome Extension",
   "scripts": {
     "package": "node scripts/package.js",
