@@ -1,6 +1,8 @@
 # Project Guidelines & Rules
 
+See [CLAUDE.md](CLAUDE.md) for the full agent guide (architecture, conventions, workflow). Everything in this repository is written in English.
+
 ## Git & Tagging Rules
-- **No Tag Overwrites**: Niemals bestehende Git-Tags überschreiben oder mit `--force` pushen.
-- **Tag Immutability**: Einmal gepushte Git-Tags sind unveränderlich. Wenn nach dem Pushen eines Tags noch Änderungen oder Fixes hinzukommen, wird stattdessen ein neuer Release-Tag mit entsprechender EffVer-Version vergeben (z. B. Micro-Bump `v0.28.1`).
-- **Explicit Permission**: Das Überschreiben oder Force-Pushen von Tags ist ausschließlich nach expliziter Erlaubnis des Nutzers gestattet.
+- **No Tag Overwrites**: Never overwrite existing Git tags or push them with `--force`.
+- **Tag Immutability**: Once pushed, Git tags are immutable. If changes or fixes are needed after a tag has been pushed, create a new release tag with the appropriate EffVer version instead (e.g. micro bump `v0.28.1`).
+- **Explicit Permission**: Overwriting or force-pushing tags is only allowed with the user's explicit permission.

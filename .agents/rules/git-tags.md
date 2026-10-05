@@ -1,6 +1,6 @@
 # Git Tagging & Release Rule
 
-- **Niemals bestehende Git-Tags überschreiben oder mit `--force` pushen.**
-- Gepushte Git-Tags sind strikt unveränderlich.
-- Falls nach dem Pushen eines Tags Änderungen hinzukommen, wird stattdessen ein neuer Release-Tag (nach EffVer z. B. Micro-Bump) erstellt.
-- Das Überschreiben oder Force-Pushen von Tags darf **nur nach vorheriger, expliziter Erlaubnis des Nutzers** erfolgen.
+- **Never overwrite existing Git tags or push them with `--force`.**
+- Pushed Git tags are strictly immutable.
+- If changes are needed after a tag has been pushed, create a new release tag instead (following EffVer, e.g. a micro bump).
+- Overwriting or force-pushing tags is **only allowed with the user's prior, explicit permission**.
