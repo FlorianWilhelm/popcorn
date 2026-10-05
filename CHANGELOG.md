@@ -22,6 +22,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 ### Documentation
 - Added `CLAUDE.md` with architecture notes, conventions, and release rules for AI coding agents.
 - Translated `GEMINI.md` and `.agents/rules/git-tags.md` to English.
+- Regenerated the Chrome Web Store screenshots: fixed settings gear icon, the wider meeting title from v0.31.0, and the new Markdown date format.
 
 ### Chore
 - Translated remaining German code comments to English.

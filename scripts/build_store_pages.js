@@ -1032,13 +1032,13 @@ const s3Popup = `
 
 | Person | Last Update |
 | --- | --- |
-| Alice Martin | 07/09/2026, 10:15:20 |
-| Florian Wilhelm | 04/09/2026, 10:12:05 |
-| Sarah Connor | 06/09/2026, 10:15:30 |
-| David Chen | 06/09/2026, 10:11:45 |
-| Elena Rostova | 03/09/2026, 10:09:12 |
-| Liam Vance | 02/09/2026, 10:15:00 |
-| Marcus Brody | 25/08/2026, 10:05:18 |
+| Alice Martin | 2026-09-07 10:15 |
+| Sarah Connor | 2026-09-06 10:15 |
+| David Chen | 2026-09-06 10:11 |
+| Florian Wilhelm | 2026-09-04 10:12 |
+| Elena Rostova | 2026-09-03 10:09 |
+| Liam Vance | 2026-09-02 10:15 |
+| Marcus Brody | 2026-08-25 10:05 |
 | Thomas Clark | ignored |</textarea>
       <div class="modal-footer">
         <div class="modal-footer-left">
