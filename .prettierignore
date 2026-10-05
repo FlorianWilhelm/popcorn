@@ -1,0 +1,8 @@
+dist/
+store_assets/
+.chrome-user-data/
+.chrome-temp/
+package-lock.json
+
+# Hand-edited documentation keeps its own formatting
+*.md
