@@ -90,7 +90,7 @@ function ensureSessionPort(tabId, force = false) {
 function disconnectSession() {
   if (lastActiveTabId) {
     try {
-      chrome.tabs.sendMessage(lastActiveTabId, { type: "MUR_POPUP_CLOSING" }).catch(() => {});
+      chrome.tabs.sendMessage(lastActiveTabId, { type: "POPCORN_POPUP_CLOSING" }).catch(() => {});
     } catch {}
   }
   if (sessionPort) {
@@ -118,7 +118,7 @@ async function readMeet(withPeople, opts = {}) {
   ensureSessionPort(tab.id);
   const send = () =>
     chrome.tabs.sendMessage(tab.id, {
-      type: "MUR_SCRAPE",
+      type: "POPCORN_SCRAPE",
       withPeople: !!withPeople,
       openIfClosed: !!opts.openIfClosed
     });

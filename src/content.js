@@ -2,21 +2,72 @@
  * Content script for scraping Google Meet participant lists and title.
  */
 (() => {
-  if (window.__murCleanup) {
+  // The popup may inject this script again; tear down the previous instance first.
+  if (window.__popcornCleanup) {
     try {
-      window.__murCleanup();
+      window.__popcornCleanup();
     } catch {}
   }
 
-  const CODE_RE = /^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i;
-
   // Shared name filters from lib/names.js, which is injected before this script.
-  const { collapseWhitespace: clean, cleanPersonName, isPresentation, looksLikeName } = globalThis.PopcornNames;
+  const {
+    collapseWhitespace: clean,
+    normalizeKey,
+    cleanPersonName,
+    isPresentation,
+    looksLikeName
+  } = globalThis.PopcornNames;
+
+  const MEET_CODE_PATTERN = "[a-z]{3}-[a-z]{4}-[a-z]{3}";
+  const CODE_RE = new RegExp(`^${MEET_CODE_PATTERN}$`, "i");
+  const CODE_PATH_RE = new RegExp(`^/(${MEET_CODE_PATTERN})`, "i");
+
+  const LIVE_ROSTER_INTERVAL_MS = 1000;
+  const ROSTER_MERGE_WINDOW_MS = 60 * 1000; // people unseen for longer are not merged into a scrape
+  const ROSTER_EXPIRY_MS = 2 * 60 * 1000; // people unseen for longer are forgotten
+  const BOTTOM_BAR_HEIGHT = 160;
+
+  const BUTTON_SELECTOR = 'button, [role="button"]';
+  const ICON_SELECTOR = '.google-material-icons, [class*="icon" i], span, i';
+  const CHAT_CONTAINER_SELECTOR =
+    'aside[aria-label*="chat" i], div[aria-label*="chat" i], div[aria-label*="nachricht" i]';
+  const CHAT_INPUT_SELECTOR =
+    'textarea[aria-label*="chat" i], textarea[aria-label*="nachricht" i], [contenteditable="true"][aria-label*="chat" i]';
+
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const allButtons = () => Array.from(document.querySelectorAll(BUTTON_SELECTOR));
+
+  /** Meet often wraps the real button in a container; return the button itself. */
+  const toButton = (el) => (el.matches(BUTTON_SELECTOR) ? el : el.querySelector(BUTTON_SELECTOR) || el);
+
+  /** True for visible controls in Meet's bottom control bar. */
+  function isInBottomBar(el) {
+    const rect = el.getBoundingClientRect();
+    return rect.top > window.innerHeight - BOTTOM_BAR_HEIGHT && rect.width > 0 && rect.height > 0;
+  }
+
+  /** All human-readable labels of a control, lowercased. */
+  const controlLabel = (b) =>
+    `${b.getAttribute("aria-label") || ""} ${b.getAttribute("data-tooltip") || ""} ${b.getAttribute("title") || ""} ${b.textContent || ""}`.toLowerCase();
+
+  function isChatInputVisible() {
+    const input = document.querySelector(CHAT_INPUT_SELECTOR);
+    return !!input && input.offsetParent !== null;
+  }
+
+  function isScreenShare(el) {
+    return (
+      el.getAttribute("data-is-screen-share") === "true" ||
+      el.getAttribute("data-is-presenting") === "true" ||
+      isPresentation(el.textContent) ||
+      isPresentation(el.getAttribute("aria-label"))
+    );
+  }
 
   function extractName(item) {
     // 0. Skip accordion toggles, section headings, and tabs
     if (item.getAttribute("aria-expanded") !== null) return null;
-    if (item.matches && item.matches('[role="heading"], [role="tab"], h1, h2, h3, h4, h5, h6')) return null;
+    if (item.matches('[role="heading"], [role="tab"], h1, h2, h3, h4, h5, h6')) return null;
 
     // 1. Google Meet standard name span in people panel
     const nameSpan = item.querySelector(".zWGUib");
@@ -40,9 +91,8 @@
       const match = aria.match(
         /(?:weitere\s+(?:optionen|aktionen)\s+für|more\s+(?:options|actions)\s+for|aktionen\s+für|nachricht\s+an|send\s+a\s+message\s+to|chat\s+with|chatten\s+mit|you\s+can\x27?t\s+remotely\s+mute|sie\s+können\s+das\s+mikrofon\s+von|bitten,?\s+(?:sie\s+)?|ask\s+)\s*(.+?)(?:\s+(?:beizutreten|to\s+join))?$/i
       );
-      if (match && (match[1] || match[2])) {
-        const rawExtracted = match[1] || match[2];
-        const cleaned = cleanPersonName(rawExtracted);
+      if (match && match[1]) {
+        const cleaned = cleanPersonName(match[1]);
         if (looksLikeName(cleaned)) return cleaned;
       }
     }
@@ -57,28 +107,22 @@
       }
     }
 
-    // 5. Leaf nodes not inside buttons, menus, tooltips, or badges
+    // 5. Leaf nodes not inside buttons, menus, tooltips, or badges, then 6. all leaf nodes
     const allLeaves = Array.from(item.querySelectorAll("*")).filter(
       (el) => el.children.length === 0 && clean(el.textContent).length > 0
     );
-
     const nonButtonLeaves = allLeaves.filter(
       (el) =>
         !el.closest(
           'button, [role="button"], [role="menu"], [role="menuitem"], [role="tooltip"], [role="img"], [aria-haspopup="true"], .d93U2d'
         )
     );
-    for (const leaf of nonButtonLeaves) {
-      if (isPresentation(leaf.textContent)) return null;
-      const t = cleanPersonName(leaf.textContent);
-      if (looksLikeName(t)) return t;
-    }
-
-    // 6. Fallback across all leaves
-    for (const leaf of allLeaves) {
-      if (isPresentation(leaf.textContent)) return null;
-      const t = cleanPersonName(leaf.textContent);
-      if (looksLikeName(t)) return t;
+    for (const leaves of [nonButtonLeaves, allLeaves]) {
+      for (const leaf of leaves) {
+        if (isPresentation(leaf.textContent)) return null;
+        const t = cleanPersonName(leaf.textContent);
+        if (looksLikeName(t)) return t;
+      }
     }
 
     const direct = cleanPersonName(item.textContent);
@@ -87,7 +131,7 @@
   }
 
   function meetCode() {
-    const m = location.pathname.match(/^\/([a-z]{3}-[a-z]{4}-[a-z]{3})/i);
+    const m = location.pathname.match(CODE_PATH_RE);
     return m ? m[1] : location.pathname.replace(/^\//, "").split("/")[0] || null;
   }
 
@@ -125,6 +169,8 @@
     /also invited|ebenfalls eingeladen|not in (?:the )?call|nicht im anruf|andere eingeladene|weitere eingeladene|ausstehend|awaiting response|no response|également invités|egalement invites|pas dans l'appel|también invitados|tambien invitados|no están en la llamada|no estan en la llamada/i;
   const IN_CALL_SECTION_RE =
     /\b(?:in call|im anruf|in this call|in diesem anruf|in meeting|in the meeting|in der besprechung|contributors|beitragende|dans l'appel|en la llamada)\b/i;
+  const NOT_IN_CALL_STATUS_RE =
+    /\b(?:not in (?:the )?call|nicht im anruf|also invited|ebenfalls eingeladen|awaiting response|no response|antwort ausstehend|noch keine antwort|invited|eingeladen)\b/i;
   const ASK_TO_JOIN_RE =
     /bitten,?\s+(?:sie\s+)?(?:beizutreten|teilzunehmen)|ask(?:\s+.*)?\s+to\s+join|teilnahme\s+anfragen|demander(?:\s+.*)?\s+à\s+participer|pedir(?:\s+.*)?\s+que\s+se\s+una/i;
 
@@ -193,7 +239,7 @@
     if (ASK_TO_JOIN_RE.test(combined)) {
       return false;
     }
-    for (const b of item.querySelectorAll('button, [role="button"]')) {
+    for (const b of item.querySelectorAll(BUTTON_SELECTOR)) {
       const bTxt = ((b.textContent || "") + " " + (b.getAttribute("aria-label") || "")).toLowerCase();
       if (ASK_TO_JOIN_RE.test(bTxt)) {
         return false;
@@ -201,26 +247,22 @@
     }
 
     // 2. Check if item is inside any known absent container
-    if (ctx && ctx.absentContainers) {
-      for (const c of ctx.absentContainers) {
-        if (c.contains(item)) {
-          return false;
-        }
+    for (const c of ctx.absentContainers) {
+      if (c.contains(item)) {
+        return false;
       }
     }
 
     // 3. Check DOM position relative to absent section headers in the same side panel
-    if (ctx && ctx.absentHeaders && ctx.absentHeaders.length > 0) {
-      for (const h of ctx.absentHeaders) {
-        const panel =
-          h.closest(
-            'aside, [role="tabpanel"], div[aria-label*="panel" i], div[aria-label*="Personen" i], div[aria-label*="People" i]'
-          ) || h.parentElement;
-        if (panel && panel.contains(item)) {
-          const pos = h.compareDocumentPosition(item);
-          if ((pos & (Node.DOCUMENT_POSITION_FOLLOWING | Node.DOCUMENT_POSITION_CONTAINED_BY)) !== 0) {
-            return false;
-          }
+    for (const h of ctx.absentHeaders) {
+      const panel =
+        h.closest(
+          'aside, [role="tabpanel"], div[aria-label*="panel" i], div[aria-label*="Personen" i], div[aria-label*="People" i]'
+        ) || h.parentElement;
+      if (panel && panel.contains(item)) {
+        const pos = h.compareDocumentPosition(item);
+        if ((pos & (Node.DOCUMENT_POSITION_FOLLOWING | Node.DOCUMENT_POSITION_CONTAINED_BY)) !== 0) {
+          return false;
         }
       }
     }
@@ -251,15 +293,7 @@
     }
 
     // 6. Check item itself for not-in-call status text / badges
-    if (
-      /\b(?:not in (?:the )?call|nicht im anruf|also invited|ebenfalls eingeladen|awaiting response|no response|antwort ausstehend|noch keine antwort|invited|eingeladen)\b/i.test(
-        combined
-      )
-    ) {
-      return false;
-    }
-
-    return true;
+    return !NOT_IN_CALL_STATUS_RE.test(combined);
   }
 
   function collect() {
@@ -269,8 +303,7 @@
     const items = Array.from(document.querySelectorAll('[role="listitem"]'));
 
     for (const item of items) {
-      if (item.closest('aside[aria-label*="chat" i], div[aria-label*="chat" i], div[aria-label*="nachricht" i]'))
-        continue;
+      if (item.closest(CHAT_CONTAINER_SELECTOR)) continue;
       if (item.closest('[role="toolbar"], nav, header')) continue;
 
       const rect = item.getBoundingClientRect();
@@ -281,15 +314,13 @@
       const inPeopleList = hasId || !!item.querySelector(".zWGUib") || (panel !== null && panel.contains(item));
       if (!inPeopleList) continue;
 
-      if (item.getAttribute("data-is-screen-share") === "true" || item.getAttribute("data-is-presenting") === "true")
-        continue;
-      if (isPresentation(item.textContent) || isPresentation(item.getAttribute("aria-label"))) continue;
+      if (isScreenShare(item)) continue;
 
       const name = extractName(item);
       if (!name || isPresentation(name) || !looksLikeName(name)) continue;
 
       const present = isItemPresent(item, ctx);
-      const key = name.toLowerCase();
+      const key = normalizeKey(name);
       const prev = seen.get(key);
       seen.set(key, { name, present: (prev && prev.present) || present });
     }
@@ -297,19 +328,14 @@
     // Also scan video tiles with data-participant-id directly (must NOT be inside side panel)
     for (const tile of document.querySelectorAll("[data-participant-id]")) {
       if (tile.closest('[role="listitem"], [role="list"], aside, [role="tabpanel"]')) continue;
-      if (tile.getAttribute("data-is-screen-share") === "true" || tile.getAttribute("data-is-presenting") === "true")
-        continue;
-      if (isPresentation(tile.textContent) || isPresentation(tile.getAttribute("aria-label"))) continue;
+      if (isScreenShare(tile)) continue;
       const name = extractName(tile);
       if (!name || isPresentation(name) || !looksLikeName(name)) continue;
-      const key = name.toLowerCase();
-      seen.set(key, { name, present: true });
+      seen.set(normalizeKey(name), { name, present: true });
     }
 
     return Array.from(seen.values());
   }
-
-  const sessionRoster = new Map();
 
   function clickElement(el) {
     if (!el) return;
@@ -406,7 +432,7 @@
     }
 
     // 3. Match Google Material Icons/Symbols inside button
-    const icons = Array.from(b.querySelectorAll('.google-material-icons, [class*="icon" i], span, i'));
+    const icons = Array.from(b.querySelectorAll(ICON_SELECTOR));
     for (const icon of icons) {
       const iconTxt = (icon.textContent || "").trim().toLowerCase();
       if (PEOPLE_ICON_RE.test(iconTxt)) {
@@ -430,35 +456,14 @@
   }
 
   function findPanelButton() {
-    // Search bottom control bar buttons first (usually anchored in bottom 160px)
-    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
-    const bottomButtons = buttons.filter((b) => {
-      const rect = b.getBoundingClientRect();
-      return rect.top > window.innerHeight - 160 && rect.width > 0 && rect.height > 0;
-    });
+    // Prefer the bottom control bar, then any button on screen
+    const buttons = allButtons();
+    const found = buttons.filter(isInBottomBar).find(isPeopleButton) || buttons.find(isPeopleButton);
+    if (found) return toButton(found);
 
-    const foundInBottom = bottomButtons.find(isPeopleButton);
-    if (foundInBottom) {
-      return foundInBottom.matches('button, [role="button"]')
-        ? foundInBottom
-        : foundInBottom.querySelector('button, [role="button"]') || foundInBottom;
-    }
-
-    // Fallback: search all buttons on screen
-    const foundAnywhere = buttons.find(isPeopleButton);
-    if (foundAnywhere) {
-      return foundAnywhere.matches('button, [role="button"]')
-        ? foundAnywhere
-        : foundAnywhere.querySelector('button, [role="button"]') || foundAnywhere;
-    }
-
-    // Fallback: check by data-panel-id="2" ONLY if it satisfies isPeopleButton
+    // Fallback: data-panel-id="2", but only if it really is the People button
     const byPanelId2 = document.querySelector('[data-panel-id="2"]');
-    if (byPanelId2 && isPeopleButton(byPanelId2)) {
-      return byPanelId2.matches('button, [role="button"]')
-        ? byPanelId2
-        : byPanelId2.querySelector('button, [role="button"]') || byPanelId2;
-    }
+    if (byPanelId2 && isPeopleButton(byPanelId2)) return toButton(byPanelId2);
 
     return null;
   }
@@ -532,11 +537,11 @@
     const panel = findPeopleSidePanel();
     if (panel) {
       // 1. Look for close button in panel header
-      const headerClose = Array.from(panel.querySelectorAll('button, [role="button"]')).find((b) => {
+      const headerClose = Array.from(panel.querySelectorAll(BUTTON_SELECTOR)).find((b) => {
         const rect = b.getBoundingClientRect();
         if (rect.top > 180 || rect.width === 0 || rect.height === 0) return false;
         const aria = (b.getAttribute("aria-label") || "").toLowerCase();
-        const icon = b.querySelector('.google-material-icons, [class*="icon" i], span, i');
+        const icon = b.querySelector(ICON_SELECTOR);
         const txt = ((icon && icon.textContent) || b.textContent || "").trim().toLowerCase();
         return aria.includes("schließen") || aria.includes("close") || txt === "close" || txt === "clear";
       });
@@ -549,8 +554,7 @@
       if (inPanelClose) return inPanelClose;
     }
 
-    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
-    return buttons.find((b) => {
+    return allButtons().find((b) => {
       const rect = b.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return false;
       // Must be on the right side of the screen where side panel is located
@@ -559,13 +563,12 @@
       if (rect.top > window.innerHeight - 100) return false;
 
       // Must not be inside chat panel
-      if (b.closest('aside[aria-label*="chat" i], div[aria-label*="chat" i], div[aria-label*="nachricht" i]'))
-        return false;
+      if (b.closest(CHAT_CONTAINER_SELECTOR)) return false;
 
       const aria = (b.getAttribute("aria-label") || "").toLowerCase();
       const title = (b.getAttribute("title") || "").toLowerCase();
       const txt = (b.textContent || "").trim().toLowerCase();
-      const icon = b.querySelector('.google-material-icons, [class*="icon" i], span, i');
+      const icon = b.querySelector(ICON_SELECTOR);
       const iconTxt = ((icon && icon.textContent) || "").trim().toLowerCase();
 
       // Must not be leave call button
@@ -590,18 +593,9 @@
       return true;
     }
 
-    // 2. Active button in bottom control bar
+    // 2. Active People button in the bottom control bar (and no chat open instead)
     const btn = findPanelButton();
-    if (btn && isButtonActive(btn)) {
-      const chatInput = document.querySelector(
-        'textarea[aria-label*="chat" i], textarea[aria-label*="nachricht" i], [contenteditable="true"][aria-label*="chat" i]'
-      );
-      if (!chatInput || chatInput.offsetParent === null) {
-        return true;
-      }
-    }
-
-    return false;
+    return !!btn && isButtonActive(btn) && !isChatInputVisible();
   }
 
   function closePeoplePanel() {
@@ -626,57 +620,35 @@
 
   function isButtonActive(b) {
     if (!b) return false;
-    const target = b.matches('button, [role="button"]') ? b : b.querySelector('button, [role="button"]') || b;
-    return (
-      target.getAttribute("aria-pressed") === "true" ||
-      target.getAttribute("aria-expanded") === "true" ||
-      target.getAttribute("aria-selected") === "true" ||
-      b.getAttribute("aria-pressed") === "true" ||
-      b.getAttribute("aria-expanded") === "true" ||
-      b.getAttribute("aria-selected") === "true"
-    );
+    const isPressed = (el) =>
+      el.getAttribute("aria-pressed") === "true" ||
+      el.getAttribute("aria-expanded") === "true" ||
+      el.getAttribute("aria-selected") === "true";
+    return isPressed(toButton(b)) || isPressed(b);
   }
 
   function findChatButton() {
-    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
-    return buttons.find((b) => {
-      const rect = b.getBoundingClientRect();
-      if (rect.top <= window.innerHeight - 160 || rect.width === 0 || rect.height === 0) return false;
-      if (b.getAttribute("data-panel-id") === "1") return true;
-      const label =
-        `${b.getAttribute("aria-label") || ""} ${b.getAttribute("data-tooltip") || ""} ${b.getAttribute("title") || ""} ${b.textContent || ""}`.toLowerCase();
-      return CHAT_LABEL_RE.test(label);
-    });
+    return allButtons().find(
+      (b) => isInBottomBar(b) && (b.getAttribute("data-panel-id") === "1" || CHAT_LABEL_RE.test(controlLabel(b)))
+    );
   }
 
+  const NON_PANEL_CONTROL_RE =
+    /mikrofon|microphone|kamera|camera|verlassen|leave|hand|melden|reaktion|reaction|untertitel|caption|bildschirm|present|screen/i;
+
+  /** An active bottom bar button for another side panel (Chat, Activities, Details, Host controls). */
   function findOtherActivePanelButton() {
-    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
-    return buttons.find((b) => {
-      const rect = b.getBoundingClientRect();
-      if (rect.top <= window.innerHeight - 160 || rect.width === 0 || rect.height === 0) return false;
-      if (isPeopleButton(b)) return false;
-
-      // Exclude non-panel controls: mic, cam, hand, captions, reactions, leave
-      const label =
-        `${b.getAttribute("aria-label") || ""} ${b.getAttribute("data-tooltip") || ""} ${b.getAttribute("title") || ""} ${b.textContent || ""}`.toLowerCase();
-      if (
-        /mikrofon|microphone|kamera|camera|verlassen|leave|hand|melden|reaktion|reaction|untertitel|caption|bildschirm|present|screen/i.test(
-          label
-        )
-      ) {
-        return false;
-      }
-
-      if (
+    return allButtons().find((b) => {
+      if (!isInBottomBar(b) || isPeopleButton(b)) return false;
+      const label = controlLabel(b);
+      if (NON_PANEL_CONTROL_RE.test(label)) return false;
+      const isPanelButton =
         CHAT_LABEL_RE.test(label) ||
         ACTIVITIES_LABEL_RE.test(label) ||
         DETAILS_LABEL_RE.test(label) ||
         HOST_LABEL_RE.test(label) ||
-        b.hasAttribute("data-panel-id")
-      ) {
-        return isButtonActive(b);
-      }
-      return false;
+        b.hasAttribute("data-panel-id");
+      return isPanelButton && isButtonActive(b);
     });
   }
 
@@ -694,11 +666,8 @@
     }
 
     // 2. Is Chat input visible or Chat button active?
-    const chatInput = document.querySelector(
-      'textarea[aria-label*="chat" i], textarea[aria-label*="nachricht" i], [contenteditable="true"][aria-label*="chat" i]'
-    );
     const chatBtn = findChatButton();
-    if ((chatInput && chatInput.offsetParent !== null) || (chatBtn && isButtonActive(chatBtn))) {
+    if (isChatInputVisible() || (chatBtn && isButtonActive(chatBtn))) {
       initialSessionState = { type: "OTHER", button: chatBtn };
       return;
     }
@@ -723,38 +692,31 @@
     // If Popcorn never opened or altered the panel, leave Meet exactly as is
     if (!wasOpened || !state) return;
 
-    if (state.type === "PEOPLE") {
-      // 1) People sidebar was already open: keep it open
-      return;
-    }
-
     if (state.type === "OTHER" && state.button) {
-      // 2a) Another panel (e.g. Chat) was open: switch back to it if not already active
-      if (!isButtonActive(state.button)) {
-        clickElement(state.button);
-      }
-      return;
-    }
-
-    if (state.type === "NONE") {
-      // 2b) No sidebar was open: close People panel
+      // Another panel (e.g. Chat) was open: switch back to it if not already active
+      if (!isButtonActive(state.button)) clickElement(state.button);
+    } else if (state.type === "NONE") {
+      // No sidebar was open: close the People panel again
       closePeoplePanel();
-      return;
     }
+    // state.type === "PEOPLE": the People sidebar was already open, keep it open
   }
 
+  /* The popup holds a "popcorn-session" port while it is open. The live roster is only
+   * tracked during that time, so untracked meetings and closed popups cost nothing. */
   function onSessionConnect(port) {
-    if (port.name === "popcorn-session") {
-      activeSessionPorts.add(port);
-      captureInitialState();
+    if (port.name !== "popcorn-session") return;
+    activeSessionPorts.add(port);
+    captureInitialState();
+    startLiveRoster();
 
-      port.onDisconnect.addListener(() => {
-        activeSessionPorts.delete(port);
-        if (activeSessionPorts.size === 0) {
-          restoreInitialState();
-        }
-      });
-    }
+    port.onDisconnect.addListener(() => {
+      activeSessionPorts.delete(port);
+      if (activeSessionPorts.size === 0) {
+        stopLiveRoster();
+        restoreInitialState();
+      }
+    });
   }
 
   function findViewEveryoneButton() {
@@ -804,25 +766,49 @@
     return clickedAny;
   }
 
-  function updateLiveRoster() {
-    if (!meetCode()) return;
-    const currentCollected = collect();
-    const now = Date.now();
-    for (const p of currentCollected) {
-      if (!p.name || !looksLikeName(p.name)) continue;
-      const k = p.name.toLowerCase();
-      sessionRoster.set(k, { name: p.name, present: p.present, lastSeen: now });
-    }
-    for (const [k, v] of sessionRoster.entries()) {
-      if (!looksLikeName(v.name) || now - v.lastSeen > 120000) {
-        sessionRoster.delete(k);
+  /* Recently seen participants by normalized name. Meet virtualizes long lists, so people can
+   * briefly disappear from the DOM; merging recent sightings keeps them in the result. */
+  const sessionRoster = new Map();
+
+  function rememberSeen(people, now) {
+    for (const p of people) {
+      if (p.name && looksLikeName(p.name)) {
+        sessionRoster.set(normalizeKey(p.name), { name: p.name, present: p.present, lastSeen: now });
       }
     }
   }
 
-  const liveRosterInterval = setInterval(updateLiveRoster, 1000);
+  function updateLiveRoster() {
+    if (!meetCode()) return;
+    const now = Date.now();
+    rememberSeen(collect(), now);
+    for (const [k, v] of sessionRoster.entries()) {
+      if (now - v.lastSeen > ROSTER_EXPIRY_MS) sessionRoster.delete(k);
+    }
+  }
 
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  /** Adds people seen within the merge window who are missing from the current scrape. */
+  function mergeWithRecentlySeen(people, now) {
+    const merged = new Map();
+    for (const [k, v] of sessionRoster.entries()) {
+      if (now - v.lastSeen < ROSTER_MERGE_WINDOW_MS) merged.set(k, { name: v.name, present: v.present });
+    }
+    for (const p of people) {
+      if (looksLikeName(p.name)) merged.set(normalizeKey(p.name), { name: p.name, present: p.present });
+    }
+    return merged.size > people.length ? Array.from(merged.values()) : people;
+  }
+
+  let liveRosterInterval = null;
+
+  function startLiveRoster() {
+    if (!liveRosterInterval) liveRosterInterval = setInterval(updateLiveRoster, LIVE_ROSTER_INTERVAL_MS);
+  }
+
+  function stopLiveRoster() {
+    clearInterval(liveRosterInterval);
+    liveRosterInterval = null;
+  }
 
   /* withPeople === false means: read only the meeting name and leave the
    * people list untouched. This way the extension never opens a panel in
@@ -891,29 +877,8 @@
       }
 
       const now = Date.now();
-      for (const p of people) {
-        if (p.name && looksLikeName(p.name)) {
-          sessionRoster.set(p.name.toLowerCase(), { name: p.name, present: p.present, lastSeen: now });
-        }
-      }
-
-      // Merge with recent session roster so momentarily unseen participants are retained
-      if (sessionRoster.size > people.length) {
-        const merged = new Map();
-        for (const [k, v] of sessionRoster.entries()) {
-          if (now - v.lastSeen < 60000 && looksLikeName(v.name)) {
-            merged.set(k, { name: v.name, present: v.present });
-          }
-        }
-        for (const p of people) {
-          if (looksLikeName(p.name)) {
-            merged.set(p.name.toLowerCase(), { name: p.name, present: p.present });
-          }
-        }
-        if (merged.size > people.length) {
-          people = Array.from(merged.values());
-        }
-      }
+      rememberSeen(people, now);
+      people = mergeWithRecentlySeen(people, now);
     }
 
     return {
@@ -925,13 +890,13 @@
   }
 
   const messageListener = (msg, _sender, sendResponse) => {
-    if (msg && msg.type === "MUR_SCRAPE") {
+    if (msg && msg.type === "POPCORN_SCRAPE") {
       scrape(msg.withPeople === true, msg.openIfClosed === true)
         .then(sendResponse)
         .catch((e) => sendResponse({ ok: false, error: String(e && e.message ? e.message : e) }));
       return true;
     }
-    if (msg && msg.type === "MUR_POPUP_CLOSING") {
+    if (msg && msg.type === "POPCORN_POPUP_CLOSING") {
       restoreInitialState();
       sendResponse({ ok: true });
       return true;
@@ -948,8 +913,8 @@
   };
   window.addEventListener("focus", onWindowFocus);
 
-  window.__murCleanup = () => {
-    clearInterval(liveRosterInterval);
+  window.__popcornCleanup = () => {
+    stopLiveRoster();
     window.removeEventListener("focus", onWindowFocus);
     try {
       chrome.runtime.onMessage.removeListener(messageListener);

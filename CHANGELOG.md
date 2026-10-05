@@ -9,6 +9,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 
 ### Changed
 - **Locale-independent Markdown export**: Exported rosters now use `YYYY-MM-DD HH:mm` (local time) instead of the browser's locale format. Older exports in German, British, or US formats can still be imported.
+- **No background scanning**: The content script used to scan the whole Meet page every second in every Meet tab, even in untracked meetings and with the popup closed. It now tracks attendance only while the POPCORN popup is open.
 - **Consistent name cleaning**: The popup now strips `(invited)` / `(eingeladen)` qualifiers from names just like the Meet scraper does, and treats whitespace-only names as invalid.
 
 ### Fixed
@@ -34,6 +35,7 @@ and this project adheres to [EffVer (Intended Effort Versioning)](https://jacobt
 - Restructured `popup.js`: icons are defined once, icon buttons share a helper, `render()` is split into per-view functions, person and roster edits go through tested helpers in `lib/meetings.js`, and dead code such as the handler for a non-existent modal close button is gone.
 - Added unit tests with Node's built-in test runner (`npm test`) and an `npm run check` script that runs lint, format check, and tests.
 - Added a CI workflow (`.github/workflows/ci.yml`) that runs lint, format check, unit tests, and packaging on every push and pull request. The release workflow runs the same checks before packaging.
+- Refactored `content.js`: shared selectors and DOM helpers instead of repeated inline copies, named timing constants, and internal message types renamed from `MUR_*` to `POPCORN_*`.
 - Moved the unused 487 KB `icon.svg` source artwork from `src/icons/` to `assets/`, shrinking the release ZIP from about 430 KB to about 70 KB.
 - `npm run package` now bundles every non-hidden file in `src/` and verifies that all files referenced by `manifest.json` are present.
 
